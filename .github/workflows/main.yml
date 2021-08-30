@@ -46,10 +46,15 @@ jobs:
             texlive \
             texi2html
 
-      - name: Setup perlbrew
+      - name: Install perlbrew
         working-directory: ${{ github.workspace }}
         run: |
           curl -L https://install.perlbrew.pl | bash
+          echo "source $HOME/perl5/perlbrew/etc/bashrc" >> "$HOME/.bash_profile"
+
+      - name: Setup perlbrew
+        working-directory: ${{ github.workspace }}
+        run: |
           perlbrew init
           perlbrew install-cpanm
           perlbrew install-patchperl
@@ -106,6 +111,7 @@ jobs:
 
       - name: Build and Test
         run: |
+          cd "${{ github.workspace }}""
           eval `perl -V:siteprefix`
           ./configure --prefix=$siteprefix && make
           perl Build.PL
