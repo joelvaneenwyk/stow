@@ -126,11 +126,10 @@ jobs:
           submodules: recursive
 
       - name: Perl Setup
-        working-directory: ${{ github.workspace }}
         run: |
-          cd ${{ github.workspace }}
+          cd $(cygpath '${{ github.workspace }}')
           (echo "yes"; echo ""; echo "no"; echo "exit") | cpan
-          cpan -i -T YAML Test::Output CPAN::DistnameInfo
+          cpan -i -T YAML Test::Output CPAN::DistnameInfo Devel::Cover::Report::Coveralls Test::More Test::Output
 
       - name: Build and Test
         run: |

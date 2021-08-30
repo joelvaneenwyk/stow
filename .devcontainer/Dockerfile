@@ -16,6 +16,7 @@ RUN apt-get -y install --no-install-recommends \
     libssl-dev \
     make \
     patch \
+    perl \
     perlbrew \
     texinfo \
     texlive \
@@ -27,4 +28,4 @@ RUN (echo "yes"; echo ""; echo "no"; echo "exit") | sudo cpan
 RUN sudo cpan -i -T YAML Test::Output CPAN::DistnameInfo
 
 # Upgrade but skip tests
-RUN sudo cpan -u -T
+#RUN sudo cpan -u -T

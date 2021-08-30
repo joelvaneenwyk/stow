@@ -16,12 +16,13 @@
 # along with this program. If not, see https://www.gnu.org/licenses/.
 
 # Load perlbrew environment
-. /usr/local/perlbrew/etc/bashrc
+# shellcheck disable=SC1090
+. "${PERLBREW_ROOT:-/usr/local/perlbrew/etc/bashrc}"
 
 # For each perl version installed.
 for p_version in $(perlbrew list | sed 's/ //g'); do
     # Switch to it.
-    perlbrew use $p_version
+    perlbrew use "$p_version"
     # and install the needed modules.
     /usr/local/perlbrew/bin/cpanm -n Devel::Cover::Report::Coveralls Test::More Test::Output
 done
