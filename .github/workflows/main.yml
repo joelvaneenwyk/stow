@@ -65,12 +65,22 @@ jobs:
             perl-5.22.2 \
             perl-5.20.3
 
+      - name: CPAN Perl Dependencies
+        working-directory: ${{ github.workspace }}
+        run: |
+          (echo "yes"; echo ""; echo "no"; echo "exit") | sudo cpan
+          sudo cpan -i -T YAML Test::Output CPAN::DistnameInfo
+
       - name: Build
         working-directory: ${{ github.workspace }}
         run: |
+          autoreconf -iv
           eval `perl -V:siteprefix`
           ./configure --prefix=$siteprefix && make
+          sudo perl Build installdeps
           perl Build.PL
+          perl Build test
+          make
 
       - name: Bootstrap Perls
         working-directory: ${{ github.workspace }}
@@ -97,6 +107,7 @@ jobs:
             git
             mingw-w64-x86_64-gcc
             make
+            sudo
             autoconf
             automake1.16
             automake-wrapper
@@ -112,12 +123,20 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Perl Setup
+        working-directory: ${{ github.workspace }}
+        run: |
+          cd ${{ github.workspace }}
+          (echo "yes"; echo ""; echo "no"; echo "exit") | cpan
+          cpan -i -T YAML Test::Output CPAN::DistnameInfo
+
       - name: Build and Test
         working-directory: ${{ github.workspace }}
         run: |
           cd ${{ github.workspace }}
+          autoreconf -iv
           eval `perl -V:siteprefix`
           ./configure --prefix=$siteprefix && make
+          perl Build installdeps
           perl Build.PL
-          perl Build
           perl Build test
