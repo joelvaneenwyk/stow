@@ -80,10 +80,10 @@ jobs:
           perl Build.PL
           sudo perl Build installdeps
           ./Build test
-          ./Build install
-          ./Build distcheck
-          ./Build distmeta
-          ./Build dist
+          sudo perl Build install
+          sudo perl Build distcheck
+          sudo perl Build distmeta
+          sudo perl Build dist
 
       - name: Bootstrap Perls
         working-directory: ${{ github.workspace }}
@@ -133,9 +133,8 @@ jobs:
           cpan -i -T YAML Test::Output CPAN::DistnameInfo
 
       - name: Build and Test
-        working-directory: ${{ github.workspace }}
         run: |
-          cd ${{ github.workspace }}
+          cd $(cygpath -u $GITHUB_WORKSPACE)
           autoreconf -iv
           eval `perl -V:siteprefix`
           ./configure --prefix=$siteprefix && make

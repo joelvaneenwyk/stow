@@ -22,5 +22,9 @@ RUN apt-get -y install --no-install-recommends \
     texi2html
 
 RUN (echo "yes"; echo ""; echo "no"; echo "exit") | sudo cpan
+
+# Install dependencies but skip tests
 RUN sudo cpan -i -T YAML Test::Output CPAN::DistnameInfo
-RUN sudo cpan -u
+
+# Upgrade but skip tests
+RUN sudo cpan -u -T
