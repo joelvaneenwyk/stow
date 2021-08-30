@@ -18,10 +18,11 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      HOME: /home/runner/work
-      PERLBREW_ROOT: $HOME/perl5/perlbrew
-      PERLBREW_HOME: $HOME/.perlbrew
+      HOME: /home/runner
+      PERLBREW_ROOT: /home/runner/perl5/perlbrew
+      PERLBREW_HOME: /home/runner/.perlbrew
       PERLBREW_PATH: /usr/local/perlbrew/bin
+      DEBIAN_FRONTEND: noninteractive
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -33,8 +34,8 @@ jobs:
       - name: Install Dependencies
         working-directory: ${{ github.workspace }}
         run: |
-          DEBIAN_FRONTEND=noninteractive sudo apt-get update -qq
-          DEBIAN_FRONTEND=noninteractive sudo apt-get install -y -q \
+          sudo apt-get update
+          sudo apt-get -y install --no-install-recommends \
             autoconf \
             bzip2 \
             cpanminus \
