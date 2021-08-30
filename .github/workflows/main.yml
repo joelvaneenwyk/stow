@@ -18,8 +18,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      PERLBREW_ROOT: /home/runner/perl5/perlbrew
-      PERLBREW_HOME: /home/runner/.perlbrew
+      PERLBREW_ROOT: ${HOME}/perl5/perlbrew
+      PERLBREW_HOME: ${HOME}/.perlbrew
       PERLBREW_PATH: /usr/local/perlbrew/bin
 
     # Steps represent a sequence of tasks that will be executed as part of the job
@@ -47,13 +47,14 @@ jobs:
             texi2html
 
       - name: Install perlbrew
-        working-directory: ${{ github.workspace }}
+        working-directory: ${HOME}
         run: |
           curl -L https://install.perlbrew.pl | bash
-          echo "source $HOME/perl5/perlbrew/etc/bashrc" >> "$HOME/.bash_profile"
+          echo "${HOME}/perl5/perlbrew/bin" >> $GITHUB_PATH
+          echo "source ${HOME}/perl5/perlbrew/etc/bashrc" >> "${HOME}/.bash_profile"
 
       - name: Setup perlbrew
-        working-directory: ${{ github.workspace }}
+        working-directory: ${HOME}
         run: |
           perlbrew init
           perlbrew install-cpanm
@@ -111,7 +112,7 @@ jobs:
 
       - name: Build and Test
         run: |
-          cd "${{ github.workspace }}""
+          cd ${{ github.workspace }}"
           eval `perl -V:siteprefix`
           ./configure --prefix=$siteprefix && make
           perl Build.PL
