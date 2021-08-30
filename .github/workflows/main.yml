@@ -77,10 +77,13 @@ jobs:
           autoreconf -iv
           eval `perl -V:siteprefix`
           ./configure --prefix=$siteprefix && make
-          sudo perl Build installdeps
           perl Build.PL
-          perl Build test
-          make
+          sudo perl Build installdeps
+          ./Build test
+          ./Build install
+          ./Build distcheck
+          ./Build distmeta
+          ./Build dist
 
       - name: Bootstrap Perls
         working-directory: ${{ github.workspace }}

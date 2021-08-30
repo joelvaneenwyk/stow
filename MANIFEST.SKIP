@@ -86,4 +86,6 @@
 tmp-testing-trees
 .travis.yml
 ^docker/
+^.devcontainer/
+^.github/
 ^[a-zA-Z]*-docker.sh
