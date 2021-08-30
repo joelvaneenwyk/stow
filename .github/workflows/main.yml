@@ -18,8 +18,9 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      PERLBREW_ROOT: ${{ env.HOME }}/perl5/perlbrew
-      PERLBREW_HOME: ${{ env.HOME }}/.perlbrew
+      HOME: /home/runner/work
+      PERLBREW_ROOT: $HOME/perl5/perlbrew
+      PERLBREW_HOME: $HOME/.perlbrew
       PERLBREW_PATH: /usr/local/perlbrew/bin
 
     # Steps represent a sequence of tasks that will be executed as part of the job
