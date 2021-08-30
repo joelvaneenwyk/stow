@@ -69,7 +69,7 @@ jobs:
         working-directory: ${{ github.workspace }}
         run: |
           (echo "yes"; echo ""; echo "no"; echo "exit") | sudo cpan
-          sudo cpan -i -T YAML Test::Output CPAN::DistnameInfo
+          sudo cpan -i -T YAML Test::Output CPAN::DistnameInfo Devel::Cover::Report::Coveralls Test::More Test::Output
 
       - name: Build
         working-directory: ${{ github.workspace }}
