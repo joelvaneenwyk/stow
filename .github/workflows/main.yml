@@ -18,9 +18,8 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      HOME: /root
       PERLBREW_ROOT: /usr/local/perlbrew
-      PERLBREW_HOME: /root/.perlbrew
+      PERLBREW_HOME: /home/runner/.perlbrew
       PERLBREW_PATH: /usr/local/perlbrew/bin
 
     # Steps represent a sequence of tasks that will be executed as part of the job
@@ -33,13 +32,12 @@ jobs:
       - name: Install Dependencies
         working-directory: ${{ github.workspace }}
         run: |
-          DEBIAN_FRONTEND=noninteractive apt-get update -qq
-          DEBIAN_FRONTEND=noninteractive apt-get install -y -q \
+          DEBIAN_FRONTEND=noninteractive sudo apt-get update -qq
+          DEBIAN_FRONTEND=noninteractive sudo apt-get install -y -q \
             autoconf \
             bzip2 \
             cpanminus \
             gawk \
-            git \
             libssl-dev \
             make \
             patch \
@@ -51,7 +49,7 @@ jobs:
       - name: Setup perlbrew
         working-directory: ${{ github.workspace }}
         run: |
-          mkdir -p /usr/local/perlbrew /root
+          mkdir -p /usr/local/perlbrew
           perlbrew init
           perlbrew install-cpanm
           perlbrew install-patchperl
