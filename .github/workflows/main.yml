@@ -18,7 +18,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      PERLBREW_ROOT: /usr/local/perlbrew
+      PERLBREW_ROOT: /home/runner/perl5/perlbrew
       PERLBREW_HOME: /home/runner/.perlbrew
       PERLBREW_PATH: /usr/local/perlbrew/bin
 
@@ -38,10 +38,10 @@ jobs:
             bzip2 \
             cpanminus \
             gawk \
+            curl \
             libssl-dev \
             make \
             patch \
-            perlbrew \
             texinfo \
             texlive \
             texi2html
@@ -49,7 +49,7 @@ jobs:
       - name: Setup perlbrew
         working-directory: ${{ github.workspace }}
         run: |
-          mkdir -p /usr/local/perlbrew
+          curl -L https://install.perlbrew.pl | bash
           perlbrew init
           perlbrew install-cpanm
           perlbrew install-patchperl
