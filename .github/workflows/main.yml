@@ -134,9 +134,9 @@ jobs:
 
       - name: Build and Test
         run: |
-          cd $(cygpath -u $GITHUB_WORKSPACE)
+          cd $(cygpath '${{ github.workspace }}')
           autoreconf -iv
-          eval `perl -V:siteprefix`
+          eval $(perl -V:siteprefix)
           ./configure --prefix=$siteprefix && make
           perl Build installdeps
           perl Build.PL

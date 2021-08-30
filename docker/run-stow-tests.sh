@@ -19,7 +19,8 @@
 # Load before setting safety to keep
 # perlbrew scripts from breaking due to
 # unset variables.
-. /usr/local/perlbrew/etc/bashrc
+# shellcheck disable=SC1090
+. "${PERLBREW_ROOT:-/usr/local/perlbrew/etc/bashrc}"
 
 # Standard safety protocol
 set -ef -o pipefail
@@ -27,14 +28,17 @@ IFS=$'\n\t'
 
 test_perl_version () {
     perl_version="$1"
-    perlbrew use $perl_version
+    perlbrew use "$perl_version"
 
-    echo $(perl --version)
+    # shellcheck disable=SC2005
+    echo "$(perl --version)"
 
     # Install stow
     autoreconf --install
-    eval `perl -V:siteprefix`
-    ./configure --prefix=$siteprefix && make
+    eval "$(perl -V:siteprefix)"
+
+    # shellcheck disable=SC2154
+    ./configure --prefix="$siteprefix" && make
     make cpanm
 
     # Run tests
@@ -49,7 +53,7 @@ if [[ -n "$LIST_PERL_VERSIONS" ]]; then
 elif [[ -z "$PERL_VERSION" ]]; then
     echo "Testing all versions ..."
     for perl_version in $(perlbrew list | sed 's/ //g'); do
-        test_perl_version $perl_version
+        test_perl_version "$perl_version"
     done
     make distclean
 else
@@ -57,7 +61,7 @@ else
     # Test a specific version requested via $PERL_VERSION environment
     # variable.  Make sure set -e doesn't cause us to bail on failure
     # before we start an interactive shell.
-    test_perl_version $PERL_VERSION || :
+    test_perl_version "$PERL_VERSION" || :
     # N.B. Don't distclean since we probably want to debug this Perl
     # version interactively.
     cat <<EOF
