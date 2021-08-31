@@ -52,7 +52,7 @@ jobs:
           autoreconf -iv
           eval `perl -V:siteprefix`
           ./configure --prefix=$siteprefix
-          make bin/stow bin/chkstow lib/Stow.pmn lib/Stow/Util.pm
+          make bin/stow bin/chkstow lib/Stow.pm lib/Stow/Util.pm
           perl Build.PL
           ./Build test
           ./Build install
