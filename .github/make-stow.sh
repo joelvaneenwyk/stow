@@ -15,4 +15,9 @@ echo "Perl lib: $PERL5LIB"
 
 ./configure --prefix="${siteprefix:-}" --with-pmdir="$PERL5LIB"
 make
-sudo make install
+
+if [ -x "$(command -v sudo)" ]; then
+    make install
+else
+    sudo make install
+fi
