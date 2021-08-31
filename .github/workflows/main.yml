@@ -96,10 +96,6 @@ jobs:
   windows-msys2:
     runs-on: windows-latest
 
-    defaults:
-      run:
-        shell: msys2 {0}
-
     steps:
       - uses: msys2/setup-msys2@v2
         with:
@@ -126,17 +122,26 @@ jobs:
           submodules: recursive
 
       - name: Perl Setup
+        shell: msys2 {0}
         run: |
           cd $(cygpath '${{ github.workspace }}')
           (echo "yes"; echo ""; echo "no"; echo "exit") | cpan
           cpan -i -T YAML Test::Output CPAN::DistnameInfo Devel::Cover::Report::Coveralls Test::More Test::Output
 
-      - name: Build and Test
+      - name: Configure and Make
+        shell: msys2 {0}
         run: |
           cd $(cygpath '${{ github.workspace }}')
           autoreconf -iv
           eval $(perl -V:siteprefix)
-          ./configure --prefix=$siteprefix && make
+          echo "Site prefix (default): $siteprefix"
+          echo "Site prefix (unix): $(cygpath "$siteprefix")"
+          ./configure --prefix=$(cygpath "$siteprefix") && make
+
+      - name: Build and Test
+        shell: msys2 {0}
+        run: |
+          cd $(cygpath '${{ github.workspace }}')
           perl Build installdeps
           perl Build.PL
           perl Build test
