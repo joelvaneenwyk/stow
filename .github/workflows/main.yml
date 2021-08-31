@@ -54,8 +54,8 @@ jobs:
           ./configure --prefix=$siteprefix
           make bin/stow bin/chkstow lib/Stow.pm lib/Stow/Util.pm
           perl Build.PL
-          ./Build test
-          ./Build install
+          perl Build test
+          sudo perl Build install
 
   sanity-windows:
     needs: sanity-linux
