@@ -13,7 +13,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  sanity:
+  sanity-linux:
     # The type of runner that the job will run on
     runs-on: ubuntu-latest
 
@@ -41,6 +41,11 @@ jobs:
             make \
             patch
 
+      - name: Perl Dependencies
+        working-directory: ${{ github.workspace }}
+        run: |
+          sudo cpan -i -T YAML Test::Output Test::More CPAN::DistnameInfo Devel::Cover::Report::Coveralls
+
       - name: Build
         working-directory: ${{ github.workspace }}
         run: |
@@ -48,8 +53,35 @@ jobs:
           ./Build install
           ./Build test
 
+  sanity-windows:
+    needs: sanity-linux
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Install Perl
+        uses: shogo82148/actions-setup-perl@v1
+        with:
+          perl-version: '5.32'
+          distribution: strawberry
+
+      - name: Perl Dependencies
+        working-directory: ${{ github.workspace }}
+        run: |
+          cpan -i -T YAML Test::Output CPAN::DistnameInfo Devel::Cover::Report::Coveralls Test::More Test::Output
+
+      - name: Build and Test
+        working-directory: ${{ github.workspace }}
+        run: |
+          perl Build.PL
+          call Build.bat installdeps
+          call Build.bat test
+
   ubuntu:
-    needs: sanity
+    needs: sanity-windows
     runs-on: ubuntu-latest
 
     env:
@@ -129,7 +161,7 @@ jobs:
         run: ./docker/run-stow-tests.sh
 
   windows-msys2:
-    needs: sanity
+    needs: sanity-windows
     runs-on: windows-latest
 
     steps:
@@ -179,51 +211,6 @@ jobs:
         shell: msys2 {0}
         run: |
           cd $(cygpath '${{ github.workspace }}')
-          perl Build installdeps
           perl Build.PL
-          perl Build test
-
-      - uses: actions/upload-artifact@v2
-        with:
-          name: stow-windows
-          path: |
-            Build
-            bin/chkstow
-            bin/stow
-            lib/Stow.pm
-            lib/Stow/Util.pm
-
-  windows:
-    needs: windows-msys2
-    runs-on: windows-latest
-
-    steps:
-      - uses: actions/checkout@v2
-        with:
-          submodules: recursive
-
-      - name: Install Perl
-        uses: shogo82148/actions-setup-perl@v1
-        with:
-          perl-version: '5.32'
-          distribution: strawberry
-
-      - name: Download Stow Artifacts
-        uses: actions/download-artifact@v2
-        id: download
-        with:
-          name: 'stow-windows'
-          path: .
-
-      - name: Perl Dependencies
-        working-directory: ${{ github.workspace }}
-        run: |
-          cpan -i -T YAML Test::Output CPAN::DistnameInfo Devel::Cover::Report::Coveralls Test::More Test::Output
-
-      - name: Build and Test
-        working-directory: ${{ github.workspace }}
-        run: |
-          cd $(cygpath '${{ github.workspace }}')
           perl Build installdeps
-          perl Build.PL
           perl Build test
