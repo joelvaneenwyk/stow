@@ -133,13 +133,59 @@ jobs:
         run: |
           cd $(cygpath '${{ github.workspace }}')
           autoreconf -iv
-          eval $(perl -V:siteprefix)
-          echo "Site prefix (default): $siteprefix"
-          echo "Site prefix (unix): $(cygpath "$siteprefix")"
-          ./configure --prefix=$(cygpath "$siteprefix") && make
+          eval "$(perl -V:siteprefix)"
+          siteprefix=$(cygpath "$siteprefix")
+          echo "Site prefix: $siteprefix"
+          ./configure --prefix="$siteprefix" && make
 
       - name: Build and Test
         shell: msys2 {0}
+        run: |
+          cd $(cygpath '${{ github.workspace }}')
+          perl Build installdeps
+          perl Build.PL
+          perl Build test
+
+      - uses: actions/upload-artifact@v2
+        with:
+          name: stow-windows
+          path: |
+            Build
+            bin/chkstow
+            bin/stow
+            lib/Stow.pm
+            lib/Stow/Util.pm
+
+  windows:
+    needs: windows-msys2
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Install Perl
+        uses: shogo82148/actions-setup-perl@v1
+        with:
+          perl-version: '5.32'
+          distribution: strawberry
+
+      - name: Download Stow Artifacts
+        uses: actions/download-artifact@v2
+        id: download
+        working-directory: ${{ github.workspace }}
+        with:
+          name: 'stow-windows'
+          path: .
+
+      - name: Perl Dependencies
+        working-directory: ${{ github.workspace }}
+        run: |
+          cpan -i -T YAML Test::Output CPAN::DistnameInfo Devel::Cover::Report::Coveralls Test::More Test::Output
+
+      - name: Build and Test
+        working-directory: ${{ github.workspace }}
         run: |
           cd $(cygpath '${{ github.workspace }}')
           perl Build installdeps

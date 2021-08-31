@@ -27,5 +27,7 @@ RUN (echo "yes"; echo ""; echo "no"; echo "exit") | sudo cpan
 # Install dependencies but skip tests
 RUN sudo cpan -i -T YAML Test::Output CPAN::DistnameInfo
 
+RUN sudo cpanm -i -T Perl::LanguageServer
+
 # Upgrade but skip tests
 #RUN sudo cpan -u -T
