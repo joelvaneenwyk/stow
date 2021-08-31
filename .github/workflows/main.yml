@@ -174,7 +174,6 @@ jobs:
       - name: Download Stow Artifacts
         uses: actions/download-artifact@v2
         id: download
-        working-directory: ${{ github.workspace }}
         with:
           name: 'stow-windows'
           path: .
