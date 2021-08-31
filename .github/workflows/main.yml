@@ -100,7 +100,12 @@ jobs:
       - uses: msys2/setup-msys2@v2
         with:
           msystem: MINGW64
-          update: true
+
+          # Minimal here so that we use the MSYS perl and not the version
+          # already installed (if there is one)
+          path-type: minimal
+
+          update: false
           install: >-
             base-devel
             git
@@ -132,11 +137,7 @@ jobs:
         shell: msys2 {0}
         run: |
           cd $(cygpath '${{ github.workspace }}')
-          autoreconf -iv
-          eval "$(perl -V:siteprefix)"
-          siteprefix=$(cygpath "$siteprefix")
-          echo "Site prefix: $siteprefix"
-          ./configure --prefix="$siteprefix" && make
+          ./.github/make-stow.sh
 
       - name: Build and Test
         shell: msys2 {0}
