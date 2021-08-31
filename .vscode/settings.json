@@ -1,0 +1,9 @@
+{
+    "[shellscript]": {
+        "editor.formatOnSave": true,
+        "files.eol": "\n"
+    },
+
+    "shellcheck.enable": true,
+    "shellcheck.enableQuickFix": true
+}
