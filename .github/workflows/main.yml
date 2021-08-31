@@ -49,9 +49,13 @@ jobs:
       - name: Build
         working-directory: ${{ github.workspace }}
         run: |
+          autoreconf -iv
+          eval `perl -V:siteprefix`
+          ./configure --prefix=$siteprefix
+          make bin/stow bin/chkstow lib/Stow.pmn lib/Stow/Util.pm
           perl Build.PL
-          ./Build install
           ./Build test
+          ./Build install
 
   sanity-windows:
     needs: sanity-linux
