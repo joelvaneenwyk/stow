@@ -13,8 +13,43 @@ on:
   workflow_dispatch:
 
 jobs:
-  ubuntu:
+  sanity:
     # The type of runner that the job will run on
+    runs-on: ubuntu-latest
+
+    env:
+      DEBIAN_FRONTEND: noninteractive
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Install Dependencies
+        working-directory: ${{ github.workspace }}
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install --no-install-recommends \
+            autoconf \
+            bzip2 \
+            cpanminus \
+            gawk \
+            curl \
+            libssl-dev \
+            make \
+            patch
+
+      - name: Build
+        working-directory: ${{ github.workspace }}
+        run: |
+          perl Build.PL
+          ./Build install
+          ./Build test
+
+  ubuntu:
+    needs: sanity
     runs-on: ubuntu-latest
 
     env:
@@ -94,6 +129,7 @@ jobs:
         run: ./docker/run-stow-tests.sh
 
   windows-msys2:
+    needs: sanity
     runs-on: windows-latest
 
     steps:
