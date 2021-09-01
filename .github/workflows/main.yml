@@ -99,7 +99,7 @@ jobs:
         shell: msys2 {0}
         run: |
           cd $(cygpath '${{ github.workspace }}')
-          prove -I t/ -I bin/
+          prove -I t/ -I bin/ -I lib/
 
       - name: Install Perl
         uses: shogo82148/actions-setup-perl@v1
