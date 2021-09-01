@@ -1,36 +1,62 @@
 @echo off
 
-set STOW_ROOT=%~dp0../
+setlocal EnableExtensions EnableDelayedExpansion
+
+call "%~dp0make-clean.bat"
+
+set STOW_ROOT=%~dp0..
 set VERSION=2.3.2
 set PERL=perl
-set PMDIR=${prefix:-}/share/perl5/site_perl
-set USE_LIB_PMDIR=NA
+set PMDIR=%prefix%/perl/site/lib
+set USE_LIB_PMDIR=
 
-:: if ! PERL5LIB=$($PERL -V | awk '/@INC/ {p=1; next} (p==1) {print $1}' | grep "$PMDIR" | head -n 1); then
-::     echo "ERROR: Failed to check installed Perl libraries."
-::     PERL5LIB="$PMDIR"
-:: fi
-::
-:: echo "# Perl modules will be installed to $PMDIR"
-:: echo "#"
-:: if [ -n "$PERL5LIB" ]; then
-::     USE_LIB_PMDIR=""
-::     echo "# This is in $PERL's built-in @INC, so everything"
-::     echo "# should work fine with no extra effort."
-:: else
-::     USE_LIB_PMDIR="use lib \"$PMDIR\";"
-::     echo "# This is *not* in $PERL's built-in @INC, so the"
-::     echo "# front-end scripts will have an appropriate \"use lib\""
-::     echo "# line inserted to compensate."
-:: fi
-::
-:: echo "#"
-:: echo "# PERL5LIB: $PERL5LIB"
+set _inc=0
+for /f "tokens=*" %%a in ('%PERL% -V') do (
+    if "!_inc!"=="1" (
+        echo %%a | findstr /C:"%PMDIR%" 1>nul
+
+        if not errorlevel 1 (
+            set PERL5LIB=%%a
+            echo # This is in %PERL%'s built-in @INC, so everything
+            echo # should work fine with no extra effort.
+            goto:$PMCheckDone
+        )
+    )
+    if "%%a"=="@INC:" (
+        set _inc=1
+    )
+)
+:$PMCheckDone
+
+if "!PERL5LIB!"=="" (
+    set USE_LIB_PMDIR=use lib "%PMDIR%";
+    set PERL5LIB=%PMDIR%
+    echo This is *not* in %PERL%'s built-in @INC, so the
+    echo front-end scripts will have an appropriate "use lib"
+    echo line inserted to compensate.
+)
+
+echo.
+echo PERL5LIB: '!PERL5LIB!'
 
 call :edit "%STOW_ROOT%\bin\chkstow"
 call :edit "%STOW_ROOT%\bin\stow"
 call :edit "%STOW_ROOT%\lib\Stow.pm"
 call :edit "%STOW_ROOT%\lib\Stow\Util.pm"
+
+perl -MCPAN -e "my $c = 'CPAN::HandleConfig'; $c->load(doit => 1, autoconfig => 1); $c->edit(prerequisites_policy => 'follow'); $c->edit(build_requires_install_policy => 'yes'); $c->commit"
+
+:: Install dependencies
+call cpan -i -T YAML Test::Output Test::More CPAN::DistnameInfo
+
+:: Install dev dependencies
+call cpan -i -T Perl::LanguageServer Perl::Critic Perl::Tidy
+
+perl "%STOW_ROOT%\Build.PL"
+call "%STOW_ROOT%\Build.bat" installdeps
+call "%STOW_ROOT%\Build.bat" build
+call "%STOW_ROOT%\Build.bat" test
+
 exit /b 0
 
 :edit
@@ -38,5 +64,8 @@ exit /b 0
     set output_file=%~1
 
     :: This is more explicit and reliable than the config file trick
-    perl -p -e "s/\@PERL\@/%PERL%/g;" -e "s/\@VERSION\@/%VERSION%/g;" -e "s/\@USE_LIB_PMDIR\@/%USE_LIB_PMDIR%/g;" "%input_file%" >"%output_file%"
+    set _cmd=perl -p -e "s/\@PERL\@/$ENV{PERL}/g;" -e "s/\@VERSION\@/$ENV{VERSION}/g;" -e "s/\@USE_LIB_PMDIR\@/$ENV{USE_LIB_PMDIR}/g;" "%input_file%"
+    echo ##[cmd] %_cmd%
+    %_cmd% >"%output_file%"
+    echo Generated output: '%output_file%'
 exit /b 0
