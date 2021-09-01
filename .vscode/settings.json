@@ -5,5 +5,91 @@
     },
 
     "shellcheck.enable": true,
-    "shellcheck.enableQuickFix": true
+    "shellcheck.enableQuickFix": true,
+
+    "files.associations": {
+        "*.in": "perl"
+    },
+
+    "terminal.integrated.defaultProfile.windows": "Command Prompt",
+    "terminal.integrated.profiles.windows": {
+        "PowerShell": {
+            "source": "PowerShell",
+            "args": ["-nologo"],
+            "icon": "terminal-powershell"
+        },
+        "Command Prompt": {
+            "path": [
+                "${env:windir}\\Sysnative\\cmd.exe",
+                "${env:windir}\\System32\\cmd.exe"
+            ],
+            "args": [],
+            "icon": "terminal-cmd"
+        },
+        "MSYS2": {
+            "path": [
+                "${env:USERPROFILE}\\scoop\\apps\\msys2\\current\\usr\\bin\\bash.exe"
+            ],
+            "args": [
+                "--login", "-i"
+            ],
+            "env": {
+                "MSYSTEM": "MINGW64",
+                "CHERE_INVOKING": "1",
+                "MSYS2_PATH_TYPE": "inherit"
+            },
+            "icon": "terminal-bash"
+        },
+        "Fish": {
+            "path": [
+                "${env:USERPROFILE}\\scoop\\apps\\msys2\\current\\usr\\bin\\fish.exe"
+            ],
+            "args": [
+                "--login", "-i"
+            ],
+            "env": {
+                "MSYSTEM": "MSYS2",
+                "CHERE_INVOKING": "1",
+                "MSYS2_PATH_TYPE": "inherit"
+            },
+            "icon": "terminal"
+        },
+        "Git Bash": {
+            "source": "Git Bash",
+            "icon": "terminal-bash"
+        }
+    },
+    "cSpell.words": [
+        "automake",
+        "autoreconf",
+        "bzip",
+        "chkstow",
+        "cpan",
+        "cpanm",
+        "cpanminus",
+        "cygpath",
+        "devel",
+        "distcheck",
+        "distmeta",
+        "distname",
+        "eval",
+        "info",
+        "installdeps",
+        "libssl",
+        "libtool",
+        "mingw",
+        "msys",
+        "msystem",
+        "noninteractive",
+        "notest",
+        "patchperl",
+        "perlbrew",
+        "shogo",
+        "siteprefix",
+        "submodules",
+        "texi",
+        "texinfo",
+        "texlive",
+        "winsymlinks"
+    ]
 }
