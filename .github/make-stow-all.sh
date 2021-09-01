@@ -13,13 +13,11 @@ export PERL5LIB
 echo "Site prefix: ${siteprefix:-NULL}"
 echo "Perl lib: $PERL5LIB"
 
-(
-    echo "yes"
-    echo ""
-    echo "no"
-    echo "exit"
-) | cpan
-cpan -i -T YAML Test::Output CPAN::DistnameInfo
-
 ./configure --prefix="${siteprefix:-}" --with-pmdir="$PERL5LIB"
-make bin/stow bin/chkstow lib/Stow.pm lib/Stow/Util.pm
+make
+
+if [ -x "$(command -v sudo)" ]; then
+    make install
+else
+    sudo make install
+fi

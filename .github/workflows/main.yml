@@ -44,7 +44,7 @@ jobs:
       - name: Perl Dependencies
         working-directory: ${{ github.workspace }}
         run: |
-          sudo cpan -i -T YAML Test::Output Test::More CPAN::DistnameInfo Devel::Cover::Report::Coveralls
+          sudo cpan -i -T YAML Test::Output Test::More CPAN::DistnameInfo
 
       - name: Build
         working-directory: ${{ github.workspace }}
@@ -60,11 +60,46 @@ jobs:
   sanity-windows:
     needs: sanity-linux
     runs-on: windows-latest
+    env:
+      # https://cygwin.com/cygwin-ug-net/using-cygwinenv.html
+      MSYS: "winsymlinks:native"
 
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
+
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+
+          # Minimal here so that we use the MSYS perl and not the version
+          # already installed (if there is one)
+          path-type: minimal
+
+          update: false
+          install: >-
+            base-devel
+            git
+            mingw-w64-x86_64-gcc
+            make
+            autoconf
+            automake1.16
+            automake-wrapper
+            libtool
+            perl
+
+      - name: MSYS2 Make Stow
+        shell: msys2 {0}
+        run: |
+          cd $(cygpath '${{ github.workspace }}')
+          ./.github/make-stow.sh
+
+      - name: MSYS2 Test
+        shell: msys2 {0}
+        run: |
+          cd $(cygpath '${{ github.workspace }}')
+          prove -I t/ -I bin/
 
       - name: Install Perl
         uses: shogo82148/actions-setup-perl@v1
@@ -75,7 +110,7 @@ jobs:
       - name: Perl Dependencies
         working-directory: ${{ github.workspace }}
         run: |
-          cpan -i -T YAML Test::Output CPAN::DistnameInfo Devel::Cover::Report::Coveralls Test::More Test::Output
+          cpan -i -T YAML Test::Output CPAN::DistnameInfo
 
       - name: Build and Test
         working-directory: ${{ github.workspace }}
@@ -167,6 +202,9 @@ jobs:
   windows-msys2:
     needs: sanity-windows
     runs-on: windows-latest
+    env:
+      # https://cygwin.com/cygwin-ug-net/using-cygwinenv.html
+      MSYS: "winsymlinks:native"
 
     steps:
       - uses: msys2/setup-msys2@v2
@@ -209,7 +247,7 @@ jobs:
         shell: msys2 {0}
         run: |
           cd $(cygpath '${{ github.workspace }}')
-          ./.github/make-stow.sh
+          ./.github/make-stow-all.sh
 
       - name: Build and Test
         shell: msys2 {0}
