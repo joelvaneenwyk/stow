@@ -107,7 +107,7 @@ sub make_link {
     my ($target, $source, $invalid) = @_;
 
     if (-l $target) {
-        my $old_source = readlink join('/', parent($target), $source) 
+        my $old_source = readlink join('/', parent($target), $source)
             or die "$target is already a link but could not read link $target/$source";
         if ($old_source ne $source) {
             die "$target already exists but points elsewhere\n";
@@ -117,17 +117,41 @@ sub make_link {
     my $abs_target = File::Spec->rel2abs($target);
     my $target_container = dirname($abs_target);
     my $abs_source = File::Spec->rel2abs($source, $target_container);
+    my $source_container = dirname($abs_source);
+
+    my $remove_source = 0;
+    my $remove_source_tree = 0;
+
     #warn "t $target c $target_container as $abs_source";
     if (-e $abs_source) {
         croak "Won't make invalid link pointing to existing $abs_target"
             if $invalid;
     }
     else {
-        croak "Won't make link pointing to non-existent $abs_target"
-            unless $invalid;
+        # Windows does not support linking to a file or directory that does not exist
+        # so we create one and then remove it to generate an invalid link.
+        if ($invalid && $^O eq 'msys') {
+            if (! -d $source_container) {
+                $remove_source_tree = 1;
+                make_path($source_container);
+            } else {
+                $remove_source = 1;
+            }
+            make_file($abs_source);
+        } else {
+            croak "Won't make link pointing to non-existent $abs_target"
+                unless $invalid;
+        }
     }
+
     symlink $source, $target
         or die "could not create link $target => $source ($!)\n";
+
+    if ($remove_source_tree) {
+        remove_tree($source_container)
+    } elsif ($remove_source) {
+        unlink $abs_source;
+    }
 }
 
 #===== SUBROUTINE ===========================================================
