@@ -56,7 +56,7 @@ use File::Spec;
 use POSIX qw(getcwd);
 
 use Stow::Util qw(set_debug_level debug error set_test_mode
-                  join_paths restore_cwd canon_path parent adjust_dotfile);
+                  join_paths restore_cwd canon_path normalize_path parent adjust_dotfile);
 
 our $ProgramName = 'stow';
 our $VERSION = '@VERSION@';
@@ -368,14 +368,14 @@ sub within_target_do {
 sub stow_contents {
     my $self = shift;
     my ($stow_path, $package, $target, $source) = @_;
-
     my $path = join_paths($stow_path, $package, $target);
 
     return if $self->should_skip_target_which_is_stow_dir($target);
 
-    my $cwd = getcwd();
+    my $cwd = normalize_path(getcwd());
     my $msg = "Stowing contents of $path (cwd=$cwd)";
-    $msg =~ s!$ENV{HOME}(/|$)!~$1!g;
+    my $home = normalize_path($ENV{HOME});
+    $msg =~ s!$home(/|$)!~$1!g;
     debug(3, $msg);
     debug(4, "  => $source");
 

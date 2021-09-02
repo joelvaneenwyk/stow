@@ -37,7 +37,7 @@ use POSIX qw(getcwd);
 use base qw(Exporter);
 our @EXPORT_OK = qw(
     error debug set_debug_level set_test_mode
-    join_paths parent canon_path restore_cwd adjust_dotfile
+    join_paths parent canon_path normalize_path restore_cwd adjust_dotfile
 );
 
 our $ProgramName = 'stow';
@@ -164,7 +164,7 @@ sub join_paths {
         }
     }
 
-    return join '/', @result;
+    return normalize_path(join '/', @result);
 }
 
 #===== METHOD ===============================================================
@@ -178,10 +178,10 @@ sub join_paths {
 #============================================================================
 sub parent {
     my @path = @_;
-    my $path = join '/', @_;
+    my $path = normalize_path(join '/', @_);
     my @elts = split m{/+}, $path;
     pop @elts;
-    return join '/', @elts; 
+    return join '/', @elts;
 }
 
 #===== METHOD ===============================================================
@@ -196,11 +196,34 @@ sub canon_path {
     my ($path) = @_;
 
     my $cwd = getcwd();
-    chdir($path) or error("canon_path: cannot chdir to $path from $cwd");
-    my $canon_path = getcwd();
-    restore_cwd($cwd);
+    my $canon_path;
+    if (chdir($path)) {
+        $canon_path = getcwd();
+        restore_cwd($cwd);
+    } else {
+        $canon_path = File::Spec->rel2abs($path);
+    }
 
-    return $canon_path;
+    return normalize_path($canon_path);
+}
+
+#===== METHOD ===============================================================
+# Name      : normalize_path
+# Purpose   : convert to a standardized path usable on all platforms which
+#             means converting backslash to forward slash.
+# Parameters: $path
+# Returns   : path converted to normal path
+# Throws    : n/a
+#============================================================================
+sub normalize_path {
+    my ($path) = @_;
+    my $normalized = $path;
+
+    if ($^O eq 'msys' || $^O eq 'MSWin32') {
+        $normalized =~ s#\\#/#g;
+    }
+
+    return $normalized;
 }
 
 sub restore_cwd {

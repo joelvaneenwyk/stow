@@ -50,7 +50,7 @@ our @EXPORT = qw(
 );
 
 our $TEST_DIR = 'tmp-testing-trees';
-our $ABS_TEST_DIR = File::Spec->rel2abs('tmp-testing-trees');
+our $ABS_TEST_DIR = canon_path('tmp-testing-trees');
 
 our $stderr;
 my $tied_err;
