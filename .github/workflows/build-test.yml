@@ -90,8 +90,6 @@ jobs:
 
       - uses: msys2/setup-msys2@v2
         with:
-          msystem: MINGW64
-
           # Minimal here so that we use the MSYS perl and not the version
           # already installed (if there is one)
           path-type: minimal
