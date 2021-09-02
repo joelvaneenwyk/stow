@@ -103,14 +103,17 @@ jobs:
             base-devel
             msys2-devel
             msys2-runtime-devel
+            msys2-keyring
+            openssl
             git
-            mingw-w64-x86_64-gcc
+            gcc
             make
             autoconf
             automake1.16
             automake-wrapper
             libtool
             perl
+            perl-devel
 
       - name: MSYS2 Install Dependencies
         shell: msys2 {0}
