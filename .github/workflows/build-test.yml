@@ -14,7 +14,7 @@ on:
 
 jobs:
   build-test-linux:
-    # The type of runner that the job will run on
+    name: "Linux: Build and Test"
     runs-on: ubuntu-latest
 
     env:
@@ -54,10 +54,23 @@ jobs:
           ./configure --prefix=$siteprefix
           make bin/stow bin/chkstow lib/Stow.pm lib/Stow/Util.pm
           perl Build.PL
-          perl Build test
           sudo perl Build install
 
+      - name: Test
+        working-directory: ${{ github.workspace }}
+        run: |
+          cpan -i -T TAP::Formatter::JUnit
+          prove -I t/ -I bin/ -I lib/ --formatter TAP::Formatter::JUnit --verbose --normalize --parse t/ >ubuntu_test_results.xml
+
+      - name: Upload Unit Test Results
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: Test Results
+          path: ubuntu_test_results.xml
+
   build-test-msys2:
+    name: "MSYS2: Build and Test"
     needs: build-test-linux
     runs-on: windows-latest
     env:
@@ -93,7 +106,7 @@ jobs:
         shell: msys2 {0}
         run: |
           cd $(cygpath '${{ github.workspace }}')
-          ./.github/install-dependencies
+          ./.github/install-dependencies.sh
 
       - name: MSYS2 Make Stow
         shell: msys2 {0}
@@ -116,6 +129,7 @@ jobs:
           path: msys_test_results.xml
 
   build-test-windows:
+    name: "Windows: Build and Test"
     needs: build-test-linux
     runs-on: windows-latest
 
@@ -152,6 +166,13 @@ jobs:
         run: |
           call cpan -i -T TAP::Formatter::JUnit
           prove -I t/ -I bin/ -I lib/ --formatter TAP::Formatter::JUnit --verbose --normalize --parse t/ >windows_test_results.xml
+
+      - name: Upload Unit Test Results
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: Test Results
+          path: windows_test_results.xml
 
   publish-test-results:
     name: "Publish Unit Tests Results"
