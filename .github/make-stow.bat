@@ -3,7 +3,7 @@
 setlocal EnableExtensions EnableDelayedExpansion
 
 call "%~dp0make-clean.bat"
-"
+
 set STOW_ROOT=%~dp0..
 set VERSION=2.3.2
 set PERL=perl
