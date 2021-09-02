@@ -1,0 +1,54 @@
+# This file is part of GNU Stow.
+#
+# GNU Stow is free software: you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# GNU Stow is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see https://www.gnu.org/licenses/.
+
+package Stow::Util::Win32;
+
+use strict;
+use warnings;
+
+use base qw(Exporter);
+our @EXPORT_OK = qw(
+    make_symlink
+);
+
+our $VERSION = '@VERSION@';
+
+#===== METHOD ===============================================================
+# Name      : make_symlink
+# Purpose   : wrapper for creating symlinks to add custom support for Windows
+# Parameters: $oldfile, $newfile
+# Returns   : Returns 1 for success, 0 otherwise
+# Throws    : n/a
+#============================================================================
+sub make_symlink {
+    my ($oldfile, $newfile) = @_;
+    my $result = 1;
+
+    if (File::Spec->VERSION < 3.8 && $^O eq 'MSWin32') {
+        $result = 0;
+    } else {
+        $result = symlink($oldfile, $newfile);
+    }
+
+    return $result;
+}
+
+1;
+
+# Local variables:
+# mode: perl
+# cperl-indent-level: 4
+# end:
+# vim: ft=perl

@@ -32,7 +32,7 @@ use IO::Scalar;
 use Test::More;
 
 use Stow;
-use Stow::Util qw(parent canon_path);
+use Stow::Util qw(make_symlink parent canon_path);
 
 use base qw(Exporter);
 our @EXPORT = qw(
@@ -144,7 +144,7 @@ sub make_link {
         }
     }
 
-    symlink $source, $target
+    make_symlink $source, $target
         or die "could not create link $target => $source ($!)\n";
 
     if ($remove_source_tree) {

@@ -43,6 +43,8 @@ call :edit "%STOW_ROOT%\bin\chkstow"
 call :edit "%STOW_ROOT%\bin\stow"
 call :edit "%STOW_ROOT%\lib\Stow.pm"
 call :edit "%STOW_ROOT%\lib\Stow\Util.pm"
+call :edit "%STOW_ROOT%\lib\Stow\Util\Default.pm"
+call :edit "%STOW_ROOT%\lib\Stow\Util\Win32.pm"
 
 exit /b 0
 

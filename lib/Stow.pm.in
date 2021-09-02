@@ -56,7 +56,7 @@ use File::Spec;
 use POSIX qw(getcwd);
 
 use Stow::Util qw(set_debug_level debug error set_test_mode
-                  join_paths restore_cwd canon_path normalize_path parent adjust_dotfile);
+                  make_symlink join_paths restore_cwd canon_path normalize_path parent adjust_dotfile);
 
 our $ProgramName = 'stow';
 our $VERSION = '@VERSION@';
@@ -1501,7 +1501,7 @@ sub process_task {
             return;
         }
         elsif ($task->{type} eq 'link') {
-            symlink $task->{source}, $task->{path}
+            make_symlink $task->{source}, $task->{path}
                 or error(
                     "Could not create symlink: %s => %s ($!)",
                     $task->{path},

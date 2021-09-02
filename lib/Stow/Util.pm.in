@@ -31,13 +31,12 @@ Supporting utility routines for L<Stow>.
 
 use strict;
 use warnings;
-
 use POSIX qw(getcwd);
-
 use base qw(Exporter);
+
 our @EXPORT_OK = qw(
     error debug set_debug_level set_test_mode
-    join_paths parent canon_path normalize_path restore_cwd adjust_dotfile
+    make_symlink join_paths parent canon_path normalize_path restore_cwd adjust_dotfile
 );
 
 our $ProgramName = 'stow';
@@ -134,6 +133,28 @@ sub debug {
             warn "$msg\n";
         }
     }
+}
+
+
+#===== METHOD ===============================================================
+# Name      : make_symlink
+# Purpose   : wrapper for creating symlinks to add custom support for Windows
+# Parameters: $oldfile, $newfile
+# Returns   : Returns 1 for success, 0 otherwise
+# Throws    : n/a
+#============================================================================
+sub make_symlink {
+    my ($oldfile, $newfile) = @_;
+    my %module = (
+        MSWin32 => 'Win32',
+        NetWare => 'Win32',
+        symbian => 'Win32'
+    );
+
+    my $module = $module{$^O} || 'Default';
+
+    require "Stow/Util/$module.pm";
+    return eval "Stow::Util::$module"->make_symlink($oldfile, $newfile);
 }
 
 #===== METHOD ===============================================================
