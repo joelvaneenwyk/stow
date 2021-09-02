@@ -96,6 +96,10 @@ jobs:
           # already installed (if there is one)
           path-type: minimal
 
+          # Need to use MSYS here otherwise we get errors during build of
+          # the 'TAP::Formatter::JUnit' package with missing "sys/wait.h"
+          msystem: MSYS
+
           update: false
           install: >-
             base-devel
