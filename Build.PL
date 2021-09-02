@@ -1,3 +1,4 @@
+#!/usr/bin/env perl
 # This file is part of GNU Stow.
 #
 # GNU Stow is free software: you can redistribute it and/or modify it
@@ -73,9 +74,9 @@ my $build = Module::Build->new(
     },
 );
 
-my $grepOutput = qx(qq(grep "^use lib " "bin/stow" 2>&1));
+my $grepOutput = qx(grep "^use lib " "bin/stow" 2>&1);
 my $grepReturnCode = $?;
-if (index($grepOutput, 'is not recognized') != -1 || index($grepOutput, 'command not found') != -1) {
+if (index($grepOutput, 'is not recognized') != -1 || index($grepOutput, 'not found') != -1) {
     print("Skipped 'use lib' check as 'grep' command is unavailable.\n")
 } elsif ($grepReturnCode >> 8 == 0) {
     die <<'EOF';
@@ -101,6 +102,8 @@ while Stow is configured in this way unless you really want an
 installation using these parameters.
 
 EOF
+} else {
+    print("Validated that Stow library is built correctly.\n");
 }
 
 $build->create_build_script();
