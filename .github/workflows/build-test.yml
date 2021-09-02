@@ -128,7 +128,7 @@ jobs:
           call .github\make-stow.bat
           perl Build.PL
           call Build.bat installdeps
-          call Build.bat test
+          call Build.bat build
 
       # This will fail until symlinks are supported
       # - name: Test

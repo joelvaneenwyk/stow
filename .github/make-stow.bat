@@ -3,7 +3,7 @@
 setlocal EnableExtensions EnableDelayedExpansion
 
 call "%~dp0make-clean.bat"
-
+"
 set STOW_ROOT=%~dp0..
 set VERSION=2.3.2
 set PERL=perl
@@ -43,19 +43,6 @@ call :edit "%STOW_ROOT%\bin\chkstow"
 call :edit "%STOW_ROOT%\bin\stow"
 call :edit "%STOW_ROOT%\lib\Stow.pm"
 call :edit "%STOW_ROOT%\lib\Stow\Util.pm"
-
-perl -MCPAN -e "my $c = 'CPAN::HandleConfig'; $c->load(doit => 1, autoconfig => 1); $c->edit(prerequisites_policy => 'follow'); $c->edit(build_requires_install_policy => 'yes'); $c->commit"
-
-:: Install dependencies
-call cpan -i -T YAML Test::Output Test::More CPAN::DistnameInfo
-
-:: Install dev dependencies
-call cpan -i -T Perl::LanguageServer Perl::Critic Perl::Tidy
-
-perl "%STOW_ROOT%\Build.PL"
-call "%STOW_ROOT%\Build.bat" installdeps
-call "%STOW_ROOT%\Build.bat" build
-call "%STOW_ROOT%\Build.bat" test
 
 exit /b 0
 
