@@ -89,6 +89,12 @@ jobs:
             libtool
             perl
 
+      - name: MSYS2 Install Dependencies
+        shell: msys2 {0}
+        run: |
+          cd $(cygpath '${{ github.workspace }}')
+          ./.github/install-dependencies
+
       - name: MSYS2 Make Stow
         shell: msys2 {0}
         run: |
@@ -99,7 +105,15 @@ jobs:
         shell: msys2 {0}
         run: |
           cd $(cygpath '${{ github.workspace }}')
-          prove -I t/ -I bin/ -I lib/
+          cpan -i -T TAP::Formatter::JUnit
+          prove -I t/ -I bin/ -I lib/ --formatter TAP::Formatter::JUnit --verbose --normalize --parse t/ >msys_test_results.xml
+
+      - name: Upload Unit Test Results
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: Test Results
+          path: msys_test_results.xml
 
   build-test-windows:
     needs: build-test-linux
@@ -131,7 +145,31 @@ jobs:
           call Build.bat build
 
       # This will fail until symlinks are supported
-      # - name: Test
-      #   working-directory: ${{ github.workspace }}
-      #   run: |
-      #     prove -I t/ -I bin/ -I lib/
+      - name: Test
+        continue-on-error: true
+        working-directory: ${{ github.workspace }}
+        shell: cmd
+        run: |
+          call cpan -i -T TAP::Formatter::JUnit
+          prove -I t/ -I bin/ -I lib/ --formatter TAP::Formatter::JUnit --verbose --normalize --parse t/ >windows_test_results.xml
+
+  publish-test-results:
+    name: "Publish Unit Tests Results"
+    needs:
+      - build-test-msys2
+      - build-test-windows
+    runs-on: ubuntu-latest
+
+    # The other jobs might be skipped, we don't need to run this job then
+    if: success() || failure()
+
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: artifacts
+
+      - name: Publish Unit Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v1
+        with:
+          files: artifacts/**/*.xml
