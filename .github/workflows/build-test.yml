@@ -123,6 +123,7 @@ jobs:
 
       - name: Build
         working-directory: ${{ github.workspace }}
+        shell: cmd
         run: |
           call .github\make-stow.bat
           perl Build.PL
