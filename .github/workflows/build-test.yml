@@ -58,7 +58,7 @@ jobs:
           sudo perl Build install
 
   build-test-msys2:
-    needs: sanity-linux
+    needs: build-test-linux
     runs-on: windows-latest
     env:
       # https://cygwin.com/cygwin-ug-net/using-cygwinenv.html
@@ -102,7 +102,7 @@ jobs:
           prove -I t/ -I bin/ -I lib/
 
   build-test-windows:
-    needs: sanity-linux
+    needs: build-test-linux
     runs-on: windows-latest
 
     steps:
