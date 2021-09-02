@@ -73,8 +73,12 @@ my $build = Module::Build->new(
     },
 );
 
-if (system('grep', '-q', '^use lib ', 'bin/stow') >> 8 == 0) {
-  die <<'EOF';
+my $grepOutput = qx(qq(grep "^use lib " "bin/stow" 2>&1));
+my $grepReturnCode = $?;
+if (index($grepOutput, 'is not recognized') != -1 || index($grepOutput, 'command not found') != -1) {
+    print("Skipped 'use lib' check as 'grep' command is unavailable.\n")
+} elsif ($grepReturnCode >> 8 == 0) {
+    die <<'EOF';
 
 ERROR: bin/stow contains 'use lib' line which could interfere
 with CPAN-style installation via Module::Build.  To avoid this,
