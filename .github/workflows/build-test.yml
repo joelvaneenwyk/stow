@@ -53,6 +53,7 @@ jobs:
           eval `perl -V:siteprefix`
           ./configure --prefix=$siteprefix
           make bin/stow bin/chkstow lib/Stow.pm lib/Stow/Util.pm
+          perl Build.PL installdeps
           perl Build.PL
 
       - name: Test

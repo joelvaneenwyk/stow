@@ -1,5 +1,9 @@
 #!/bin/bash
 
+STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && cd ../ && pwd)"
+
+cd "$STOW_ROOT" || true
+
 autoreconf --install --verbose
 eval "$(perl -V:siteprefix)"
 
