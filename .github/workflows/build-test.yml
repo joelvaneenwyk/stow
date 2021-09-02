@@ -32,7 +32,6 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get -y install --no-install-recommends \
-            msys2-devel msys2-runtime-devel \
             autoconf \
             bzip2 \
             cpanminus \
@@ -100,6 +99,8 @@ jobs:
           update: false
           install: >-
             base-devel
+            msys2-devel
+            msys2-runtime-devel
             git
             mingw-w64-x86_64-gcc
             make
