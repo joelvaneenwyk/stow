@@ -39,6 +39,7 @@ jobs:
             curl \
             libssl-dev \
             make \
+            texlive \
             patch
 
       - name: Perl Dependencies
@@ -53,13 +54,18 @@ jobs:
           eval `perl -V:siteprefix`
           ./configure --prefix=$siteprefix
           make bin/stow bin/chkstow lib/Stow.pm lib/Stow/Util.pm
-          perl Build.PL installdeps
+          sudo perl Build.PL installdeps
           perl Build.PL
+
+      - name: Install
+        working-directory: ${{ github.workspace }}
+        run: |
+          sudo make install
 
       - name: Test
         working-directory: ${{ github.workspace }}
         run: |
-          cpan -i -T TAP::Formatter::JUnit
+          sudo cpan -i -T TAP::Formatter::JUnit
           prove -I t/ -I bin/ -I lib/ --formatter TAP::Formatter::JUnit --verbose --normalize --parse t/ > test_results_ubuntu.xml
 
       - name: Upload Unit Test Results
