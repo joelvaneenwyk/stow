@@ -19,17 +19,17 @@ Module::Build.
 
 Advantages of the Autotools approach:
 
-  - It's arguably more flexible.
+- It's arguably more flexible.
 
-  - It will install the documentation in Info, HTML, man, and PDF
+- It will install the documentation in Info, HTML, man, and PDF
     formats.
 
 Advantages of the `Module::Build` approach:
 
-  - It's more in keeping with the standard way to distribute CPAN
+- It's more in keeping with the standard way to distribute CPAN
     modules.
 
-  - It performs dependency checking to ensure you have the necessary
+- It performs dependency checking to ensure you have the necessary
     Perl modules installed.
 
 Both approaches are described in detail below.  However if you are
@@ -57,9 +57,9 @@ Basic Installation via `Module::Build`
 
 The steps in building Stow are:
 
-1.  `cd` to the directory containing the source code (and this file).
+1. `cd` to the directory containing the source code (and this file).
 
-2.  If you are building from an official GNU release tarball, type
+2. If you are building from an official GNU release tarball, type
     `./configure && make` to configure stow for your system.  If you
     are building from a CPAN tarball, this step can be skipped.
 
@@ -71,9 +71,9 @@ The steps in building Stow are:
 
     to avoid a superfluous `use lib` line in your stow executable.
 
-3.  Type `perl Build.PL`.
+3. Type `perl Build.PL`.
 
-4.  Type `./Build install` to install the various files.  As noted
+4. Type `./Build install` to install the various files.  As noted
     above, this installs fewer files than the Autotools installation.
 
 Basic Installation via Autotools
@@ -81,9 +81,9 @@ Basic Installation via Autotools
 
 The steps in building Stow are:
 
-1.  `cd` to the directory containing the source code (and this file).
+1. `cd` to the directory containing the source code (and this file).
 
-2.  Type `./configure` to configure stow for your system.  This step
+2. Type `./configure` to configure stow for your system.  This step
     will attempt to locate your copy of perl and set its location in
     `Makefile.in`.  You can use the normal arguments to change the
     default installation paths (see below); additionally you can use
@@ -95,7 +95,7 @@ The steps in building Stow are:
     However, if you don't, the `configure` script will go to great
     lengths to try to choose a sensible default.
 
-3.  Type `make install` to install the various files.  If the chosen
+3. Type `make install` to install the various files.  If the chosen
     installation directory for Perl modules is not included in Perl's
     built-in `@INC` search path, the Makefile rules will automatically
     insert a
@@ -105,7 +105,7 @@ The steps in building Stow are:
     line into the generated stow script to ensure that it can always
     locate the Perl modules without needing to manually set `PERL5LIB`.
 
-4.  You can remove the generated files from the source code directory
+4. You can remove the generated files from the source code directory
     by typing `make clean`.  To also remove the files that `configure`
     created (so you can compile the package for a different computer),
     type `make distclean`.  There is also a `make maintainer-clean`

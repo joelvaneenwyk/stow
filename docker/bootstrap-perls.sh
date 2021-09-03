@@ -17,14 +17,22 @@
 
 # Load perlbrew environment
 # shellcheck disable=SC1090
-. "${PERLBREW_ROOT:-/usr/local/perlbrew/etc/bashrc}"
+PERLBREW_ROOT="${PERLBREW_ROOT:-/usr/local/perlbrew}"
+_perlbrewSetup="$PERLBREW_ROOT/etc/bashrc"
+
+if [ -f "$_perlbrewSetup" ]; then
+    . "$_perlbrewSetup"
+else
+    echo "ERROR: Failed to find perlbrew setup script."
+fi
 
 # For each perl version installed.
 for p_version in $(perlbrew list | sed 's/ //g'); do
     # Switch to it.
     perlbrew use "$p_version"
-    # and install the needed modules.
-    /usr/local/perlbrew/bin/cpanm -n Devel::Cover::Report::Coveralls Test::More Test::Output
+
+    # And install the needed modules.
+    "$PERLBREW_ROOT/bin/cpanm" -n Devel::Cover::Report::Coveralls Test::More Test::Output
 done
 
 # Cleanup to remove any temp files.

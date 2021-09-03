@@ -17,6 +17,9 @@ del "%STOW_ROOT%\bin\stow" > nul 2>&1
 del "%STOW_ROOT%\lib\Stow\Util.pm" > nul 2>&1
 del "%STOW_ROOT%\lib\Stow.pm" > nul 2>&1
 rmdir /q /s "%STOW_ROOT%\_build\" > nul 2>&1
+rmdir /q /s "%STOW_ROOT%\_Inline\" > nul 2>&1
+rmdir /q /s "%STOW_ROOT%\_test\" > nul 2>&1
 rmdir /q /s "%STOW_ROOT%\autom4te.cache\" > nul 2>&1
 rmdir /q /s "%STOW_ROOT%\blib\" > nul 2>&1
+rmdir /q /s "%STOW_ROOT%\cover_db\" > nul 2>&1
 rmdir /q /s "%STOW_ROOT%\tmp-testing-trees\" > nul 2>&1
