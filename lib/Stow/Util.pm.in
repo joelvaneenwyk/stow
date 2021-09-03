@@ -325,8 +325,10 @@ $code = <<'END_OF_C';
             } GenericReparseBuffer;
         };
     } REPARSE_DATA_BUFFER, *PREPARSE_DATA_BUFFER;
+#endif
 
     int my_ReadLink( SV* svlink, SV* target ) {
+#if defined(WIN32)
         HANDLE h;
         DWORD len;
         REPARSE_DATA_BUFFER rdb;
@@ -371,6 +373,7 @@ $code = <<'END_OF_C';
         else if( rdb.ReparseTag == IO_REPARSE_TAG_MOUNT_POINT ) { //# Just for reference, but we don't care about this case
             return 0;
         }
+#endif
 
         return 0; //# Not a reparse point at all
     }
@@ -488,7 +491,6 @@ $code = <<'END_OF_C';
             return next;
         }
     }
-#endif
 END_OF_C
 }
 

@@ -50,6 +50,7 @@ t/testutil.pm
 t/unstow.t
 t/unstow_orig.t
 t/make_links.t
+t/make_links.pm
 tools/get-version
 THANKS
 TODO

@@ -64,6 +64,7 @@
 \bBuild.COM$
 \bBUILD.COM$
 \bbuild.com$
+\b_Inline
 ^MANIFEST\.SKIP
 
 # Avoid archives of this distribution
