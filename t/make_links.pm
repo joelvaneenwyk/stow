@@ -31,9 +31,26 @@ use File::Spec;
 use IO::Scalar;
 
 use Stow;
-use Stow::Util qw(make_symlink parent canon_path);
+use Stow::Util qw(make_symlink parent canon_path error);
 
-make_symlink('bin1', '../stow/pkg1/bin1');
+use testutil;
+
+remove();
+
+make_path('_test/stow/pkg1/bin1');
+make_file('_test/stow/pkg1/bin1/file1')
+    or error("Could not create file.");
+make_symlink('stow/pkg1/bin1', '_test/bin1')
+    or error("Could not create directory link.");
+make_symlink('stow/pkg1/bin1/file1', '_test/file1')
+    or error("Could not create file link.");
+
+sub remove {
+    unlink '_test/stow/pkg1/bin1';
+    unlink '_test/bin1';
+    unlink '_test/file1';
+    remove_tree '_test/';
+}
 
 1;
 

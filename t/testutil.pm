@@ -124,7 +124,7 @@ sub make_link {
 
     #warn "t $target c $target_container as $abs_source";
     if (-e $abs_source) {
-        croak "Won't make invalid link pointing to existing $abs_target"
+        die "Won't make invalid link pointing to existing $abs_target"
             if $invalid;
     }
     else {
@@ -139,12 +139,12 @@ sub make_link {
             }
             make_file($abs_source);
         } else {
-            croak "Won't make link pointing to non-existent $abs_target"
+            die "Won't make link pointing to non-existent $abs_target"
                 unless $invalid;
         }
     }
 
-    make_symlink $source, $target
+    my $result = make_symlink $source, $target
         or die "could not create link $target => $source ($!)\n";
 
     if ($remove_source_tree) {
@@ -152,6 +152,8 @@ sub make_link {
     } elsif ($remove_source) {
         unlink $abs_source;
     }
+
+    return $result;
 }
 
 #===== SUBROUTINE ===========================================================

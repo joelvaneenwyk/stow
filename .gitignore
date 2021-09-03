@@ -13,6 +13,7 @@
 tmp-testing-trees/
 _build/
 _Inline/
+_test/
 autom4te.cache/
 blib/
 config.log

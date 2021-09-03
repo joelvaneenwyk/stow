@@ -68,10 +68,11 @@ my $build = Module::Build->new(
         'Module::Build' => 0,
     },
     build_requires => {
-        'Test::More'   => 0,
-        'Test::Output' => 0,
-        'Inline::C'    => 0,
-        'IO::Scalar'   => 0,
+        'Test::More'        => 0,
+        'Test::Output'      => 0,
+        'Parse::RecDescent' => 0,
+        'Inline::C'         => 0,
+        'IO::Scalar'        => 0,
     },
 );
 
