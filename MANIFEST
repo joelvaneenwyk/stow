@@ -7,6 +7,7 @@ bin/chkstow
 bin/chkstow.in
 bin/stow
 bin/stow.in
+.proverc
 Build.PL
 ChangeLog
 configure
