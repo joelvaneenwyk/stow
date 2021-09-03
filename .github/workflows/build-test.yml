@@ -112,8 +112,8 @@ jobs:
             automake1.16
             automake-wrapper
             libtool
+            libcrypt-devel
             perl
-            perl-devel
 
       - name: MSYS2 Install Dependencies
         shell: msys2 {0}

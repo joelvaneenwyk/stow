@@ -1,3 +1,5 @@
+#!/usr/bin/perl
+#
 # This file is part of GNU Stow.
 #
 # GNU Stow is free software: you can redistribute it and/or modify it
@@ -13,28 +15,25 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see https://www.gnu.org/licenses/.
 
-package Stow::Util::Default;
+#
+# Utilities shared by test scripts
+#
+
+package testutil;
 
 use strict;
 use warnings;
-use base qw(Exporter);
-our @EXPORT_OK = qw(
-    make_symlink
-);
 
-our $VERSION = '@VERSION@';
+use Carp qw(croak);
+use File::Basename;
+use File::Path qw(make_path remove_tree);
+use File::Spec;
+use IO::Scalar;
 
-#===== METHOD ===============================================================
-# Name      : make_symlink
-# Purpose   : wrapper for creating symlinks to add custom support for Windows
-# Parameters: $oldfile, $newfile
-# Returns   : Returns 1 for success, 0 otherwise
-# Throws    : n/a
-#============================================================================
-sub make_symlink {
-    my ($oldfile, $newfile) = @_;
-    return symlink $oldfile, $newfile;
-}
+use Stow;
+use Stow::Util qw(make_symlink parent canon_path);
+
+make_symlink('bin1', '../stow/pkg1/bin1');
 
 1;
 

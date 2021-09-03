@@ -22,7 +22,7 @@
 use strict;
 use warnings;
 
-use Test::More tests => 1;
+use Test::More tests => 2;
 use English qw(-no_match_vars);
 
 use testutil;
@@ -30,17 +30,7 @@ use testutil;
 init_test_dirs();
 cd("$TEST_DIR/target");
 
-my $stow;
-
-# Note that each of the following tests use a distinct set of files
-
-#
-# nothing to clean in a simple tree
-#
-
-
-diag($^O);
 make_path('../stow/pkg1/bin1');
 make_file('../stow/pkg1/bin1/file1');
-make_link('bin1', '../stow/pkg1/bin1');
+ok(make_link('bin1', '../stow/pkg1/bin1'), 'create link');
 ok(-e 'bin1', 'link exists')

@@ -7,6 +7,15 @@
     "shellcheck.enable": true,
     "shellcheck.enableQuickFix": true,
 
+    "files.exclude": {
+        "**/.git": true,
+        "**/.svn": true,
+        "**/.hg": true,
+        "**/CVS": true,
+        "**/.DS_Store": true,
+        "bin/**/*.pm": true,
+        "lib/**/*.pm": true
+    },
     "files.associations": {
         "*.in": "perl"
     },
@@ -77,6 +86,7 @@
         "eval",
         "info",
         "installdeps",
+        "libcrypt",
         "libssl",
         "libtool",
         "mingw",
