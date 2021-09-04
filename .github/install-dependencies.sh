@@ -11,7 +11,7 @@ function _sudo {
 if [ -x "$(command -v apt-get)" ]; then
     _sudo apt-get update
     _sudo apt-get -y install \
-        texlive texinfo cpanminus
+        texlive texinfo cpanminus \
         autoconf bzip2 \
         gawk curl libssl-dev make patch
 fi

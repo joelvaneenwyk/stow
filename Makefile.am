@@ -51,7 +51,7 @@ doc_deps = $(info_TEXINFOS) doc/version.texi
 DEFAULT_IGNORE_LIST = $(srcdir)/default-ignore-list
 
 TESTS_DIR = $(srcdir)/t
-TESTS_OUT = tmp-testing-trees
+TESTS_OUT = tmp-testing-trees _test
 TESTS_ENVIRONMENT = $(PERL) -Ibin -Ilib -I$(TESTS_DIR)
 
 # This is a kind of hack; TESTS needs to be set to ensure that the
@@ -99,12 +99,12 @@ EXTRA_DIST = \
 	$(DEFAULT_IGNORE_LIST) \
 	$(CPAN_FILES)
 CLEANFILES = $(bin_SCRIPTS) $(pm_DATA) $(pmstow_DATA)
-DISTCLEANFILES = Makefile.in configure Build MYMETA.*
+DISTCLEANFILES = Makefile.in configure Build Build.bat MYMETA.*
 MAINTAINERCLEANFILES = $(dist_man_MANS) $(HTML) $(PDF) ChangeLog
 
 # clean up auto-generated files
 clean-local:
-	-rm -rf $(TESTS_OUT)
+	-rm -rf $(TESTS_OUT) _Inline _build
 maintainer-clean-local:
 	-rm -rf doc/manual-split cover_db
 
