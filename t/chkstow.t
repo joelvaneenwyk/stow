@@ -24,7 +24,7 @@ use warnings;
 
 use testutil;
 
-require chkstow;
+require 'chkstow';
 
 use Test::More tests => 7;
 use Test::Output;

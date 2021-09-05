@@ -26,7 +26,7 @@ use Test::More tests => 34;
 
 use testutil;
 
-require stow;
+require 'stow';
 
 # .stowrc files used for testing, relative to run_from/
 my $CWD_RC_FILE = ".stowrc";

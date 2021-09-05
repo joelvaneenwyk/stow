@@ -64,4 +64,7 @@ function make_stow() {
     fi
 }
 
+# shellcheck source=./.github/install-dependencies.sh
+. "$STOW_ROOT/.github/install-dependencies.sh"
+
 make_stow
