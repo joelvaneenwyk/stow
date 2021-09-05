@@ -8,7 +8,8 @@ perl -MCPAN "%~dp0init-config.pl"
 call cpan -i -T App::cpanminus
 
 :: Install dependencies
-call cpanm --install --notest YAML Test::Output Test::More Test::Exception CPAN::DistnameInfo Module::Build Parse::RecDescent Inline::C
-
-:: Install dev dependencies
-call cpanm --install --notest Perl::LanguageServer Perl::Critic Perl::Tidy Devel::Cover::Report::Coveralls
+call cpanm --install --notest ^
+    YAML Test::Output Test::More Test::Exception ^
+    CPAN::DistnameInfo Module::Build Parse::RecDescent Inline::C ^
+    Perl::LanguageServer Perl::Critic Perl::Tidy ^
+    Devel::Cover::Report::Coveralls TAP::Formatter::JUnit

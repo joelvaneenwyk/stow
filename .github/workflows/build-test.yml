@@ -40,7 +40,7 @@ jobs:
             curl \
             libssl-dev \
             make \
-            texlive \
+            texinfo texlive \
             patch
 
       - name: Perl Dependencies
@@ -66,7 +66,7 @@ jobs:
       - name: Test
         working-directory: ${{ github.workspace }}
         run: |
-          prove -I t/ -I bin/ -I lib/ --formatter TAP::Formatter::JUnit --verbose --normalize --parse t/ > test_results_ubuntu.xml
+          prove -I t/ -I bin/ -I lib/ --formatter TAP::Formatter::JUnit --verbose --normalize --parse t/ | tee test_results_ubuntu.xml
 
       - name: Upload Unit Test Results
         if: always()
@@ -131,7 +131,7 @@ jobs:
         shell: msys2 {0}
         run: |
           cd $(cygpath '${{ github.workspace }}')
-          prove -I t/ -I bin/ -I lib/ --formatter TAP::Formatter::JUnit --verbose --normalize --parse t/ > test_results_msys2.xml
+          prove -I t/ -I bin/ -I lib/ --formatter TAP::Formatter::JUnit --verbose --normalize --parse t/ | tee test_results_msys2.xml
 
       - name: Upload Unit Test Results
         if: always()
