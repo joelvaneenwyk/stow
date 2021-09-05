@@ -23,6 +23,8 @@ require 5.006_001;
 use File::Find;
 use Getopt::Long;
 
+use Stow::Util qw(get_link_target);
+
 my $DEFAULT_TARGET = $ENV{STOW_DIR} || '/usr/local/';
 
 our $Wanted   = \&bad_links;
@@ -112,7 +114,7 @@ sub aliens  {
 # FIXME: what if the stow dir is not called 'stow'?
 sub list {
     if (-l) {
-        $_ = readlink;
+        $_ = get_link_target;
         s{\A(?:\.\./)+stow/}{}g;
         s{/.*}{}g;
         $Package{$_} = 1;

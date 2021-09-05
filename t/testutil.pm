@@ -32,7 +32,7 @@ use IO::Scalar;
 use Test::More;
 
 use Stow;
-use Stow::Util qw(make_symlink parent canon_path);
+use Stow::Util qw(get_link_target make_symlink parent canon_path);
 
 use base qw(Exporter);
 our @EXPORT = qw(
@@ -44,7 +44,7 @@ our @EXPORT = qw(
     new_Stow new_compat_Stow
     make_path make_link make_invalid_link make_file
     remove_dir remove_file remove_link
-    cat_file
+    cat_file get_link_target
     is_link is_dir_not_symlink is_nonexistent_path
     capture_stderr uncapture_stderr
 );
@@ -107,7 +107,7 @@ sub make_link {
     my ($target, $source, $invalid) = @_;
 
     if (-l $target) {
-        my $old_source = readlink join('/', parent($target), $source)
+        my $old_source = get_link_target(join('/', parent($target), $source))
             or die "$target is already a link but could not read link $target/$source";
         if ($old_source ne $source) {
             die "$target already exists but points elsewhere\n";
@@ -305,7 +305,7 @@ sub cat_file {
 sub is_link {
     my ($path, $dest) = @_;
     ok(-l $path => "$path should be symlink");
-    is(readlink $path, $dest => "$path symlinks to $dest");
+    is(get_link_target($path), $dest => "$path symlinks to $dest");
 }
 
 #===== SUBROUTINE ===========================================================

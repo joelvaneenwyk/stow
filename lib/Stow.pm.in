@@ -56,7 +56,8 @@ use File::Spec;
 use POSIX qw(getcwd);
 
 use Stow::Util qw(set_debug_level debug error set_test_mode
-                  make_symlink join_paths restore_cwd canon_path normalize_path parent adjust_dotfile);
+                  make_symlink get_link_target normalize_path
+                  join_paths restore_cwd canon_path parent adjust_dotfile);
 
 our $ProgramName = 'stow';
 our $VERSION = '@VERSION@';
@@ -1023,7 +1024,7 @@ sub cleanup_invalid_links {
 
             # Where is the link pointing?
             # (don't use read_a_link() here)
-            my $source = readlink($node_path);
+            my $source = get_link_target($node_path);
             if (not $source) {
                 error("Could not read link $node_path");
             }
@@ -1784,7 +1785,7 @@ sub read_a_link {
     }
     elsif (-l $path) {
         debug(4, "  read_a_link($path): real link");
-        my $target = readlink $path or error("Could not read link: $path ($!)");
+        my $target = get_link_target $path or error("Could not read link: $path ($!)");
         return $target;
     }
     internal_error("read_a_link() passed a non link path: $path\n");
@@ -1909,7 +1910,7 @@ sub do_unlink {
     # Remove the link
     debug(1, "UNLINK: $file");
 
-    my $source = readlink $file or error("could not readlink $file ($!)");
+    my $source = get_link_target $file or error("could not get link target $file ($!)");
 
     my $task = {
         action  => 'remove',

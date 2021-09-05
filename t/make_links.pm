@@ -36,7 +36,6 @@ use Stow::Util qw(make_symlink parent canon_path error);
 use testutil;
 
 remove();
-
 make_path('_test/stow/pkg1/bin1');
 make_file('_test/stow/pkg1/bin1/file1')
     or error("Could not create file.");
@@ -44,6 +43,7 @@ make_symlink('stow/pkg1/bin1', '_test/bin1')
     or error("Could not create directory link.");
 make_symlink('stow/pkg1/bin1/file1', '_test/file1')
     or error("Could not create file link.");
+remove();
 
 sub remove {
     unlink '_test/stow/pkg1/bin1';
