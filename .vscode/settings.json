@@ -6,6 +6,8 @@
 
     "shellcheck.enable": true,
     "shellcheck.enableQuickFix": true,
+    "shellcheck.customArgs": ["-x"],
+    "shellcheck.useWorkspaceRootAsCwd": true,
 
     "files.exclude": {
         "**/.git": true,
