@@ -26,7 +26,7 @@ use Test::More tests => 10;
 
 use testutil;
 
-require 'stow';
+require stow;
 
 init_test_dirs();
 

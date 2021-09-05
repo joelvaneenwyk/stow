@@ -23,7 +23,8 @@ use strict;
 use warnings;
 
 use testutil;
-require "chkstow";
+
+require chkstow;
 
 use Test::More tests => 7;
 use Test::Output;
@@ -83,7 +84,7 @@ stderr_like(
     \&run_chkstow,
     qr{\Askipping .*stow.*\z}xms,
     "Skip directories containing .stow");
-      
+
 # squelch warn so that check_stow doesn't carp about skipping .stow all the time
 $SIG{__WARN__} = sub { };
 

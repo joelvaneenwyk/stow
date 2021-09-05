@@ -1310,13 +1310,13 @@ sub get_ignore_regexps_from_file {
         return @{ $ignore_file_regexps{$file} };
     }
 
-    if (! open(REGEXPS, $file)) {
+    if (! open(my $REGEXPS, "<", $file)) {
         debug(4, "    Failed to open $file: $!");
-        return undef;
+        return;
     }
 
-    my @regexps = $self->get_ignore_regexps_from_fh(\*REGEXPS);
-    close(REGEXPS);
+    my @regexps = $self->get_ignore_regexps_from_fh(\*$REGEXPS);
+    close($REGEXPS);
 
     $ignore_file_regexps{$file} = [ @regexps ];
     return @regexps;
