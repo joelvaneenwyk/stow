@@ -65,7 +65,7 @@ jobs:
       - name: Test
         working-directory: ${{ github.workspace }}
         run: |
-          sudo cpan -i -T TAP::Formatter::JUnit
+          sudo cpanm --install --notest TAP::Formatter::JUnit
           prove -I t/ -I bin/ -I lib/ --formatter TAP::Formatter::JUnit --verbose --normalize --parse t/ > test_results_ubuntu.xml
 
       - name: Upload Unit Test Results
@@ -159,6 +159,7 @@ jobs:
 
       - name: Perl Dependencies
         working-directory: ${{ github.workspace }}
+        shell: cmd
         run: |
           call cpanm --install --notest YAML Test::Output CPAN::DistnameInfo
 
