@@ -131,7 +131,7 @@ jobs:
         shell: msys2 {0}
         run: |
           cd $(cygpath '${{ github.workspace }}')
-          cpan -i -T TAP::Formatter::JUnit
+          cpanm --install --notest TAP::Formatter::JUnit
           prove -I t/ -I bin/ -I lib/ --formatter TAP::Formatter::JUnit --verbose --normalize --parse t/ > test_results_msys2.xml
 
       - name: Upload Unit Test Results
@@ -160,7 +160,7 @@ jobs:
       - name: Perl Dependencies
         working-directory: ${{ github.workspace }}
         run: |
-          cpan -i -T YAML Test::Output CPAN::DistnameInfo
+          call cpanm --install --notest YAML Test::Output CPAN::DistnameInfo
 
       - name: Build
         working-directory: ${{ github.workspace }}
@@ -177,7 +177,7 @@ jobs:
         working-directory: ${{ github.workspace }}
         shell: cmd
         run: |
-          call cpan -i -T TAP::Formatter::JUnit
+          call cpanm --install --notest TAP::Formatter::JUnit
           prove -I t/ -I bin/ -I lib/ --formatter TAP::Formatter::JUnit --verbose --normalize --parse t/ > test_results_windows.xml
 
       - name: Upload Unit Test Results

@@ -14,7 +14,10 @@
         "**/CVS": true,
         "**/.DS_Store": true,
         "bin/**/*.pm": true,
-        "lib/**/*.pm": true
+        "lib/**/*.pm": true,
+        "_build/**": true,
+        "_Inline/**": true,
+        "blib/**": true
     },
     "files.associations": {
         "*.in": "perl"
