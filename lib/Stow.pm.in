@@ -1315,7 +1315,7 @@ sub get_ignore_regexps_from_file {
         return;
     }
 
-    my @regexps = $self->get_ignore_regexps_from_fh(\*$REGEXPS);
+    my @regexps = $self->get_ignore_regexps_from_fh($REGEXPS);
     close($REGEXPS);
 
     $ignore_file_regexps{$file} = [ @regexps ];

@@ -3,10 +3,11 @@
 use strict;
 use warnings;
 
-open(my $CONF, "<", "configure.ac") or die "Couldn't open configure.ac: $!\n";
+open(my $CONF, "<", "configure.ac")
+  or die "Couldn't open configure.ac: $!\n";
 
-while (<$CONF>) {
-  if (/^AC_INIT\(\[stow\], \[(.+?)\]/) {
+while (my $line = <$CONF>) {
+  if ($line =~ /^AC_INIT\(\[stow\], \[(.+?)\]/) {
     print "$1\n";
     exit 0;
   }
