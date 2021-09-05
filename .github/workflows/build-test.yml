@@ -203,7 +203,17 @@ jobs:
           path: artifacts
 
       - name: Publish Unit Test Results
+        if: always()
         uses: EnricoMi/publish-unit-test-result-action@v1
         with:
-          report_individual_runs: "true"
+          check_name: "Stow Test Results"
+          report_individual_runs: true
           files: artifacts/**/*.xml
+
+      - name: Test Report
+        if: always()
+        uses: dorny/test-reporter@v1
+        with:
+          name: "Stow Test Report"
+          path: artifacts/**/*.xml
+          reporter: java-junit

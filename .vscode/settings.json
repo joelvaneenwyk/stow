@@ -90,6 +90,7 @@
         "distcheck",
         "distmeta",
         "distname",
+        "dorny",
         "eval",
         "info",
         "installdeps",
