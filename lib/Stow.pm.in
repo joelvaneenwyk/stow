@@ -1785,7 +1785,7 @@ sub read_a_link {
     }
     elsif (-l $path) {
         debug(4, "  read_a_link($path): real link");
-        my $target = get_link_target $path or error("Could not read link: $path ($!)");
+        my $target = get_link_target($path) or error("Could not read link: $path ($!)");
         return $target;
     }
     internal_error("read_a_link() passed a non link path: $path\n");
@@ -1910,7 +1910,7 @@ sub do_unlink {
     # Remove the link
     debug(1, "UNLINK: $file");
 
-    my $source = get_link_target $file or error("could not get link target $file ($!)");
+    my $source = get_link_target($file) or error("could not get link target $file ($!)");
 
     my $task = {
         action  => 'remove',

@@ -181,7 +181,7 @@ $stow->process_tasks();
 for my $file ('file4c', 'bin4c/file4c') {
     ok(-l $file, "$file turned into a symlink");
     is(
-        get_link_target $file,
+        get_link_target($file),
         (index($file, '/') == -1 ? '' : '../' )
         . "../stow/pkg4c/$file" => "$file points to right place"
     );

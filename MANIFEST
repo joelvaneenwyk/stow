@@ -10,6 +10,7 @@ bin/stow.in
 .proverc
 Build.PL
 ChangeLog
+cpanfile
 configure
 configure.ac
 COPYING
@@ -51,7 +52,7 @@ t/testutil.pm
 t/unstow.t
 t/unstow_orig.t
 t/make_links.t
-t/make_links.pm
+t/make_links.pl
 tools/get-version
 THANKS
 TODO
