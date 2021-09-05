@@ -43,4 +43,4 @@ fi
 _sudo cpanm --install --notest \
     YAML Test::Output Test::More Test::Exception \
     CPAN::DistnameInfo Module::Build Parse::RecDescent Inline::C \
-    Devel::Cover::Report::Coveralls
+    Devel::Cover::Report::Coveralls TAP::Formatter::JUnit
