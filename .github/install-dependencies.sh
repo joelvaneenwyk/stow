@@ -1,5 +1,7 @@
 #!/bin/bash
 
+STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && cd ../ && pwd)"
+
 function _sudo {
     if [ -x "$(command -v sudo)" ]; then
         sudo "$@"
@@ -31,9 +33,14 @@ elif [ -x "$(command -v pacman)" ]; then
         libcrypt-devel \
         perl
 fi
-_sudo perl -MCPAN -e 'my $c = "CPAN::HandleConfig"; $c->load(doit => 1, autoconfig => 1); $c->edit(prerequisites_policy => "follow"); $c->edit(build_requires_install_policy => "yes"); $c->commit'
 
-_sudo cpan -i -T App::cpanminus
+_sudo perl -MCPAN "$STOW_ROOT/init-config.pl"
 
-_sudo cpanm --install --notest YAML Test::Output Test::More Test::Exception CPAN::DistnameInfo Module::Build Parse::RecDescent Inline::C
-_sudo cpanm --install --notest Devel::Cover::Report::Coveralls
+if [ ! -x "$(command -v cpanm)" ]; then
+    _sudo cpan -i -T App::cpanminus
+fi
+
+_sudo cpanm --install --notest \
+    YAML Test::Output Test::More Test::Exception \
+    CPAN::DistnameInfo Module::Build Parse::RecDescent Inline::C \
+    Devel::Cover::Report::Coveralls

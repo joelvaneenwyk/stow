@@ -20,7 +20,11 @@
         "blib/**": true
     },
     "files.associations": {
-        "*.in": "perl"
+        "*.in": "perl",
+        "stow": "perl",
+        "chkstow": "perl",
+        "get-version": "perl",
+        "cpanfile": "perl"
     },
 
     "perl.enable": true,
