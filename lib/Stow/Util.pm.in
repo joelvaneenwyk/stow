@@ -474,7 +474,7 @@ sub get_link_target {
         $result = readlink($path);
     }
 
-    if (not defined $oldfile) {
+    if (not defined $result) {
         $result = "";
     }
 
