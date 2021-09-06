@@ -314,8 +314,8 @@ sub is_link {
 #============================================================================
 sub is_dir_not_symlink {
     my ($path) = @_;
-    ok(not is_symlink($path)    => "$path should not be symlink");
-    ok(-d $path                 => "$path should be a directory");
+    ok(! is_symlink($path)  => "$path should not be symlink");
+    ok(-d $path             => "$path should be a directory");
 }
 
 #===== SUBROUTINE ===========================================================

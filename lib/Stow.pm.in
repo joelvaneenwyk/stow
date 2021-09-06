@@ -1028,8 +1028,7 @@ sub cleanup_invalid_links {
             if (not $source) {
                 error("Could not read link $node_path");
             }
-
-            if (-e get_link_target(join_paths($dir, $source))) {
+            elsif (-e join_paths($dir, $source)) {
                 debug(5, "--- valid link: $node_path");
             }
             elsif (not $self->path_owned_by_package($node_path, $source)) {
