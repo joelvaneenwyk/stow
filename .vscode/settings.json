@@ -30,6 +30,11 @@
     },
 
     "perl.enable": true,
+    "perl.perlInc": [
+        "${workspaceFolder}/lib",
+        "${workspaceFolder}/bin",
+        "${workspaceFolder}/t"
+    ],
 
     "terminal.integrated.defaultProfile.windows": "Command Prompt",
     "terminal.integrated.profiles.windows": {

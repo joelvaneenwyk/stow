@@ -56,8 +56,8 @@ use File::Spec;
 use POSIX qw(getcwd);
 
 use Stow::Util qw(set_debug_level debug error set_test_mode
-                  make_symlink get_link_target normalize_path
-                  join_paths restore_cwd canon_path parent adjust_dotfile);
+                  make_symlink get_link_target is_symlink remove_link remove_tree
+                  normalize_path join_paths restore_cwd canon_path parent adjust_dotfile);
 
 our $ProgramName = 'stow';
 our $VERSION = '@VERSION@';
@@ -203,7 +203,7 @@ sub set_stow_dir {
 
     my $stow_dir = canon_path($self->{dir});
     my $target = canon_path($self->{target});
-    $self->{stow_path} = File::Spec->abs2rel($stow_dir, $target);
+    $self->{stow_path} = normalize_path(File::Spec->abs2rel($stow_dir, $target));
 
     debug(2, "stow dir is $stow_dir");
     debug(2, "stow dir path relative to target $target is $self->{stow_path}");
@@ -438,7 +438,7 @@ sub stow_node {
     debug(4, "  => $source");
 
     # Don't try to stow absolute symlinks (they can't be unstowed)
-    if (-l $source) {
+    if (is_symlink($source)) {
         my $second_source = $self->read_a_link($source);
         if ($second_source =~ m{\A/}) {
             $self->conflict(
@@ -548,7 +548,7 @@ sub stow_node {
             }
         }
     }
-    elsif ($self->{'no-folding'} && -d $path && ! -l $path) {
+    elsif ($self->{'no-folding'} && -d $path && ! is_symlink($path)) {
         $self->do_mkdir($target);
         $self->stow_contents(
             $self->{stow_path},
@@ -938,7 +938,7 @@ sub find_stowed_path {
     my ($target, $source) = @_;
 
     # Evaluate softlink relative to its target
-    my $path = join_paths(parent($target), $source);
+    my $path = normalize_path(join_paths(parent($target), $source));
     debug(4, "  is path $path owned by stow?");
 
     # Search for .stow files - this allows us to detect links
@@ -947,7 +947,7 @@ sub find_stowed_path {
     my @path = split m{/+}, $path;
     for my $i (0 .. $#path) {
         my $part = $path[$i];
-        $dir = join_paths($dir, $part);
+        $dir = normalize_path(join_paths($dir, $part));
         if ($self->marked_stow_dir($dir)) {
             # FIXME - not sure if this can ever happen
             internal_error("find_stowed_path() called directly on stow dir")
@@ -1020,7 +1020,7 @@ sub cleanup_invalid_links {
 
         my $node_path = join_paths($dir, $node);
 
-        if (-l $node_path and not exists $self->{link_task_for}{$node_path}) {
+        if (is_symlink($node_path) and not exists $self->{link_task_for}{$node_path}) {
 
             # Where is the link pointing?
             # (don't use read_a_link() here)
@@ -1029,10 +1029,13 @@ sub cleanup_invalid_links {
                 error("Could not read link $node_path");
             }
 
-            if (
-                not -e join_paths($dir, $source) and  # bad link
-                $self->path_owned_by_package($node_path, $source) # owned by stow
-            ){
+            if (-e get_link_target(join_paths($dir, $source))) {
+                debug(5, "--- valid link: $node_path");
+            }
+            elsif (not $self->path_owned_by_package($node_path, $source)) {
+                debug(5, "--- not owned by package: $node_path");
+            }
+            else {
                 debug(2, "--- removing stale link: $node_path => " .
                           join_paths($dir, $source));
                 $self->do_unlink($node_path);
@@ -1515,12 +1518,12 @@ sub process_task {
     }
     elsif ($task->{action} eq 'remove') {
         if ($task->{type} eq 'dir') {
-            rmdir $task->{path}
+            remove_tree($task->{path})
                 or error("Could not remove directory: $task->{path} ($!)");
             return;
         }
         elsif ($task->{type} eq 'link') {
-            unlink $task->{path}
+            remove_link($task->{path})
                 or error("Could not remove link: $task->{path} ($!)");
             return;
         }
@@ -1642,7 +1645,7 @@ sub is_a_link {
         }
     }
 
-    if (-l $path) {
+    if (is_symlink($path)) {
         # Check if any of its parent are links scheduled for removal
         # (need this for edge case during unfolding)
         debug(4, "  is_a_link($path): is a real link");
@@ -1785,7 +1788,7 @@ sub read_a_link {
             );
         }
     }
-    elsif (-l $path) {
+    elsif (is_symlink($path)) {
         debug(4, "  read_a_link($path): real link");
         my $target = get_link_target($path) or error("Could not read link: $path ($!)");
         return $target;

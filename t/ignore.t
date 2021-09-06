@@ -299,8 +299,12 @@ sub test_ignore_via_stow {
     $stow->process_tasks();
     is($stow->get_conflicts(), 0, 'no conflicts stowing qux');
     ok(! -e "foo/bar", "bar ignore prevented stow");
-    ok(-l "foo/qux",   "qux not ignored and stowed");
-    is(get_link_target("foo/qux"), "../$stow_path/$package/foo/qux", "qux stowed correctly");
+    ok(is_symlink("foo/qux"),   "qux not ignored and stowed");
+    is(
+        normalize_path(get_link_target("foo/qux")),
+        "../$stow_path/$package/foo/qux",
+        "qux stowed correctly"
+    );
 }
 
 main();

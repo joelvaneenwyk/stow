@@ -91,8 +91,8 @@ $stow->plan_unstow('pkg3b');
 $stow->process_tasks();
 ok(
     $stow->get_conflict_count == 0 &&
-    -l 'bin3' &&
-    get_link_target('bin3') eq '../stow/pkg3a/bin3'
+    is_symlink('bin3') &&
+    normalize_path(get_link_target('bin3')) eq '../stow/pkg3a/bin3'
     => 'fold tree after unstowing'
 );
 
@@ -131,7 +131,7 @@ $stow->plan_unstow('pkg5');
 #    => q(existing link not owned by stow)
 #);
 ok(
-    -l 'bin5' && get_link_target('bin5') eq '../not-stow'
+    is_symlink('bin5') && get_link_target('bin5') eq '../not-stow'
     => q(existing link not owned by stow)
 );
 
@@ -151,7 +151,7 @@ make_file('../stow/pkg6b/bin6/file6');
 $stow->plan_unstow('pkg6b');
 ok(
     $stow->get_conflict_count == 0 &&
-    -l 'bin6/file6' &&
+    is_symlink('bin6/file6') &&
     get_link_target('bin6/file6') eq '../../stow/pkg6a/bin6/file6'
     => q(ignore existing link that points to a different package)
 );
@@ -171,7 +171,7 @@ capture_stderr();
 $stow->plan_unstow('pkg7b');
 is($stow->get_tasks, 0, 'no tasks to process when unstowing pkg7b');
 is($stow->get_conflict_count, 0, 'expect no conflicts unlinking nodes under the stow directory');
-ok(-l 'stow/pkg7b', q(don't unlink any nodes under the stow directory));
+ok(is_symlink('stow/pkg7b'), q(don't unlink any nodes under the stow directory));
 is(get_link_target('stow/pkg7b'), 'pkg7a/stow/pkg7b', 'relative symlink paths should match');
 like($stderr,
      qr/WARNING: skipping target which was current stow directory stow/
@@ -195,7 +195,7 @@ capture_stderr();
 $stow->plan_unstow('pkg8a');
 is($stow->get_tasks, 0, 'no tasks to process when unstowing pkg8a');
 is($stow->get_conflict_count, 0, 'expect no conflicts unlinking nodes under the stow directory');
-ok(-l 'stow2/pkg8b', q(don't unlink any nodes under the stow directory));
+ok(is_symlink('stow2/pkg8b'), q(don't unlink any nodes under the stow directory));
 is(get_link_target('stow2/pkg8b'), '../stow/pkg8a/stow2/pkg8b', 'relative symlink paths should match');
 like($stderr,
      qr/WARNING: skipping target which was current stow directory stow/
@@ -231,7 +231,7 @@ $stow->plan_unstow('pkg9b');
 $stow->process_tasks();
 ok(
     $stow->get_conflict_count == 0 &&
-    !-l 'man9/man1/file9.1'
+    !is_symlink('man9/man1/file9.1')
     => 'overriding existing documentation files'
 );
 check_protected_dirs_skipped();

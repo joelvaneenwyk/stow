@@ -66,7 +66,7 @@ is(scalar($stow->get_tasks),     1, 'one task cleaning up bad link');
 is($stow->link_task_action('bin2/file2b'), 'remove', 'removal task for bad link');
 
 #
-# dont cleanup a bad link not owned by stow
+# do not cleanup a bad link not owned by stow
 #
 
 make_path('bin3');

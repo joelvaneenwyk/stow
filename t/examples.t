@@ -63,11 +63,14 @@ $stow->plan_stow('perl');
 $stow->process_tasks();
 ok(
     $stow->get_conflict_count == 0 &&
-    -l 'bin' && -l 'info' && -l 'lib' && -l 'man' &&
-    get_link_target('bin')  eq 'stow/perl/bin' &&
-    get_link_target('info') eq 'stow/perl/info' &&
-    get_link_target('lib')  eq 'stow/perl/lib' &&
-    get_link_target('man')  eq 'stow/perl/man'
+    is_symlink('bin') &&
+    is_symlink('info') &&
+    is_symlink('lib') &&
+    is_symlink('man') &&
+    normalize_path(get_link_target('bin'))  eq 'stow/perl/bin' &&
+    normalize_path(get_link_target('info')) eq 'stow/perl/info' &&
+    normalize_path(get_link_target('lib'))  eq 'stow/perl/lib' &&
+    normalize_path(get_link_target('man'))  eq 'stow/perl/man'
     => 'stow perl into an empty target'
 );
 
@@ -91,13 +94,16 @@ $stow->process_tasks();
 ok(
     $stow->get_conflict_count == 0 &&
     -d 'bin' && -d 'lib' && -d 'man' && -d 'man/man1' &&
-    -l 'info' && -l 'bin/perl' && -l 'bin/a2p' &&
-    -l 'lib/perl' && -l 'man/man1/perl.1' &&
-    get_link_target('info')     eq 'stow/perl/info' &&
-    get_link_target('bin/perl') eq '../stow/perl/bin/perl' &&
-    get_link_target('bin/a2p')  eq '../stow/perl/bin/a2p' &&
-    get_link_target('lib/perl') eq '../stow/perl/lib/perl' &&
-    get_link_target('man/man1/perl.1')  eq '../../stow/perl/man/man1/perl.1'
+    is_symlink('info') &&
+    is_symlink('bin/perl') &&
+    is_symlink('bin/a2p') &&
+    is_symlink('lib/perl') &&
+    is_symlink('man/man1/perl.1') &&
+    normalize_path(get_link_target('info'))             eq 'stow/perl/info' &&
+    normalize_path(get_link_target('bin/perl'))         eq '../stow/perl/bin/perl' &&
+    normalize_path(get_link_target('bin/a2p'))          eq '../stow/perl/bin/a2p' &&
+    normalize_path(get_link_target('lib/perl'))         eq '../stow/perl/lib/perl' &&
+    normalize_path(get_link_target('man/man1/perl.1'))  eq '../../stow/perl/man/man1/perl.1'
     => 'stow perl into a non-empty target'
 );
 
@@ -117,33 +123,33 @@ $stow->plan_stow('perl', 'emacs');
 $stow->process_tasks();
 is($stow->get_conflict_count, 0, 'no conflicts');
 ok(
-    -d 'bin'        &&
-    -l 'bin/perl'   &&
-    -l 'bin/emacs'  &&
-    -l 'bin/a2p'    &&
-    -l 'bin/etags'  &&
-    get_link_target('bin/perl')    eq '../stow/perl/bin/perl'      &&
-    get_link_target('bin/a2p')     eq '../stow/perl/bin/a2p'       &&
-    get_link_target('bin/emacs')   eq '../stow/emacs/bin/emacs'    &&
-    get_link_target('bin/etags')   eq '../stow/emacs/bin/etags'    &&
+    -d 'bin'                    &&
+    is_symlink('bin/perl')      &&
+    is_symlink('bin/emacs')     &&
+    is_symlink('bin/a2p')       &&
+    is_symlink('bin/etags')     &&
+    normalize_path(get_link_target('bin/perl'))    eq '../stow/perl/bin/perl'      &&
+    normalize_path(get_link_target('bin/a2p'))     eq '../stow/perl/bin/a2p'       &&
+    normalize_path(get_link_target('bin/emacs'))   eq '../stow/emacs/bin/emacs'    &&
+    normalize_path(get_link_target('bin/etags'))   eq '../stow/emacs/bin/etags'    &&
 
-    -d 'info'       &&
-    -l 'info/perl'  &&
-    -l 'info/emacs' &&
-    get_link_target('info/perl')   eq '../stow/perl/info/perl'     &&
-    get_link_target('info/emacs')  eq '../stow/emacs/info/emacs'   &&
+    -d 'info'                   &&
+    is_symlink('info/perl')     &&
+    is_symlink('info/emacs')    &&
+    normalize_path(get_link_target('info/perl'))   eq '../stow/perl/info/perl'     &&
+    normalize_path(get_link_target('info/emacs'))  eq '../stow/emacs/info/emacs'   &&
 
-    -d 'man'                &&
-    -d 'man/man1'           &&
-    -l 'man/man1/perl.1'    &&
-    -l 'man/man1/emacs.1'   &&
-    get_link_target('man/man1/perl.1')  eq '../../stow/perl/man/man1/perl.1'   &&
-    get_link_target('man/man1/emacs.1') eq '../../stow/emacs/man/man1/emacs.1' &&
+    -d 'man'                            &&
+    -d 'man/man1'                       &&
+    is_symlink( 'man/man1/perl.1')      &&
+    is_symlink( 'man/man1/emacs.1')     &&
+    normalize_path(get_link_target('man/man1/perl.1'))  eq '../../stow/perl/man/man1/perl.1'   &&
+    normalize_path(get_link_target('man/man1/emacs.1')) eq '../../stow/emacs/man/man1/emacs.1' &&
 
-    -l 'lib'        &&
-    -l 'libexec'    &&
-    get_link_target('lib')     eq 'stow/perl/lib'      &&
-    get_link_target('libexec') eq 'stow/emacs/libexec' &&
+    is_symlink('lib')          &&
+    is_symlink('libexec')      &&
+    normalize_path(get_link_target('lib'))     eq 'stow/perl/lib'      &&
+    normalize_path(get_link_target('libexec')) eq 'stow/emacs/libexec' &&
     1
     => 'stow perl into an empty target, then stow emacs'
 );

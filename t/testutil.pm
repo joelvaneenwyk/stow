@@ -26,13 +26,14 @@ use warnings;
 
 use Carp qw(croak);
 use File::Basename;
-use File::Path qw(make_path remove_tree);
 use File::Spec;
 use IO::Scalar;
 use Test::More;
 
 use Stow;
-use Stow::Util qw(get_link_target make_symlink parent canon_path);
+use Stow::Util qw(
+    get_link_target remove_link remove_tree normalize_path
+    is_symlink make_symlink parent canon_path);
 
 use base qw(Exporter);
 our @EXPORT = qw(
@@ -44,8 +45,8 @@ our @EXPORT = qw(
     new_Stow new_compat_Stow
     make_path make_link make_invalid_link make_file
     remove_dir remove_file remove_link
-    cat_file get_link_target
-    is_link is_dir_not_symlink is_nonexistent_path
+    cat_file get_link_target normalize_path
+    is_link is_symlink is_dir_not_symlink is_nonexistent_path
     capture_stderr uncapture_stderr
 );
 
@@ -54,6 +55,17 @@ our $ABS_TEST_DIR = canon_path('tmp-testing-trees');
 
 our $stderr;
 my $tied_err;
+
+sub make_path {
+    my ($path) = @_;
+
+    if ($^O eq 'MSWin32') {
+        my $abs_target = File::Spec->rel2abs($path);
+        $path = "\\\\?\\$abs_target";
+    }
+
+    return File::Path::make_path($path);
+}
 
 sub capture_stderr {
     undef $stderr;
@@ -71,7 +83,7 @@ sub init_test_dirs {
     # target directory.
     for my $dir ("target", "stow", "run_from") {
         my $path = "$TEST_DIR/$dir";
-        -d $path and remove_tree($path);
+        remove_tree($path);
         make_path($path);
     }
 
@@ -106,7 +118,7 @@ sub new_compat_Stow {
 sub make_link {
     my ($target, $source, $invalid) = @_;
 
-    if (-l $target) {
+    if (is_symlink($target)) {
         my $old_source = get_link_target(join('/', parent($target), $source))
             or die "$target is already a link but could not read link $target/$source";
         if ($old_source ne $source) {
@@ -193,24 +205,6 @@ sub make_file {
 }
 
 #===== SUBROUTINE ===========================================================
-# Name      : remove_link()
-# Purpose   : remove an esiting symbolic link
-# Parameters: $path => path to the symbolic link
-# Returns   : n/a
-# Throws    : fatal error if the operation fails or if passed the path to a
-#           : non-link
-# Comments  : none
-#============================================================================
-sub remove_link {
-    my ($path) = @_;
-    if (not -l $path) {
-        die qq(remove_link() called with a non-link: $path);
-    }
-    unlink $path or die "could not remove link: $path ($!)\n";
-    return;
-}
-
-#===== SUBROUTINE ===========================================================
 # Name      : remove_file()
 # Purpose   : remove an existing empty file
 # Parameters: $path => the path to the empty file
@@ -252,7 +246,11 @@ sub remove_dir {
         next NODE if $node eq '..';
 
         my $path = "$dir/$node";
-        if (-l $path or (-f $path and -z $path) or $node eq $Stow::LOCAL_IGNORE_FILE) {
+        if (
+            is_symlink($path) or
+            (-f $path and -z $path) or
+            $node eq $Stow::LOCAL_IGNORE_FILE
+        ) {
             unlink $path or die "cannot unlink $path ($!)\n";
         }
         elsif (-d "$path") {
@@ -262,7 +260,8 @@ sub remove_dir {
             die "$path is not a link, directory, or empty file\n";
         }
     }
-    rmdir $dir or die "cannot rmdir $dir ($!)\n";
+
+    remove_tree $dir or die "cannot rmdir $dir ($!)\n";
 
     return;
 }
@@ -304,8 +303,8 @@ sub cat_file {
 #============================================================================
 sub is_link {
     my ($path, $dest) = @_;
-    ok(-l $path => "$path should be symlink");
-    is(get_link_target($path), $dest => "$path symlinks to $dest");
+    ok(is_symlink($path) => "$path should be symlink");
+    is(normalize_path(get_link_target($path)), $dest => "$path symlinks to $dest");
 }
 
 #===== SUBROUTINE ===========================================================
@@ -315,8 +314,8 @@ sub is_link {
 #============================================================================
 sub is_dir_not_symlink {
     my ($path) = @_;
-    ok(! -l $path => "$path should not be symlink");
-    ok(-d _       => "$path should be a directory");
+    ok(not is_symlink($path)    => "$path should not be symlink");
+    ok(-d $path                 => "$path should be a directory");
 }
 
 #===== SUBROUTINE ===========================================================
@@ -326,7 +325,7 @@ sub is_dir_not_symlink {
 #============================================================================
 sub is_nonexistent_path {
     my ($path) = @_;
-    ok(! -l $path => "$path should not be symlink");
+    ok(! is_symlink($path) => "$path should not be symlink");
     ok(! -e _     => "$path should not exist");
 }
 

@@ -31,17 +31,19 @@ Supporting utility routines for L<Stow>.
 
 use strict;
 use warnings;
+
 use POSIX qw(getcwd);
+use File::Spec;
+use Encode qw/encode decode/;
+use File::Path;
+
 use base qw(Exporter);
 
 our @EXPORT_OK = qw(
     error debug set_debug_level set_test_mode
     join_paths parent canon_path normalize_path restore_cwd adjust_dotfile
-    get_link_target make_symlink
+    get_link_target is_symlink make_symlink remove_link remove_tree
 );
-
-use File::Spec;
-use Encode qw/encode decode/;
 
 # Very Long Name Prefix
 my $VLNP = '\\\\?';
@@ -176,7 +178,7 @@ sub join_paths {
     my @paths = @_;
 
     # weed out empty components and concatenate
-    my $result = join '/', grep {! /\A\z/} @paths;
+    my $result = normalize_path(join '/', grep {! /\A\z/} @paths);
 
     # factor out back references and remove redundant /'s)
     my @result = ();
@@ -191,7 +193,103 @@ sub join_paths {
         }
     }
 
-    return normalize_path(join '/', @result);
+    return join '/', @result;
+}
+
+#===== SUBROUTINE ===========================================================
+# Name      : remove_link()
+# Purpose   : remove an esiting symbolic link
+# Parameters: $path => path to the symbolic link
+# Returns   : n/a
+# Throws    : fatal error if the operation fails or if passed the path to a
+#           : non-link
+# Comments  : none
+#============================================================================
+sub remove_link {
+    my ($path) = @_;
+
+    if (is_symlink($path)) {
+        if ($^O eq 'MSWin32') {
+            my $abs_path = File::Spec->rel2abs($path);
+
+            if (-d $path) {
+                rmdir $path
+                    or die "could not remove directory link: $path ($!)\n";
+            }
+            else {
+                system("del /f /q $abs_path");
+            }
+        }
+        else {
+            unlink $path
+                or die "could not remove link: $path ($!)\n";
+        }
+    }
+
+    return 1;
+}
+
+#===== SUBROUTINE ===========================================================
+# Name      : remove_tree()
+# Purpose   : safely remove a tree of test files
+# Parameters: $dir => path to the top of the tree
+# Returns   : n/a
+# Comments  : recursively removes directories containing softlinks empty files
+#============================================================================
+sub remove_tree {
+    my ($dir) = @_;
+
+    if (is_symlink($dir)) {
+        remove_link($dir);
+    }
+    elsif (-e $dir && $^O eq 'MSWin32') {
+        opendir my $DIR, $dir or die "cannot read directory: $dir ($!)\n";
+        my @listing = readdir $DIR;
+        closedir $DIR;
+
+        NODE:
+        for my $node (@listing) {
+            next NODE if $node eq '.';
+            next NODE if $node eq '..';
+
+            my $path = "$dir/$node";
+            if (is_symlink($path)) {
+                remove_link($path);
+            }
+            elsif (-d $path) {
+                remove_tree($path);
+            }
+            else {
+                unlink $path;
+            }
+        }
+    }
+
+    if (-e $dir) {
+        File::Path::remove_tree($dir, {
+            keep_root => 0,
+            verbose => 1,
+            safe => 0,
+            error => \my $err
+        });
+
+        if ($err && @$err) {
+            for my $diag (@$err) {
+                my ($file, $message) = %$diag;
+                if ($file eq '') {
+                    print "general error: $message\n";
+                }
+                else {
+                    print "problem unlinking $file: $message\n";
+                }
+            }
+        }
+        else {
+            print "No error encountered\n";
+        }
+    }
+
+    return 1;
 }
 
 #===== METHOD ===============================================================
@@ -285,7 +383,9 @@ sub mk_VLN {
 
 sub rm_VLN {
     my ($path) = @_;
-    $path =~ s/^$VLNP(UNC\\)?//;
+    if (defined $path and length $path) {
+        $path =~ s/^$VLNP(UNC\\)?//;
+    }
     return $path;
 }
 
@@ -319,7 +419,7 @@ sub make_symlink_windows {
     if (File::Spec->VERSION < 3.8 && $^O eq 'MSWin32') {
         $oldfile = old_in( $oldfile );
         $newfile = new_in( $newfile );
-        print "$oldfile -> $newfile\n";
+        #print "$oldfile -> $newfile\n";
         $result = 1 & CreateSymbolicLink( _to($newfile), _to($oldfile), -d $oldfile ? 1 : 0 );
 
         if ($result eq 0) {
@@ -351,7 +451,16 @@ sub readlink_windows {
 
     my $oldfile;
     ReadLink( _to($newfile), $oldfile );
-    return old_out( decode("UTF16-LE", $oldfile ) );
+
+    my $result;
+
+    if (defined $oldfile and length $oldfile) {
+        $result = old_out( decode("UTF16-LE", $oldfile ) );
+    } else {
+        $result = $newfile;
+    }
+
+    return $result;
 }
 
 # This is `readlink` but with support for Windows
@@ -369,7 +478,7 @@ sub get_link_target {
 }
 
 #
-# Win32 does *NOT* follow symlinks with `stat` so `lstat` works out of the box, but
+# Win32 does *NOT* follow symlinks with `stat`. `lstat` works out of the box, but
 # `stat` needs fixing to follow links.
 
 # Corestat uses Ansi not Wide (aka. Unicode) Win API calls whereas rest of this
@@ -391,11 +500,18 @@ sub stat_windows {
     }
 }
 
-sub is_link_windows {
-    my ( $newfile, $opts ) = @_;
-    $newfile = new_in( $newfile );
+sub is_symlink {
+    my ( $newfile ) = @_;
+    my $result;
 
-    return 1 & ReadLink( _to($newfile), my $oldfile );
+    if ($^O eq 'MSWin32') {
+        $newfile = new_in( $newfile );
+        $result = 1 & ReadLink( _to($newfile), my $oldfile );
+    } else {
+        $result = -l $newfile;
+    }
+
+    return $result;
 }
 
 my $code;
@@ -489,7 +605,8 @@ $code = <<'END_OF_C';
 
         CloseHandle( h );
         if( !ok ) {
-            return 0; //# SMELL?: Quite unexpected, maybe raise exception or return error - somehow?
+            //# SMELL?: Quite unexpected, maybe raise exception or return error - somehow?
+            return 0;
         }
 
         if( rdb.ReparseTag == IO_REPARSE_TAG_SYMLINK ) {

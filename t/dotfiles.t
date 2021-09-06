@@ -46,7 +46,7 @@ make_file('../stow/dotfiles/dot-foo');
 $stow->plan_stow('dotfiles');
 $stow->process_tasks();
 is(
-    get_link_target('.foo'),
+    normalize_path(get_link_target('.foo')),
     '../stow/dotfiles/dot-foo',
     => 'processed dotfile'
 );
@@ -63,7 +63,7 @@ make_file('../stow/dotfiles/dot-foo');
 $stow->plan_stow('dotfiles');
 $stow->process_tasks();
 is(
-    get_link_target('dot-foo'),
+    normalize_path(get_link_target('dot-foo')),
     '../stow/dotfiles/dot-foo',
     => 'unprocessed dotfile'
 );
@@ -81,7 +81,7 @@ make_file('../stow/dotfiles/dot-emacs/init.el');
 $stow->plan_stow('dotfiles');
 $stow->process_tasks();
 is(
-    get_link_target('.emacs'),
+    normalize_path(get_link_target('.emacs')),
     '../stow/dotfiles/dot-emacs',
     => 'processed dotfile folder'
 );
@@ -102,12 +102,12 @@ make_file('../stow/dotfiles/dot-./foo');
 $stow->plan_stow('dotfiles');
 $stow->process_tasks();
 is(
-    get_link_target('dot-'),
+    normalize_path(get_link_target('dot-')),
     '../stow/dotfiles/dot-',
     => 'processed dotfile'
 );
 is(
-    get_link_target('dot-.'),
+    normalize_path(get_link_target('dot-.')),
     '../stow/dotfiles/dot-.',
     => 'unprocessed dotfile'
 );

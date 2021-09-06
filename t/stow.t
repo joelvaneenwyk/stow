@@ -49,7 +49,7 @@ $stow->plan_stow('pkg1');
 $stow->process_tasks();
 is_deeply([ $stow->get_conflicts ], [], 'no conflicts with minimal stow');
 is(
-    get_link_target('bin1'),
+    normalize_path(get_link_target('bin1')),
     '../stow/pkg1/bin1',
     => 'minimal stow of a simple tree'
 );
@@ -66,7 +66,7 @@ make_path('lib2');
 $stow->plan_stow('pkg2');
 $stow->process_tasks();
 is(
-    get_link_target('lib2/file2'),
+    normalize_path(get_link_target('lib2/file2')),
     '../../stow/pkg2/lib2/file2',
     => 'stow simple tree to existing directory'
 );
@@ -87,8 +87,8 @@ $stow->plan_stow('pkg3b');
 $stow->process_tasks();
 ok(
     -d 'bin3' &&
-    get_link_target('bin3/file3a') eq '../../stow/pkg3a/bin3/file3a'  &&
-    get_link_target('bin3/file3b') eq '../../stow/pkg3b/bin3/file3b'
+    normalize_path(get_link_target('bin3/file3a')) eq '../../stow/pkg3a/bin3/file3a'  &&
+    normalize_path(get_link_target('bin3/file3b')) eq '../../stow/pkg3b/bin3/file3b'
     => 'target already has 1 stowed package'
 );
 
@@ -179,9 +179,9 @@ is($stow->get_conflict_count, 0 => 'no conflicts with --adopt');
 is($stow->get_tasks, 4 => 'two tasks per file');
 $stow->process_tasks();
 for my $file ('file4c', 'bin4c/file4c') {
-    ok(-l $file, "$file turned into a symlink");
+    ok(is_symlink($file), "$file turned into a symlink");
     is(
-        get_link_target($file),
+        normalize_path(get_link_target($file)),
         (index($file, '/') == -1 ? '' : '../' )
         . "../stow/pkg4c/$file" => "$file points to right place"
     );
@@ -218,7 +218,7 @@ make_file('../stow/pkg6/file6');
 $stow->plan_stow('pkg6');
 $stow->process_tasks();
 is(
-    get_link_target('file6'),
+    normalize_path(get_link_target('file6')),
     '../stow/pkg6/file6'
     => 'replace existing but invalid target'
 );
@@ -262,8 +262,8 @@ $stow->process_tasks();
 ok(
     $stow->get_conflict_count == 0 &&
     -d '0' &&
-    get_link_target('0/file8a') eq '../../stow/pkg8a/0/file8a'  &&
-    get_link_target('0/file8b') eq '../../stow/pkg8b/0/file8b'
+    normalize_path(get_link_target('0/file8a')) eq '../../stow/pkg8a/0/file8a'  &&
+    normalize_path(get_link_target('0/file8b')) eq '../../stow/pkg8b/0/file8b'
     => 'stowing directories named 0'
 );
 
@@ -284,7 +284,7 @@ $stow->plan_stow('pkg9b');
 $stow->process_tasks();
 ok(
     $stow->get_conflict_count == 0 &&
-    get_link_target('man9/man1/file9.1') eq '../../../stow/pkg9b/man9/man1/file9.1'
+    normalize_path(get_link_target('man9/man1/file9.1')) eq '../../../stow/pkg9b/man9/man1/file9.1'
     => 'overriding existing documentation files'
 );
 
@@ -305,7 +305,7 @@ $stow->plan_stow('pkg10b');
 is($stow->get_tasks, 0, 'no tasks to process');
 ok(
     $stow->get_conflict_count == 0 &&
-    get_link_target('man10/man1/file10.1') eq '../../../stow/pkg10a/man10/man1/file10.1'
+    normalize_path(get_link_target('man10/man1/file10.1')) eq '../../../stow/pkg10a/man10/man1/file10.1'
     => 'defer to existing documentation files'
 );
 
@@ -324,7 +324,7 @@ $stow->plan_stow('pkg11');
 $stow->process_tasks();
 ok(
     $stow->get_conflict_count == 0 &&
-    get_link_target('man11/man1/file11.1') eq '../../../stow/pkg11/man11/man1/file11.1' &&
+    normalize_path(get_link_target('man11/man1/file11.1')) eq '../../../stow/pkg11/man11/man1/file11.1' &&
     !-e 'man11/man1/file11.1~' &&
     !-e 'man11/man1/.#file11.1'
     => 'ignore temp files'
@@ -345,8 +345,8 @@ $stow->plan_stow('pkg12');
 $stow->process_tasks();
 ok(
     $stow->get_conflict_count == 0 &&
-    get_link_target('lib12/lib.so.1') eq '../../stow/pkg12/lib12/lib.so.1' &&
-    get_link_target('lib12/lib.so'  ) eq '../../stow/pkg12/lib12/lib.so'
+    normalize_path(get_link_target('lib12/lib.so.1')) eq '../../stow/pkg12/lib12/lib.so.1' &&
+    normalize_path(get_link_target('lib12/lib.so'  )) eq '../../stow/pkg12/lib12/lib.so'
     => 'stow links to libraries'
 );
 
@@ -368,10 +368,10 @@ $stow->plan_stow('pkg13b');
 $stow->process_tasks();
 ok(
     $stow->get_conflict_count == 0 &&
-    get_link_target('lib13/liba.so.1') eq '../../stow/pkg13a/lib13/liba.so.1'  &&
-    get_link_target('lib13/liba.so'  ) eq '../../stow/pkg13a/lib13/liba.so'    &&
-    get_link_target('lib13/libb.so.1') eq '../../stow/pkg13b/lib13/libb.so.1'  &&
-    get_link_target('lib13/libb.so'  ) eq '../../stow/pkg13b/lib13/libb.so'
+    normalize_path(get_link_target('lib13/liba.so.1')) eq '../../stow/pkg13a/lib13/liba.so.1'  &&
+    normalize_path(get_link_target('lib13/liba.so'  )) eq '../../stow/pkg13a/lib13/liba.so'    &&
+    normalize_path(get_link_target('lib13/libb.so.1')) eq '../../stow/pkg13b/lib13/libb.so.1'  &&
+    normalize_path(get_link_target('lib13/libb.so'  )) eq '../../stow/pkg13b/lib13/libb.so'
     => 'unfolding to stow links to libraries'
 );
 
@@ -389,7 +389,7 @@ $stow->plan_stow('pkg14');
 is($stow->get_tasks, 0, 'no tasks to process');
 ok(
     $stow->get_conflict_count == 0 &&
-    ! -l 'stow/pkg15'
+    ! is_symlink('stow/pkg15')
     => "stowing to stow dir should fail"
 );
 like($stderr,
@@ -410,7 +410,7 @@ $stow->plan_stow('pkg16');
 $stow->process_tasks();
 is_deeply([ $stow->get_conflicts ], [], 'no conflicts with minimal stow');
 is(
-    get_link_target("$TEST_DIR/target/bin16"),
+    normalize_path(get_link_target("$TEST_DIR/target/bin16")),
     '../stow/pkg16/bin16',
     => "minimal stow of a simple tree when cwd isn't target"
 );
@@ -429,7 +429,7 @@ $stow->plan_stow('pkg17');
 $stow->process_tasks();
 is_deeply([ $stow->get_conflicts ], [], 'no conflicts with minimal stow');
 is(
-    get_link_target("$TEST_DIR/target/bin17"),
+    normalize_path(get_link_target("$TEST_DIR/target/bin17")),
     '../stow/pkg17/bin17',
     => "minimal stow of a simple tree with absolute stow dir"
 );
@@ -448,7 +448,7 @@ $stow->plan_stow('pkg18');
 $stow->process_tasks();
 is_deeply([ $stow->get_conflicts ], [], 'no conflicts with minimal stow');
 is(
-    get_link_target("$TEST_DIR/target/bin18"),
+    normalize_path(get_link_target("$TEST_DIR/target/bin18")),
     '../stow/pkg18/bin18',
     => "minimal stow of a simple tree with absolute stow and target dirs"
 );
