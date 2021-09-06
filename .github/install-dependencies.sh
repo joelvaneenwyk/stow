@@ -34,7 +34,7 @@ elif [ -x "$(command -v pacman)" ]; then
         perl
 fi
 
-_sudo perl -MCPAN "$STOW_ROOT/.github/init-config.pl"
+_sudo perl -MCPAN "$STOW_ROOT/.github/initialize-cpan-config.pl"
 
 if [ ! -x "$(command -v cpanm)" ]; then
     _sudo cpan -i -T App::cpanminus

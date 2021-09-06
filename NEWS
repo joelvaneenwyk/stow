@@ -117,7 +117,7 @@ News file for Stow.
 ***** Update documentation to reflect more modern use cases
 
       The README.md, stow(8) man page, and info manual have been updated
-      to de-emphasise the package management use, since these days almost
+      to de-emphasize the package management use, since these days almost
       everyone prefers to use modern package managers such as rpm / dpkg
       / Nix for (system-wide) package management.
 
@@ -303,7 +303,7 @@ due to Stow::Util missing $VERSION.
     is considered potentially dangerous (especially for stow package
     directories which are not managed by a version control system).
     Therefore it seems prudent to require a bit more effort from the
-    user to enable this option, minimising the change of enabling it
+    user to enable this option, minimizing the change of enabling it
     via a typo.
 
 *** Improve error message when stow package is not found.
@@ -414,10 +414,10 @@ due to Stow::Util missing $VERSION.
       2. No operations are be performed if _any_ conflicts are detected:
          a failed stow will not leave you with a partially installed
          package.
-      3. Minimises the set of operations that need to be performed.
+      3. Minimizes the set of operations that need to be performed.
       4. Operations are executed as a batch which is much faster
          This can be an advantage when upgrading packages on a live system
-         where you want to minimise the amount of time when the package is
+         where you want to minimize the amount of time when the package is
          unavailable.
 
 *** The above fixes the false conflict problem mentioned in the info file.

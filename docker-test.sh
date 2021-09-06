@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 #
 # Test Stow across multiple Perl versions, by executing the
-# Docker image built via build-docker.sh.
+# Docker image built via docker-build.sh.
 #
-# Usage: ./test-docker.sh [list | PERL_VERSION]
+# Usage: ./docker-test.sh [list | PERL_VERSION]
 #
 # If the first argument is 'list', list available Perl versions.
 # If the first argument is a Perl version, test just that version interactively.

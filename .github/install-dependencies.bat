@@ -2,7 +2,7 @@
 
 setlocal EnableExtensions EnableDelayedExpansion
 
-perl -MCPAN "%~dp0init-config.pl"
+perl -MCPAN "%~dp0initialize-cpan-config.pl"
 
 :: Already installed as part of Strawberry Perl but install/update regardless
 call cpan -i -T App::cpanminus
