@@ -93,4 +93,4 @@ tmp-testing-trees
 ^.devcontainer/
 ^.github/
 ^.vscode/
-^[a-zA-Z]*-docker.sh
+^docker-[a-zA-Z]*.sh
