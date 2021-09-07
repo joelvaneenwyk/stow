@@ -34,9 +34,9 @@ use warnings;
 
 use POSIX qw(getcwd);
 use Encode qw/encode decode/;
-use File::Spec;
-use File::Path;
-use File::Basename;
+use File::Spec ();
+use File::Path ();
+use File::Basename ();
 
 use base qw(Exporter);
 
@@ -510,7 +510,7 @@ sub make_path {
 
     while (@paths) {
         my $path_to_make = pop @paths;
-        File::Path::make_path $path_to_make, $mode
+        mkdir $path_to_make, $mode
             or die "Failed to create path: $path_to_make";
     }
 

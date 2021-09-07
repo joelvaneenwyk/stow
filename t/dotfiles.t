@@ -22,7 +22,6 @@
 use strict;
 use warnings;
 
-use testutil;
 
 use Test::More tests => $^O eq 'MSWin32' ? 5 : 6;
 use English qw(-no_match_vars);
@@ -30,9 +29,6 @@ use English qw(-no_match_vars);
 use Stow::Util qw(set_debug_level);
 
 use testutil;
-
-set_debug_level(5);
-
 init_test_dirs();
 cd("$TEST_DIR/target");
 
@@ -95,18 +91,17 @@ is(
 # "$DOT_PREFIX." should not have that part expanded.
 #
 
-$stow = new_Stow(dir => '../stow', dotfiles => 1);
-
 make_path('../stow/dotfiles');
 make_file('../stow/dotfiles/dot-');
 
 # Not supported on Windows since long path is not supported which is required
 # for non-standard characters at the end of a folder e.g., '.' (dot)
-if (! $^O eq 'MSWin32') {
+if ($^O ne 'MSWin32') {
     make_path('../stow/dotfiles/dot-.');
     make_file('../stow/dotfiles/dot-./foo');
 }
 
+$stow = new_Stow(dir => '../stow', dotfiles => 1);
 $stow->plan_stow('dotfiles');
 $stow->process_tasks();
 is(

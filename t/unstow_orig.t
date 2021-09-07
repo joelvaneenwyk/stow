@@ -22,7 +22,6 @@
 use strict;
 use warnings;
 
-use File::Spec qw(make_path);
 use Test::More tests => 41;
 use Test::Output;
 use English qw(-no_match_vars);
