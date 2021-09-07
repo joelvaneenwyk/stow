@@ -68,6 +68,12 @@ jobs:
         run: |
           prove -I t/ -I bin/ -I lib/ --formatter TAP::Formatter::JUnit --verbose --normalize --parse t/ | tee test_results_ubuntu.xml
 
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
       - name: Upload Unit Test Results
         if: always()
         uses: actions/upload-artifact@v2
