@@ -23,7 +23,7 @@ use strict;
 use warnings;
 
 
-use Test::More tests => $^O eq 'MSWin32' ? 5 : 6;
+use Test::More tests => 6;
 use English qw(-no_match_vars);
 
 use Stow::Util qw(set_debug_level);
@@ -109,7 +109,10 @@ is(
     '../stow/dotfiles/dot-',
     => 'processed dotfile'
 );
-if ($^O ne 'MSWin32') {
+
+SKIP: {
+    skip 'Windows does not support trailing dot characters in path', 1 if $^O eq 'MSWin32';
+
     is(
         normalize_path(get_link_target('dot-.')),
         '../stow/dotfiles/dot-.',
