@@ -41,8 +41,10 @@ echo PERL5LIB: '!PERL5LIB!'
 
 call :edit "%STOW_ROOT%\bin\chkstow"
 call :edit "%STOW_ROOT%\bin\stow"
-call :edit "%STOW_ROOT%\lib\Stow.pm"
 call :edit "%STOW_ROOT%\lib\Stow\Util.pm"
+
+call :edit "%STOW_ROOT%\lib\Stow.pm"
+type "%STOW_ROOT%\default-ignore-list" >> "%STOW_ROOT%\lib\Stow.pm"
 
 call "%~dp0install-dependencies.bat"
 perl "%STOW_ROOT%\Build.PL"
