@@ -36,7 +36,7 @@ use POSIX qw(getcwd);
 use Encode qw/encode decode/;
 use File::Spec ();
 use File::Path ();
-use File::Basename (dirname);
+use File::Basename;
 
 use base qw(Exporter);
 
