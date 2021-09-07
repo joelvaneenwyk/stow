@@ -10,6 +10,12 @@ set PERL=perl
 set PMDIR=%prefix%/perl/site/lib
 set USE_LIB_PMDIR=
 
+%PERL% --version
+if errorlevel 1 (
+    echo Invalid or missing Perl executable: '%PERL%'
+    exit /b 1
+)
+
 set _inc=0
 for /f "tokens=*" %%a in ('%PERL% -V') do (
     if "!_inc!"=="1" (
@@ -40,14 +46,18 @@ echo.
 echo PERL5LIB: '!PERL5LIB!'
 
 call :edit "%STOW_ROOT%\bin\chkstow"
+
 call :edit "%STOW_ROOT%\bin\stow"
+if not exist "%STOW_ROOT%\doc" mkdir "%STOW_ROOT%\doc"
+call pod2man --name stow --section 8 "%STOW_ROOT%\bin\stow" > "%STOW_ROOT%\doc\stow.8"
+
 call :edit "%STOW_ROOT%\lib\Stow\Util.pm"
 
 call :edit "%STOW_ROOT%\lib\Stow.pm"
 type "%STOW_ROOT%\default-ignore-list" >> "%STOW_ROOT%\lib\Stow.pm"
 
 call "%~dp0install-dependencies.bat"
-perl "%STOW_ROOT%\Build.PL"
+%PERL% "%STOW_ROOT%\Build.PL"
 call "%STOW_ROOT%\Build.bat" installdeps
 call "%STOW_ROOT%\Build.bat" build
 
@@ -58,7 +68,7 @@ exit /b 0
     set output_file=%~1
 
     :: This is more explicit and reliable than the config file trick
-    set _cmd=perl -p -e "s/\@PERL\@/$ENV{PERL}/g;" -e "s/\@VERSION\@/$ENV{VERSION}/g;" -e "s/\@USE_LIB_PMDIR\@/$ENV{USE_LIB_PMDIR}/g;" "%input_file%"
+    set _cmd=%PERL% -p -e "s/\@PERL\@/$ENV{PERL}/g;" -e "s/\@VERSION\@/$ENV{VERSION}/g;" -e "s/\@USE_LIB_PMDIR\@/$ENV{USE_LIB_PMDIR}/g;" "%input_file%"
     echo ##[cmd] %_cmd%
     %_cmd% >"%output_file%"
     echo Generated output: '%output_file%'

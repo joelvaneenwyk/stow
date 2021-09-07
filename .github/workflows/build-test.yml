@@ -46,7 +46,7 @@ jobs:
       - name: Perl Dependencies
         working-directory: ${{ github.workspace }}
         run: |
-          ./.github/install-dependencies.sh
+          ./tools/install-dependencies.sh
 
       - name: Build
         working-directory: ${{ github.workspace }}
@@ -73,6 +73,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+    - name: Run ShellCheck
+      uses: ludeeus/action-shellcheck@master
+      env:
+        SHELLCHECK_OPTS: --external-sources
+      with:
+        check_together: 'yes'
 
       - name: Upload Unit Test Results
         if: always()
@@ -125,13 +132,13 @@ jobs:
         shell: msys2 {0}
         run: |
           cd $(cygpath '${{ github.workspace }}')
-          ./.github/install-dependencies.sh
+          ./tools/install-dependencies.sh
 
       - name: MSYS2 Make Stow
         shell: msys2 {0}
         run: |
           cd $(cygpath '${{ github.workspace }}')
-          ./.github/make-stow.sh
+          ./tools/make-stow.sh
 
       - name: MSYS2 Test
         shell: msys2 {0}
@@ -166,13 +173,13 @@ jobs:
         working-directory: ${{ github.workspace }}
         shell: cmd
         run: |
-          call .github\install-dependencies.bat
+          call tools\install-dependencies.bat
 
       - name: Build
         working-directory: ${{ github.workspace }}
         shell: cmd
         run: |
-          call .github\make-stow.bat
+          call tools\make-stow.bat
           perl Build.PL
           call Build.bat installdeps
           call Build.bat build

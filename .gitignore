@@ -12,6 +12,7 @@
 /doc/version.texi
 /tmp-testing-trees/
 /_build/
+/.build/
 /_test/
 /autom4te.cache/
 /blib/

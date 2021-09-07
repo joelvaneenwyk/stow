@@ -1,6 +1,6 @@
 #!/bin/env bash
 
-./.github/install-dependencies.sh
+./tools/install-dependencies.sh
 
 # This will create 'configure' script
 autoreconf -iv

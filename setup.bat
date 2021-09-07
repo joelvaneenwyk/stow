@@ -1,2 +1,2 @@
 @echo off
-call "%~dp0.github\install-dependencies.bat"
+call "%~dp0tools\install-dependencies.bat"

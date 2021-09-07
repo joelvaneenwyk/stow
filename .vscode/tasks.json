@@ -4,9 +4,9 @@
         {
             "label": "Make Stow",
             "type": "shell",
-            "command": "./.github/make-stow.sh",
+            "command": "./tools/make-stow.sh",
             "windows": {
-                "command": ".\\.github\\make-stow.bat"
+                "command": ".\\tools\\make-stow.bat"
             },
             "group": "build",
             "presentation": {

@@ -135,7 +135,7 @@ jobs:
         shell: msys2 {0}
         run: |
           cd $(cygpath '${{ github.workspace }}')
-          ./.github/make-stow-all.sh
+          ./tools/make-stow-all.sh
 
       - name: Build and Test
         shell: msys2 {0}

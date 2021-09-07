@@ -6,7 +6,7 @@
 
     "shellcheck.enable": true,
     "shellcheck.enableQuickFix": true,
-    "shellcheck.customArgs": ["-x"],
+    "shellcheck.customArgs": ["--external-sources"],
     "shellcheck.useWorkspaceRootAsCwd": true,
 
     "files.exclude": {
@@ -160,6 +160,7 @@
         "libitk",
         "libssl",
         "libtool",
+        "ludeeus",
         "maintainership",
         "makeinfo",
         "Manh",
@@ -186,10 +187,12 @@
         "setchapternewpage",
         "setfilename",
         "settitle",
+        "shellcheck",
         "shogo",
         "siteprefix",
         "Slaven",
         "smallbook",
+        "sonarcloud",
         "Stefano",
         "stowrc",
         "subdirs",

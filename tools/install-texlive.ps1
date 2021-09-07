@@ -1,10 +1,11 @@
 Function Get-TexLive {
     Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
 
-    $tempFolder = "$PSScriptRoot\..\_build"
+    $tempFolder = "$PSScriptRoot\..\.build"
     if ( -not(Test-Path -Path "$tempFolder") ) {
         New-Item -ItemType directory -Path "$tempFolder" | Out-Null
     }
+    $tempFolder = Resolve-Path -Path "$tempFolder"
 
     try {
         $tempTexTargetFolder = "$tempFolder\texlive-install"
