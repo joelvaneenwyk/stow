@@ -109,11 +109,13 @@ is(
     '../stow/dotfiles/dot-',
     => 'processed dotfile'
 );
-is(
-    normalize_path(get_link_target('dot-.')),
-    '../stow/dotfiles/dot-.',
-    => 'unprocessed dotfile'
-);
+if ($^O ne 'MSWin32') {
+    is(
+        normalize_path(get_link_target('dot-.')),
+        '../stow/dotfiles/dot-.',
+        => 'unprocessed dotfile'
+    );
+}
 
 #
 # simple unstow scenario

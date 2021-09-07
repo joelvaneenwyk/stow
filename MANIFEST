@@ -7,6 +7,7 @@ bin/chkstow
 bin/chkstow.in
 bin/stow
 bin/stow.in
+_proverc
 .proverc
 Build.PL
 ChangeLog
