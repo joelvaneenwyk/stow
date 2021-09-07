@@ -57,7 +57,7 @@ use POSIX qw(getcwd);
 
 use Stow::Util qw(set_debug_level debug error set_test_mode
                   make_symlink get_link_target is_symlink remove_link remove_tree
-                  normalize_path join_paths restore_cwd canon_path parent adjust_dotfile);
+                  make_path normalize_path join_paths restore_cwd canon_path parent adjust_dotfile);
 
 our $ProgramName = 'stow';
 our $VERSION = '@VERSION@';
@@ -1501,7 +1501,7 @@ sub process_task {
 
     if ($task->{action} eq 'create') {
         if ($task->{type} eq 'dir') {
-            mkdir($task->{path}, 0777)
+            make_path($task->{path}, 0777)
                 or error("Could not create directory: $task->{path} ($!)");
             return;
         }
@@ -1789,7 +1789,7 @@ sub read_a_link {
     }
     elsif (is_symlink($path)) {
         debug(4, "  read_a_link($path): real link");
-        my $target = get_link_target($path) or error("Could not read link: $path ($!)");
+        my $target = normalize_path(get_link_target($path)) or error("Could not read link: $path ($!)");
         return $target;
     }
     internal_error("read_a_link() passed a non link path: $path\n");
@@ -1914,7 +1914,8 @@ sub do_unlink {
     # Remove the link
     debug(1, "UNLINK: $file");
 
-    my $source = get_link_target($file) or error("could not get link target $file ($!)");
+    my $source = normalize_path(get_link_target($file))
+        or error("could not get link target $file ($!)");
 
     my $task = {
         action  => 'remove',

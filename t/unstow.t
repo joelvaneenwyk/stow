@@ -145,7 +145,7 @@ $stow->plan_unstow('pkg6b');
 ok(
     $stow->get_conflict_count == 0 &&
     is_symlink('bin6/file6') &&
-    get_link_target('bin6/file6') eq '../../stow/pkg6a/bin6/file6'
+    normalize_path(get_link_target('bin6/file6')) eq '../../stow/pkg6a/bin6/file6'
     => q(ignore existing link that points to a different package)
 );
 
@@ -164,7 +164,11 @@ $stow->plan_unstow('pkg7b');
 is($stow->get_tasks, 0, 'no tasks to process when unstowing pkg7b');
 is($stow->get_conflict_count, 0, 'expect no conflicts unlinking nodes under the stow directory');
 ok(is_symlink('stow/pkg7b'), q(don't unlink any nodes under the stow directory));
-is(get_link_target('stow/pkg7b'), 'pkg7a/stow/pkg7b', 'relative symlink paths should match');
+is(
+    normalize_path(get_link_target('stow/pkg7b')),
+    'pkg7a/stow/pkg7b',
+    'relative symlink paths should match'
+);
 
 
 #
@@ -185,7 +189,11 @@ $stow->plan_unstow('pkg8a');
 is($stow->get_tasks, 0, 'no tasks to process when unstowing pkg8a');
 is($stow->get_conflict_count, 0, 'expect no conflicts unlinking nodes under the stow directory');
 ok(is_symlink('stow2/pkg8b'), q(don't unlink any nodes under the stow directory));
-is(get_link_target('stow2/pkg8b'), '../stow/pkg8a/stow2/pkg8b', 'relative symlink paths should match');
+is(
+    normalize_path(get_link_target('stow2/pkg8b')),
+    '../stow/pkg8a/stow2/pkg8b',
+    'relative symlink paths should match'
+);
 like($stderr,
      qr/WARNING: skipping protected directory stow2/
      => "unstowing from ourself should skip stow");
@@ -234,7 +242,7 @@ $stow->plan_unstow('pkg10c');
 is($stow->get_tasks, 0, 'no tasks to process when unstowing pkg10c');
 ok(
     $stow->get_conflict_count == 0 &&
-    get_link_target('man10/man1/file10a.1') eq '../../../stow/pkg10a/man10/man1/file10a.1'
+    normalize_path(get_link_target('man10/man1/file10a.1')) eq '../../../stow/pkg10a/man10/man1/file10a.1'
     => 'defer to existing documentation files'
 );
 
@@ -274,7 +282,7 @@ ok(
 #
 
 eval { remove_dir("$TEST_DIR/target"); };
-mkdir("$TEST_DIR/target");
+make_path("$TEST_DIR/target");
 
 $stow = new_Stow();
 $stow->plan_unstow('pkg12');

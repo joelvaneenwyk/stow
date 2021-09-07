@@ -24,10 +24,14 @@ use warnings;
 
 use testutil;
 
-use Test::More tests => 6;
+use Test::More tests => $^O eq 'MSWin32' ? 5 : 6;
 use English qw(-no_match_vars);
 
+use Stow::Util qw(set_debug_level);
+
 use testutil;
+
+set_debug_level(5);
 
 init_test_dirs();
 cd("$TEST_DIR/target");
@@ -96,8 +100,12 @@ $stow = new_Stow(dir => '../stow', dotfiles => 1);
 make_path('../stow/dotfiles');
 make_file('../stow/dotfiles/dot-');
 
-make_path('../stow/dotfiles/dot-.');
-make_file('../stow/dotfiles/dot-./foo');
+# Not supported on Windows since long path is not supported which is required
+# for non-standard characters at the end of a folder e.g., '.' (dot)
+if (! $^O eq 'MSWin32') {
+    make_path('../stow/dotfiles/dot-.');
+    make_file('../stow/dotfiles/dot-./foo');
+}
 
 $stow->plan_stow('dotfiles');
 $stow->process_tasks();
@@ -126,6 +134,7 @@ $stow->plan_unstow('dotfiles');
 $stow->process_tasks();
 ok(
     $stow->get_conflict_count == 0 &&
-    -f '../stow/dotfiles/dot-bar' && ! -e '.bar'
+    -f '../stow/dotfiles/dot-bar' &&
+    ! -e '.bar'
     => 'unstow a simple dotfile'
 );

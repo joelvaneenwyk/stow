@@ -131,7 +131,8 @@ $stow->plan_unstow('pkg5');
 #    => q(existing link not owned by stow)
 #);
 ok(
-    is_symlink('bin5') && get_link_target('bin5') eq '../not-stow'
+    is_symlink('bin5') &&
+    normalize_path(get_link_target('bin5')) eq '../not-stow'
     => q(existing link not owned by stow)
 );
 
@@ -152,7 +153,7 @@ $stow->plan_unstow('pkg6b');
 ok(
     $stow->get_conflict_count == 0 &&
     is_symlink('bin6/file6') &&
-    get_link_target('bin6/file6') eq '../../stow/pkg6a/bin6/file6'
+    normalize_path(get_link_target('bin6/file6')) eq '../../stow/pkg6a/bin6/file6'
     => q(ignore existing link that points to a different package)
 );
 
@@ -172,7 +173,11 @@ $stow->plan_unstow('pkg7b');
 is($stow->get_tasks, 0, 'no tasks to process when unstowing pkg7b');
 is($stow->get_conflict_count, 0, 'expect no conflicts unlinking nodes under the stow directory');
 ok(is_symlink('stow/pkg7b'), q(don't unlink any nodes under the stow directory));
-is(get_link_target('stow/pkg7b'), 'pkg7a/stow/pkg7b', 'relative symlink paths should match');
+is(
+    normalize_path(get_link_target('stow/pkg7b')),
+    'pkg7a/stow/pkg7b',
+    'relative symlink paths should match'
+);
 like($stderr,
      qr/WARNING: skipping target which was current stow directory stow/
      => "warn when unstowing from ourself");
@@ -196,7 +201,11 @@ $stow->plan_unstow('pkg8a');
 is($stow->get_tasks, 0, 'no tasks to process when unstowing pkg8a');
 is($stow->get_conflict_count, 0, 'expect no conflicts unlinking nodes under the stow directory');
 ok(is_symlink('stow2/pkg8b'), q(don't unlink any nodes under the stow directory));
-is(get_link_target('stow2/pkg8b'), '../stow/pkg8a/stow2/pkg8b', 'relative symlink paths should match');
+is(
+    normalize_path(get_link_target('stow2/pkg8b')),
+    '../stow/pkg8a/stow2/pkg8b',
+    'relative symlink paths should match'
+);
 like($stderr,
      qr/WARNING: skipping target which was current stow directory stow/
      => "warn when skipping unstowing");
@@ -251,7 +260,6 @@ make_path('../stow/pkg10b/man10/man1');
 make_file('../stow/pkg10b/man10/man1/file10b.1');
 make_link('man10/man1/file10b.1'  => '../../../stow/pkg10b/man10/man1/file10b.1');
 
-
 make_path('../stow/pkg10c/man10/man1');
 make_file('../stow/pkg10c/man10/man1/file10a.1');
 capture_stderr();
@@ -259,7 +267,7 @@ $stow->plan_unstow('pkg10c');
 is($stow->get_tasks, 0, 'no tasks to process when unstowing pkg10c');
 ok(
     $stow->get_conflict_count == 0 &&
-    get_link_target('man10/man1/file10a.1') eq '../../../stow/pkg10a/man10/man1/file10a.1'
+    normalize_path(get_link_target('man10/man1/file10a.1')) eq '../../../stow/pkg10a/man10/man1/file10a.1'
     => 'defer to existing documentation files'
 );
 check_protected_dirs_skipped();
@@ -304,7 +312,7 @@ check_protected_dirs_skipped();
 #
 
 eval { remove_dir("$TEST_DIR/target"); };
-mkdir("$TEST_DIR/target");
+make_path("$TEST_DIR/target");
 
 $stow = new_compat_Stow();
 capture_stderr();

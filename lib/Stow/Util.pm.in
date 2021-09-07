@@ -33,15 +33,16 @@ use strict;
 use warnings;
 
 use POSIX qw(getcwd);
-use File::Spec;
 use Encode qw/encode decode/;
+use File::Spec;
 use File::Path;
+use File::Basename;
 
 use base qw(Exporter);
 
 our @EXPORT_OK = qw(
     error debug set_debug_level set_test_mode
-    join_paths parent canon_path normalize_path restore_cwd adjust_dotfile
+    make_path join_paths parent canon_path normalize_path restore_cwd adjust_dotfile
     get_link_target is_symlink make_symlink remove_link remove_tree
 );
 
@@ -212,7 +213,7 @@ sub remove_link {
         if ($^O eq 'MSWin32') {
             my $abs_path = File::Spec->rel2abs($path);
 
-            if (-d $path) {
+            if (is_directory($path)) {
                 rmdir $path
                     or die "could not remove directory link: $path ($!)\n";
             }
@@ -227,6 +228,12 @@ sub remove_link {
     }
 
     return 1;
+}
+
+sub is_directory {
+    my ($dir) = @_;
+    $dir = get_absolute_path($dir);
+    return -d $dir;
 }
 
 #===== SUBROUTINE ===========================================================
@@ -256,7 +263,7 @@ sub remove_tree {
             if (is_symlink($path)) {
                 remove_link($path);
             }
-            elsif (-d $path) {
+            elsif (is_directory($path)) {
                 remove_tree($path);
             }
             else {
@@ -360,7 +367,7 @@ sub adjust_dotfile {
     my ($target) = @_;
 
     my @result = ();
-    for my $part (split m{/+}, $target) {
+    for my $part (split m{/+}, normalize_path($target)) {
         if (($part ne "dot-") && ($part ne "dot-.")) {
             $part =~ s/^dot-/./;
         }
@@ -417,10 +424,20 @@ sub make_symlink_windows {
     my $result = 1;
 
     if (File::Spec->VERSION < 3.8 && $^O eq 'MSWin32') {
+        my $abs_newfile = File::Spec->rel2abs($newfile);
+        my $newfile_container = dirname($abs_newfile);
+
+        my $abs_oldfile = File::Spec->rel2abs($oldfile, $newfile_container);
+        my $oldfile_container = dirname($abs_oldfile);
+
         $oldfile = old_in( $oldfile );
         $newfile = new_in( $newfile );
         #print "$oldfile -> $newfile\n";
-        $result = 1 & CreateSymbolicLink( _to($newfile), _to($oldfile), -d $oldfile ? 1 : 0 );
+        $result = 1 & CreateSymbolicLink(
+            _to($newfile),  # from
+            _to($oldfile),  # to
+            is_directory($abs_oldfile) ? 1 : 0
+        );
 
         if ($result eq 0) {
             require Win32;
@@ -441,7 +458,7 @@ sub link_windows {
     $newfile = new_in( $newfile );
 
     # Cannot *usually* (& usefully?) create hard links to directories: Windows & Linux
-    return 0 if -d $oldfile;
+    return 0 if is_directory($oldfile);
     return 1 & CreateHardLink( _to($newfile), _to($oldfile) );
 }
 
@@ -461,6 +478,43 @@ sub readlink_windows {
     }
 
     return $result;
+}
+
+sub get_absolute_path {
+    my ($path) = @_;
+    my $abs_target = File::Spec->rel2abs($path);
+    if ($^O eq 'MSWin32') {
+        $abs_target = "\\\\?\\$abs_target\\";
+    }
+    return $abs_target;
+}
+
+sub make_path {
+    my ($path, $mode) = @_;
+
+    if (not defined $mode) {
+        $mode = 0777;
+    }
+
+    my $current = normalize_path(File::Spec->rel2abs($path));
+    my $abs_path = get_absolute_path($current);
+    my @paths = ();
+    while (! is_directory($current)) {
+        my $parent = parent($current);
+        last if (! length $parent);
+
+        push @paths, $abs_path;
+        $current = $parent;
+        $abs_path = get_absolute_path($current);
+    }
+
+    while (@paths) {
+        my $path_to_make = pop @paths;
+        File::Path::make_path $path_to_make, $mode
+            or die "Failed to create path: $path_to_make";
+    }
+
+    return 1;
 }
 
 # This is `readlink` but with support for Windows

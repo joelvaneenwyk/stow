@@ -32,7 +32,7 @@ use Test::More;
 
 use Stow;
 use Stow::Util qw(
-    get_link_target remove_link remove_tree normalize_path
+    get_link_target remove_link remove_tree normalize_path make_path
     is_symlink make_symlink parent canon_path);
 
 use base qw(Exporter);
@@ -44,7 +44,7 @@ our @EXPORT = qw(
     cd
     new_Stow new_compat_Stow
     make_path make_link make_invalid_link make_file
-    remove_dir remove_file remove_link
+    remove_dir remove_file remove_tree remove_link
     cat_file get_link_target normalize_path
     is_link is_symlink is_dir_not_symlink is_nonexistent_path
     capture_stderr uncapture_stderr
@@ -55,17 +55,6 @@ our $ABS_TEST_DIR = canon_path('tmp-testing-trees');
 
 our $stderr;
 my $tied_err;
-
-sub make_path {
-    my ($path) = @_;
-
-    if ($^O eq 'MSWin32') {
-        my $abs_target = File::Spec->rel2abs($path);
-        $path = "\\\\?\\$abs_target";
-    }
-
-    return File::Path::make_path($path);
-}
 
 sub capture_stderr {
     undef $stderr;
@@ -156,7 +145,7 @@ sub make_link {
         }
     }
 
-    my $result = make_symlink $source, $target
+    my $result = make_symlink($source, $target)
         or die "could not create link $target => $source ($!)\n";
 
     if ($remove_source_tree) {
@@ -246,12 +235,15 @@ sub remove_dir {
         next NODE if $node eq '..';
 
         my $path = "$dir/$node";
-        if (
-            is_symlink($path) or
+        if (is_symlink($path)) {
+            remove_link($path);
+        }
+        elsif (
             (-f $path and -z $path) or
             $node eq $Stow::LOCAL_IGNORE_FILE
         ) {
-            unlink $path or die "cannot unlink $path ($!)\n";
+            unlink $path
+                or die "cannot unlink $path ($!)\n";
         }
         elsif (-d "$path") {
             remove_dir($path);

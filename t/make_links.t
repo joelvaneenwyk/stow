@@ -26,9 +26,12 @@ use Test::Exception;
 use Test::More tests => 5;
 use English qw(-no_match_vars);
 
-use Stow::Util qw(make_symlink);
+use File::stat;
+use Stow::Util qw(make_symlink set_debug_level);
 
 use testutil;
+
+set_debug_level(5);
 
 init_test_dirs();
 cd("$TEST_DIR/target");
