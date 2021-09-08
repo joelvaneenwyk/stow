@@ -8,7 +8,8 @@ exit /b
 :MakeStow
     setlocal EnableExtensions EnableDelayedExpansion
 
-    set STOW_ROOT=%~dp1
+    set _root=%~dp1
+    set STOW_ROOT=%_root:~0,-1%
     set VERSION=2.3.2
     set PERL=perl
     set PMDIR=%prefix%/perl/site/lib

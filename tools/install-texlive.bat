@@ -7,7 +7,10 @@ call :InstallTexLive "%~dp0..\"
 exit /b
 
 :InstallTexLive
-    set STOW_ROOT=%~dp1
+    setlocal EnableExtensions EnableDelayedExpansion
+
+    set _root=%~dp1
+    set STOW_ROOT=%_root:~0,-1%
     set BUILD_TEMP_ROOT=%STOW_ROOT%\.build
 
     set TEXLIVE_ROOT=%BUILD_TEMP_ROOT%\texlive-install

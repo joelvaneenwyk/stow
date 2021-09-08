@@ -6,7 +6,8 @@ exit /b
 :Clean
     setlocal EnableExtensions EnableDelayedExpansion
 
-    set STOW_ROOT=%~dp1
+    set _root=%~dp1
+    set STOW_ROOT=%_root:~0,-1%
     del "%STOW_ROOT%\Build" > nul 2>&1
     del "%STOW_ROOT%\Build.bat" > nul 2>&1
     del "%STOW_ROOT%\config.*" > nul 2>&1

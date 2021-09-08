@@ -10,8 +10,9 @@ exit /b
 :InstallDependencies
     setlocal EnableExtensions EnableDelayedExpansion
 
+    set _root=%~dp1
+    set STOW_ROOT=%_root:~0,-1%
     set STARTING_DIR=%CD%
-    set STOW_ROOT=%~dp1
 
     :: Already installed as part of Strawberry Perl but install/update regardless.
     call cpan -i -T App::cpanminus
