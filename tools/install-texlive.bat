@@ -35,8 +35,10 @@ exit /b
     set TEXLIVE_INSTALL_TEXMFVAR=%TEXDIR%\texmf-var
 
     set _texInstallCommand="%TEXLIVE_INSTALL%" -no-gui -portable -profile "%STOW_ROOT%\tools\install-texlive.profile"
-    if not exist "%TEXLIVE_BIN%\texi2dvi.exe" (
-        echo %_texInstallCommand%
+    if not exist "%TEXLIVE_BIN%\tex.exe" (
+        echo ##[cmd] %_texInstallCommand%
         call %_texInstallCommand%
+    ) else (
+        echo Skipped install. Tex executable already exists: '%TEXLIVE_BIN%\tex.exe'
     )
 exit /b 0

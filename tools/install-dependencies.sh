@@ -18,9 +18,11 @@ if [ -x "$(command -v apt-get)" ]; then
         gawk curl libssl-dev make patch
 elif [ -x "$(command -v pacman)" ]; then
     pacman -S --quiet --noconfirm --needed \
-        base-devel msys2-devel msys2-runtime-devel msys2-keyring \
-        git autoconf automake1.16 automake-wrapper libtool libcrypt-devel perl openssl \
-        mingw-w64-x86_64-make mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils
+        msys2-devel msys2-runtime-devel msys2-keyring \
+        base-devel git autoconf automake1.16 automake-wrapper libtool libcrypt-devel openssl \
+        mingw-w64-x86_64-make mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils \
+        mingw-w64-x86_64-perl \
+        mingw-w64-x86_64-poppler
 fi
 
 "$STOW_ROOT/tools/initialize-cpan-config.pl"

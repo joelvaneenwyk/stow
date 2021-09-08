@@ -9,7 +9,10 @@ Function Get-TexLive {
 
     try {
         $tempTexTargetFolder = "$tempFolder\texlive-install"
-        if ( -not(Test-Path -Path "$tempTexTargetFolder\install-tl-windows.bat" -PathType Leaf) ) {
+        if (Test-Path -Path "$tempTexTargetFolder\install-tl-windows.bat" -PathType Leaf) {
+            Write-Host "Installer already available: '$tempTexTargetFolder\install-tl-windows.bat'"
+        }
+        else {
             $tempTexFolder = "$tempFolder\texlive-tmp"
             $tempTexArchive = "$tempFolder\install-tl.zip"
 
