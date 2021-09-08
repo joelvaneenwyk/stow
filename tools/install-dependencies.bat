@@ -2,7 +2,7 @@
 
 setlocal EnableExtensions EnableDelayedExpansion
 
-perl -MCPAN "%~dp0initialize-cpan-config.pl"
+perl "%~dp0initialize-cpan-config.pl"
 
 :: Already installed as part of Strawberry Perl but install/update regardless.
 call cpan -i -T App::cpanminus
@@ -15,8 +15,4 @@ call cpan -i -T App::cpanminus
 ::      - mingw-w64-x86_64-gcc
 ::      - mingw-w64-x86_64-binutils
 ::
-call cpanm --install --notest ^
-    YAML Test::Output Test::More Test::Exception ^
-    CPAN::DistnameInfo Module::Build Parse::RecDescent Inline::C ^
-    Perl::LanguageServer Perl::Critic Perl::Tidy ^
-    Devel::Cover::Report::Coveralls TAP::Formatter::JUnit
+call cpanm --installdeps --sudo --notest "%~dp0..\"

@@ -23,13 +23,10 @@ elif [ -x "$(command -v pacman)" ]; then
         mingw-w64-x86_64-make mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils
 fi
 
-_sudo perl -MCPAN "$STOW_ROOT/tools/initialize-cpan-config.pl"
+"$STOW_ROOT/tools/initialize-cpan-config.pl"
 
 if [ ! -x "$(command -v cpanm)" ]; then
     _sudo cpan -i -T App::cpanminus
 fi
 
-_sudo cpanm --install --notest \
-    YAML Test::Output Test::More Test::Exception \
-    CPAN::DistnameInfo Module::Build Parse::RecDescent Inline::C \
-    Devel::Cover::Report::Coveralls TAP::Formatter::JUnit
+_sudo cpanm --installdeps --notest "$STOW_ROOT"
