@@ -1,6 +1,6 @@
 @echo off
 
-powershell -Command "Set-ExecutionPolicy RemoteSigned -scope CurrentUser;"
+powershell -NoLogo -NoProfile -Command "Set-ExecutionPolicy RemoteSigned -scope CurrentUser;"
 powershell -NoLogo -NoProfile -File "%~dp0install-texlive.ps1"
 
 call :InstallTexLive "%~dp0..\"
