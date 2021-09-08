@@ -1,3 +1,5 @@
+#!/usr/bin/perl
+
 my $config = 'CPAN::HandleConfig';
 $config->load(doit => 1, autoconfig => 1);
 $config->edit(prerequisites_policy => 'follow');
