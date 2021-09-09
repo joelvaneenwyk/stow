@@ -9,6 +9,11 @@ function make_docs() {
         TEXI2DVI_USE_RECORDER=yes texi2dvi -I . -I doc/ --pdf --batch -o doc/manual.pdf ./doc/stow.texi
 }
 
+TEXINPUTS=doc/stow.texi doc/version.texi
+MAKEINFO='sh automake/missing makeinfo -I doc'
+texi2dvi --pdf --batch -o doc/manual.pdf doc/stow.texi
+exit
+
 # shellcheck source=./tools/install-dependencies.sh
 . "$STOW_ROOT/tools/install-dependencies.sh"
 
