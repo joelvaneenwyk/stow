@@ -1,0 +1,3 @@
+[submodule "tools/texinfo"]
+	path = tools/texinfo
+	url = https://github.com/joelvaneenwyk/texinfo

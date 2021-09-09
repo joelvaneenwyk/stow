@@ -35,7 +35,7 @@ export PATH=.:$PATH
 MAKEINFO=./automake/missing makeinfo -I doc/ -o doc/ doc/stow.texi
 
 # -E --debug
-~/Projects/texinfo/util/texi2dvi -E --verbose --pdf -I ./doc/ --language=texinfo -o ./doc/manual.pdf doc/stow.texi
+./tools/texinfo/util/texi2dvi -E --verbose --pdf -I ./doc/ --language=texinfo -o ./doc/manual.pdf doc/stow.texi
 #texi2dvi --verbose --pdf -I doc/ --language=texinfo -o doc/manual.pdf doc/stow.texi
 #autoreconf -iv
 #./configure --prefix="${siteprefix:-}" && make doc/stow.pdf
