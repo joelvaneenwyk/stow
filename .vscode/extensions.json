@@ -1,5 +1,6 @@
 {
     "recommendations": [
-        "maelvalais.autoconf"
+        "maelvalais.autoconf",
+        "james-yu.latex-workshop"
     ]
 }
