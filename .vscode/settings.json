@@ -84,6 +84,9 @@
             "icon": "terminal-bash"
         }
     },
+    "vscode-nmake-tools.workspaceBuildDirectories": [
+        "c:\\Users\\jovaneen\\Projects\\stow"
+    ],
     "cSpell.ignorePaths": [
         "package-lock.json",
         "node_modules",
