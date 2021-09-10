@@ -86,6 +86,8 @@
 ^doc/stamp-vti$
 ^doc/HOWTO-RELEASE$
 
+\btools/texinfo/\b
+
 # Avoid test files
 tmp-testing-trees
 .travis.yml
