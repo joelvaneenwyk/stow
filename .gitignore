@@ -31,6 +31,9 @@ configure~
 /doc/manual.texi
 /doc/stow.pdf
 /doc/stow.8
+/doc/stow.toc
+/doc/stow.aux
+/doc/stow.cp
 /lib/*.pm
 /lib/Stow/*.pm
 /lib/Stow/Util/*.pm

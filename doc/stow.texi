@@ -1,4 +1,4 @@
-\input texinfo @c -*- texinfo -*-
+\input ./doc/texinfo.tex @c -*- texinfo -*-
 @c %**start of header
 @setfilename stow.info
 @settitle Stow
@@ -8,7 +8,7 @@
 @c @footnotestyle separate
 @c %**end of header
 
-@include version.texi
+@include ./doc/version.texi
 
 @ifinfo
 @end ifinfo
@@ -528,7 +528,7 @@ built-in default ignore list, which serves as a useful example of the
 format of these ignore list files:
 
 @example
-@verbatiminclude default-ignore-list
+@verbatiminclude ./default-ignore-list
 @end example
 
 Stow first iterates through the chosen ignore list (built-in, global,
