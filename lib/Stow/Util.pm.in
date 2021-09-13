@@ -38,6 +38,8 @@ use File::Spec ();
 use File::Path ();
 use File::Basename;
 
+use constant IS_WIN32 => $^O eq 'MSWin32';
+
 use base qw(Exporter);
 
 our @EXPORT_OK = qw(
@@ -157,7 +159,7 @@ sub make_symlink {
     my ($oldfile, $newfile) = @_;
     my $result;
 
-    if ($^O eq 'MSWin32') {
+    if (IS_WIN32) {
         $result = make_symlink_windows($oldfile, $newfile);
     } else {
         $result = symlink($oldfile, $newfile);
@@ -210,7 +212,7 @@ sub remove_link {
     my ($path) = @_;
 
     if (is_symlink($path)) {
-        if ($^O eq 'MSWin32') {
+        if (IS_WIN32) {
             my $abs_path = File::Spec->rel2abs($path);
 
             if (is_directory($path)) {
@@ -249,7 +251,7 @@ sub remove_tree {
     if (is_symlink($dir)) {
         remove_link($dir);
     }
-    elsif (-e $dir && $^O eq 'MSWin32') {
+    elsif (-e $dir && IS_WIN32) {
         opendir my $DIR, $dir or die "cannot read directory: $dir ($!)\n";
         my @listing = readdir $DIR;
         closedir $DIR;
@@ -351,7 +353,7 @@ sub normalize_path {
     my ($path) = @_;
     my $normalized = $path;
 
-    if ($^O eq 'msys' || $^O eq 'MSWin32') {
+    if ($^O eq 'msys' || IS_WIN32) {
         $normalized =~ s#\\#/#g;
     }
 
@@ -423,7 +425,7 @@ sub make_symlink_windows {
     my ($oldfile, $newfile) = @_;
     my $result = 1;
 
-    if (File::Spec->VERSION < 3.8 && $^O eq 'MSWin32') {
+    if (File::Spec->VERSION < 3.8 && IS_WIN32) {
         my $abs_newfile = File::Spec->rel2abs($newfile);
         my $newfile_container = dirname($abs_newfile);
 
@@ -483,7 +485,7 @@ sub readlink_windows {
 sub get_absolute_path {
     my ($path) = @_;
     my $abs_target = File::Spec->rel2abs($path);
-    if ($^O eq 'MSWin32') {
+    if (IS_WIN32) {
         $abs_target = "\\\\?\\$abs_target\\";
     }
     return $abs_target;
@@ -522,7 +524,7 @@ sub get_link_target {
     my ($path) = @_;
     my $result;
 
-    if ($^O eq 'MSWin32') {
+    if (IS_WIN32) {
         $result = readlink_windows($path);
     } else {
         $result = readlink($path);
@@ -562,7 +564,7 @@ sub is_symlink {
     my ( $newfile ) = @_;
     my $result;
 
-    if ($^O eq 'MSWin32') {
+    if (IS_WIN32) {
         $newfile = new_in( $newfile );
         $result = 1 & ReadLink( _to($newfile), my $oldfile );
     } else {

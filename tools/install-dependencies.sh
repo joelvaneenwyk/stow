@@ -28,7 +28,11 @@ fi
 "$STOW_ROOT/tools/initialize-cpan-config.pl"
 
 if [ ! -x "$(command -v cpanm)" ]; then
-    _sudo cpan -i -T App::cpanminus
+    if [ -x "$(command -v curl)" ]; then
+        curl -L https://cpanmin.us | perl - App::cpanminus
+    else
+        _sudo cpan -i -T App::cpanminus
+    fi
 fi
 
 _sudo cpanm --installdeps --notest "$STOW_ROOT"
