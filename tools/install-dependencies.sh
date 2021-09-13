@@ -35,4 +35,4 @@ if [ ! -x "$(command -v cpanm)" ]; then
     fi
 fi
 
-_sudo cpanm --installdeps --notest "$STOW_ROOT"
+cpanm --sudo --installdeps --notest "$STOW_ROOT"
