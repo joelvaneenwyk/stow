@@ -3,12 +3,13 @@ requires 'perl', '>=5.006';
 use constant IS_WIN32 => $^O eq 'MSWin32';
 
 requires 'Carp';
-requires 'Parse::RecDescent';
 requires 'Inline::C';
 requires 'IO::File';
 requires 'IO::Scalar';
+requires 'Parse::RecDescent';
 requires 'YAML';
 requires 'CPAN::DistnameInfo';
+requires 'Module::Build';
 
 if (IS_WIN32) {
     requires 'Win32::Mutex';
@@ -16,18 +17,12 @@ if (IS_WIN32) {
 
 recommends 'App::cpanminus';
 
-on 'configure' => sub {
-    requires 'Module::Build';
-    requires 'Inline::C';
-    requires 'Parse::RecDescent';
-};
-
 on 'test' => sub {
     requires 'Test::Output';
     requires 'Test::More';
     requires 'Test::Exception';
-    requires 'Devel::Cover::Report::Coveralls';
     requires 'TAP::Formatter::JUnit';
+    requires 'Devel::Cover::Report::Coveralls';
 };
 
 on 'develop' => sub {
