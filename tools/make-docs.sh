@@ -23,6 +23,7 @@ function _remove_intermediate_files() {
     rm -f "$STOW_ROOT/configure" >/dev/null 2>&1
     rm -f "$STOW_ROOT/ChangeLog" >/dev/null 2>&1
     rm -f "$STOW_ROOT/Build" >/dev/null 2>&1
+    rm -f "$STOW_ROOT/Build.bat" >/dev/null 2>&1
     rm -f "$STOW_ROOT"/stow-* >/dev/null 2>&1
     rm -f "$STOW_ROOT/stow.log" >/dev/null 2>&1
     rm -f "$STOW_ROOT"/stow.* >/dev/null 2>&1
