@@ -10,7 +10,7 @@ requires 'IO::Scalar';
 requires 'YAML';
 requires 'CPAN::DistnameInfo';
 
-if ($IS_WIN32) {
+if (IS_WIN32) {
     requires 'Win32::Mutex';
 }
 
