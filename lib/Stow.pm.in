@@ -749,7 +749,8 @@ sub unstow_contents {
 
     my $cwd = getcwd();
     my $msg = "Unstowing from $target (cwd=$cwd, stow dir=$self->{stow_path})";
-    $msg =~ s!$ENV{HOME}/!~/!g;
+    my $home = normalize_path($ENV{HOME});
+    $msg =~ s!$home/!~/!g;
     debug(3, $msg);
     debug(4, "  source path is $path");
     # We traverse the source tree not the target tree, so $path must exist.
