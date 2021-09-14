@@ -32,6 +32,7 @@ pmstowdir = $(pmdir)/Stow
 pm_DATA = lib/Stow.pm
 pmstow_DATA = lib/Stow/Util.pm
 
+TEXINFO_TEX = doc/texinfo.tex
 export TEXI2DVI_BUILD_MODE = clean
 AM_MAKEINFOFLAGS = -I $(srcdir)
 
@@ -94,10 +95,11 @@ EXTRA_DIST = \
 	bin/stow.in bin/chkstow.in lib/Stow.pm.in lib/Stow/Util.pm.in \
 	doc/manual-split \
 	$(TESTS) t/testutil.pm \
+	$(TEXINFO_TEX) \
 	$(DEFAULT_IGNORE_LIST) \
 	$(CPAN_FILES)
 CLEANFILES = $(bin_SCRIPTS) $(pm_DATA) $(pmstow_DATA)
-DISTCLEANFILES = Makefile.in configure Build Build.bat MYMETA.*
+DISTCLEANFILES = Makefile.in configure Build MYMETA.*
 MAINTAINERCLEANFILES = $(dist_man_MANS) $(HTML) $(PDF) ChangeLog
 
 # clean up auto-generated files
@@ -232,14 +234,14 @@ $(HTML): $(doc_deps)
 		-c USE_TITLEPAGE_FOR_TITLE=1 --no-split -o $@ \
 		`test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi
 
-$(PDF): $(doc_deps)
+$(PDF): $(doc_deps) $(HTML)
 	TEXINPUTS="$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
 	MAKEINFO='$(MAKEINFO) $(AM_MAKEINFOFLAGS) $(MAKEINFOFLAGS) -I doc -I $(srcdir)/doc' \
 	$(TEXI2PDF) -o $@ `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi
 
-doc/manual-split: $(doc_deps)
+doc/manual-split: $(doc_deps) $(PDF)
 	rm -rf $@.new
-	if $(MAKEINFOHTML) $(AM_MAKEINFOHTMLFLAGS) $(MAKEINFOFLAGS) -I doc -I $(srcdir)/doc \
+	if $(MAKEINFOHTML) $(AM_MAKEINFOHTMLFLAGS) $(MAKEINFOFLAGS) -I $(srcdir) -I doc -I $(srcdir)/doc \
 	 -o $@.new `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi; \
 	then \
 	  rm -rf $@; \

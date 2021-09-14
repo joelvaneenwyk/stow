@@ -1,6 +1,10 @@
 #!/bin/env bash
 
-./tools/install-dependencies.sh
+set -e
+
+STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && pwd)"
+
+"$STOW_ROOT/tools/install-dependencies.sh"
 
 # This will create 'configure' script
 autoreconf -iv
@@ -18,7 +22,7 @@ fi
 
 # Run configure to generate 'Makefile' and then run make to create the
 # stow library and binary files e.g., 'stow', 'chkstow', etc.
-./configure --prefix="${siteprefix:-}" && make
+./configure --srcdir="$STOW_ROOT" --prefix="${siteprefix:-}" && make
 
 # This will create 'Build' or 'Build.bat' depending on platform
-perl Build.PL
+perl -I "$STOW_ROOT" -I "$STOW_ROOT/lib" "$STOW_ROOT/Build.PL"
