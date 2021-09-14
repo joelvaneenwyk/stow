@@ -40,8 +40,7 @@ jobs:
           SHELLCHECK_OPTS: --external-sources
         with:
           check_together: 'yes'
-          ignore:
-            - bin
+          ignore: bin
 
       - name: Install Dependencies
         working-directory: ${{ github.workspace }}
