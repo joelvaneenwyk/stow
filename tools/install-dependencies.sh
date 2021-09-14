@@ -36,6 +36,6 @@ if [ ! -x "$(command -v cpanm)" ]; then
 fi
 
 (
-    cd "$STOW_ROOT"
+    cd "$STOW_ROOT" || true
     cpanm --installdeps --notest .
 )

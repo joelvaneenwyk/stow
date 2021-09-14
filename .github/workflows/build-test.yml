@@ -39,7 +39,6 @@ jobs:
         env:
           SHELLCHECK_OPTS: --external-sources
         with:
-          check_together: 'yes'
           ignore: bin
 
       - name: Install Dependencies
