@@ -32,7 +32,7 @@ lib/Stow/Util.pm
 lib/Stow/Util.pm.in
 Makefile.am
 Makefile.in
-MANIFEST			This list of files
+MANIFEST This list of files
 MANIFEST.SKIP
 NEWS
 README.md
@@ -63,9 +63,14 @@ tools/install-texlive.bat
 tools/install-texlive.profile
 tools/install-texlive.ps1
 tools/make-clean.bat
+tools/make-clean.sh
 tools/make-stow.bat
 tools/make-stow.sh
+tools/make-stow-minimal-test.sh
+tools/make-stow-minimal.sh
 tools/make-test.bat
+tools/make-docs.bat
+tools/make-docs.sh
 THANKS
 TODO
 META.yml
