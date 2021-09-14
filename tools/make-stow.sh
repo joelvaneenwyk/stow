@@ -15,9 +15,10 @@ function edit() {
 function make_stow() {
     cd "$STOW_ROOT" || true
 
+    VERSION=2.3.2
+    PERL=$(which perl)
+
     if [ ! -x "$(command -v autoreconf)" ]; then
-        VERSION=2.3.2
-        PERL=/usr/bin/perl
         PMDIR=${prefix:-}/share/perl5/site_perl
 
         if ! PERL5LIB=$($PERL -V | awk '/@INC/ {p=1; next} (p==1) {print $1}' | grep "$PMDIR" | head -n 1); then

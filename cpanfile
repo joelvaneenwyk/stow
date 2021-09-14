@@ -6,10 +6,6 @@ requires 'Carp';
 requires 'Inline::C';
 requires 'IO::File';
 requires 'IO::Scalar';
-requires 'Parse::RecDescent';
-requires 'YAML';
-requires 'CPAN::DistnameInfo';
-requires 'Module::Build';
 
 if (IS_WIN32) {
     requires 'Win32::Mutex';
@@ -17,12 +13,23 @@ if (IS_WIN32) {
 
 recommends 'App::cpanminus';
 
+on 'configure' => sub {
+};
+
+on 'build' => sub {
+    requires 'Module::Build';
+    requires 'CPAN::DistnameInfo';
+};
+
 on 'test' => sub {
     requires 'Test::Output';
     requires 'Test::More';
     requires 'Test::Exception';
     requires 'TAP::Formatter::JUnit';
     requires 'Devel::Cover::Report::Coveralls';
+};
+
+on 'runtime' => sub {
 };
 
 on 'develop' => sub {
