@@ -36,7 +36,7 @@ perl "$STOW_ROOT/tools/initialize-cpan-config.pl"
 
 if [ ! -x "$(command -v cpanm)" ]; then
     if [ -x "$(command -v curl)" ]; then
-        curl -L https://cpanmin.us | perl - --sudo App::cpanminus
+        curl -L https://cpanmin.us | perl - --sudo --verbose App::cpanminus
     else
         _sudo cpan -i -T App::cpanminus
     fi
