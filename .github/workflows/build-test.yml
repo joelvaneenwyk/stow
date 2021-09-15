@@ -196,6 +196,13 @@ jobs:
           call cpanm --installdeps --notest .
           prove -I t/ -I bin/ -I lib/ --formatter TAP::Formatter::JUnit --timer --verbose --normalize --parse t/ > test_results_windows.xml
 
+      - uses: actions/upload-artifact@v2
+        with:
+          name: cpanm-logs
+
+          # https://github.com/msys2/setup-msys2/blob/master/main.js
+          path: C:\msys64\home\runneradmin\.cpanm\work\**\*.log
+
       - name: Upload Unit Test Results
         if: always()
         uses: actions/upload-artifact@v2

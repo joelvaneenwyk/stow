@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && cd ../ && pwd)"
 
 function _sudo {
@@ -36,13 +38,18 @@ perl "$STOW_ROOT/tools/initialize-cpan-config.pl"
 
 if [ ! -x "$(command -v cpanm)" ]; then
     if [ -x "$(command -v curl)" ]; then
-        curl -L https://cpanmin.us | perl - --sudo --verbose App::cpanminus
+        curl -L --silent https://cpanmin.us | perl - --sudo --verbose App::cpanminus | awk '{ print "[stow.cpanm.install]", $0 }'
     else
-        _sudo cpan -i -T App::cpanminus
+        _sudo cpan -i -T App::cpanminus | awk '{ print "[stow.cpan.install]", $0 }'
     fi
 fi
 
-(
-    cd "$STOW_ROOT" || true
-    cpanm --installdeps --notest .
-)
+if [ -x "$(command -v cpanm)" ]; then
+    (
+        cd "$STOW_ROOT" || true
+        cpanm --installdeps --notest .
+    )
+else
+    echo "ERROR: 'cpanm' not found."
+    exit 11
+fi
