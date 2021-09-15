@@ -17,6 +17,7 @@ jobs:
   build-test-linux:
     name: "Linux: Build and Test"
     runs-on: ubuntu-latest
+    if: always()
 
     env:
       DEBIAN_FRONTEND: noninteractive
@@ -91,8 +92,9 @@ jobs:
 
   build-test-msys2:
     name: "MSYS2: Build and Test"
-    needs: build-test-linux
     runs-on: windows-latest
+    if: always()
+
     env:
       # https://cygwin.com/cygwin-ug-net/using-cygwinenv.html
       MSYS: "winsymlinks:native"
@@ -157,8 +159,8 @@ jobs:
 
   build-test-windows:
     name: "Windows: Build and Test"
-    needs: build-test-linux
     runs-on: windows-latest
+    if: always()
 
     steps:
       - uses: actions/checkout@v2
