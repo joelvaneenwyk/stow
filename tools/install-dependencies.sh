@@ -29,7 +29,7 @@ elif [ -x "$(command -v pacman)" ]; then
         msys2-devel msys2-runtime-devel msys2-keyring \
         curl wget \
         base-devel git autoconf automake1.16 automake-wrapper libtool libcrypt-devel openssl \
-        mingw-w64-x86_64-make mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils \
+        mingw-w64-x86_64-make mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils mingw-w64-i686-gcc \
         mingw-w64-x86_64-perl \
         mingw-w64-x86_64-poppler
     echo "CPANM: '$(cygpath --windows ${HOME:-}/.cpanm/work/)'"
@@ -49,8 +49,8 @@ fi
 
 if [ ! -x "$(command -v cpanm)" ]; then
     if [ -x "$(command -v curl)" ]; then
-        echo "##[cmd] curl -L --silent https://cpanmin.us | perl - --sudo --verbose App::cpanminus"
-        curl -L --silent https://cpanmin.us | perl - --sudo --verbose App::cpanminus
+        echo "##[cmd] curl -L --silent https://cpanmin.us | sudo perl - --verbose App::cpanminus"
+        curl -L --silent https://cpanmin.us | _sudo perl - --verbose App::cpanminus
     else
         echo "##[cmd] sudo cpan -i -T App::cpanminus"
         _sudo cpan -i -T App::cpanminus
@@ -60,8 +60,8 @@ fi
 if [ -x "$(command -v cpanm)" ]; then
     (
         cd "$STOW_ROOT" || true
-        echo "##[cmd] cpanm --sudo --installdeps --notest ."
-        cpanm --sudo --installdeps --notest .
+        echo "##[cmd] sudo cpanm --installdeps --notest ."
+        _sudo cpanm --installdeps --notest .
     )
 else
     echo "❌ ERROR: 'cpanm' not found."
