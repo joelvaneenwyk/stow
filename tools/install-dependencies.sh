@@ -34,7 +34,7 @@ elif [ -x "$(command -v pacman)" ]; then
         mingw-w64-x86_64-poppler
 fi
 
-perl "$STOW_ROOT/tools/initialize-cpan-config.pl"
+perl "$STOW_ROOT/tools/initialize-cpan-config.pl" | awk '{ print "[stow.cpan.config]", $0 }'
 
 if [ ! -x "$(command -v cpanm)" ]; then
     if [ -x "$(command -v curl)" ]; then
@@ -47,7 +47,7 @@ fi
 if [ -x "$(command -v cpanm)" ]; then
     (
         cd "$STOW_ROOT" || true
-        cpanm --installdeps --notest .
+        cpanm --sudo --installdeps --notest . | awk '{ print "[stow.cpanm.installdeps]", $0 }'
     )
 else
     echo "ERROR: 'cpanm' not found."
