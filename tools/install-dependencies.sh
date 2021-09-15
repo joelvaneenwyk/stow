@@ -32,24 +32,38 @@ elif [ -x "$(command -v pacman)" ]; then
         mingw-w64-x86_64-make mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils \
         mingw-w64-x86_64-perl \
         mingw-w64-x86_64-poppler
+    echo "CPANM: '$(cygpath --windows ${HOME:-}/.cpanm/work/)'"
 fi
 
-perl "$STOW_ROOT/tools/initialize-cpan-config.pl" | awk '{ print "[stow.cpan.config]", $0 }'
+if [ ! -f "$HOME/.cpan/CPAN/MyConfig.pm" ]; then
+    (
+        echo "yes"
+        echo ""
+        echo "no"
+        echo "exit"
+    ) | _sudo cpan -T || true
+
+    echo "##[cmd] perl $STOW_ROOT/tools/initialize-cpan-config.pl"
+    perl "$STOW_ROOT/tools/initialize-cpan-config.pl"
+fi
 
 if [ ! -x "$(command -v cpanm)" ]; then
     if [ -x "$(command -v curl)" ]; then
-        curl -L --silent https://cpanmin.us | perl - --sudo --verbose App::cpanminus | awk '{ print "[stow.cpanm.install]", $0 }'
+        echo "##[cmd] curl -L --silent https://cpanmin.us | perl - --sudo --verbose App::cpanminus"
+        curl -L --silent https://cpanmin.us | perl - --sudo --verbose App::cpanminus
     else
-        _sudo cpan -i -T App::cpanminus | awk '{ print "[stow.cpan.install]", $0 }'
+        echo "##[cmd] sudo cpan -i -T App::cpanminus"
+        _sudo cpan -i -T App::cpanminus
     fi
 fi
 
 if [ -x "$(command -v cpanm)" ]; then
     (
         cd "$STOW_ROOT" || true
-        cpanm --sudo --installdeps --notest . | awk '{ print "[stow.cpanm.installdeps]", $0 }'
+        echo "##[cmd] cpanm --sudo --installdeps --notest ."
+        cpanm --sudo --installdeps --notest .
     )
 else
-    echo "ERROR: 'cpanm' not found."
+    echo "❌ ERROR: 'cpanm' not found."
     exit 11
 fi
