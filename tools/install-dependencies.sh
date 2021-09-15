@@ -29,7 +29,7 @@ fi
 
 if [ ! -x "$(command -v cpanm)" ]; then
     if [ -x "$(command -v curl)" ]; then
-        curl -L https://cpanmin.us | perl - App::cpanminus
+        curl -L https://cpanmin.us | perl - --sudo App::cpanminus
     else
         _sudo cpan -i -T App::cpanminus
     fi
