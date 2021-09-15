@@ -79,7 +79,7 @@ jobs:
       - name: Test
         working-directory: ${{ github.workspace }}
         run: |
-          cpanm --installdeps --notest .
+          cpanm --sudo --installdeps --notest .
           prove -I t/ -I bin/ -I lib/ --formatter TAP::Formatter::JUnit --timer --verbose --normalize --parse t/ | tee test_results_ubuntu.xml
 
       - name: Upload Unit Test Results
@@ -188,11 +188,10 @@ jobs:
 
       # This will fail until symlinks are supported
       - name: Test
-        continue-on-error: true
         working-directory: ${{ github.workspace }}
         shell: cmd
         run: |
-          cpanm --installdeps --notest .
+          call cpanm --installdeps --notest .
           prove -I t/ -I bin/ -I lib/ --formatter TAP::Formatter::JUnit --timer --verbose --normalize --parse t/ > test_results_windows.xml
 
       - name: Upload Unit Test Results
