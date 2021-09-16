@@ -55,6 +55,7 @@ function make_stow() {
     edit "$STOW_ROOT/lib/Stow/Util.pm"
     echo "✔ Generated Stow binaries and libraries."
 
+    echo "##[cmd] perl -I $STOW_ROOT/lib -I $STOW_ROOT/bin $STOW_ROOT/bin/stow --version"
     perl -I "$STOW_ROOT/lib" -I "$STOW_ROOT/bin" "$STOW_ROOT/bin/stow" --version
 }
 
