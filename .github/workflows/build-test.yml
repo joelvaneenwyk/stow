@@ -14,8 +14,8 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-test-linux:
-    name: "Linux: Build and Test"
+  lint:
+    name: "Lint"
     runs-on: ubuntu-latest
     if: always()
 
@@ -41,6 +41,21 @@ jobs:
           SHELLCHECK_OPTS: --external-sources
         with:
           ignore: bin
+
+  build-test-linux:
+    name: "Linux: Build and Test"
+    runs-on: ubuntu-latest
+    if: always()
+
+    env:
+      DEBIAN_FRONTEND: noninteractive
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
 
       - name: Install Dependencies
         working-directory: ${{ github.workspace }}

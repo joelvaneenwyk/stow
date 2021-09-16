@@ -32,7 +32,7 @@ elif [ -x "$(command -v pacman)" ]; then
         mingw-w64-x86_64-make mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils mingw-w64-i686-gcc \
         mingw-w64-x86_64-perl \
         mingw-w64-x86_64-poppler
-    echo "CPANM: '$(cygpath --windows ${HOME:-}/.cpanm/work/)'"
+    echo "CPANM: $(cygpath --windows "${HOME:-}/.cpanm/work/")"
 fi
 
 if [ ! -f "$HOME/.cpan/CPAN/MyConfig.pm" ]; then
