@@ -43,8 +43,9 @@ if [ ! -f "$HOME/.cpan/CPAN/MyConfig.pm" ]; then
         echo "exit"
     ) | _sudo cpan -T || true
 
-    echo "##[cmd] perl $STOW_ROOT/tools/initialize-cpan-config.pl"
-    perl "$STOW_ROOT/tools/initialize-cpan-config.pl"
+    echo ""
+    echo "##[cmd] sudo perl $STOW_ROOT/tools/initialize-cpan-config.pl"
+    _sudo perl "$STOW_ROOT/tools/initialize-cpan-config.pl" || true
 fi
 
 if [ ! -x "$(command -v cpanm)" ]; then
