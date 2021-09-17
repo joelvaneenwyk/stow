@@ -55,7 +55,7 @@
         },
         "MSYS2": {
             "path": [
-                "${env:USERPROFILE}\\scoop\\apps\\msys2\\current\\usr\\bin\\bash.exe"
+                "${env:USERPROFILE}\\msys64\\usr\\bin\\bash.exe"
             ],
             "args": [
                 "--login", "-i"
@@ -69,7 +69,7 @@
         },
         "Fish": {
             "path": [
-                "${env:USERPROFILE}\\scoop\\apps\\msys2\\current\\usr\\bin\\fish.exe"
+                "${env:USERPROFILE}\\msys64\\usr\\bin\\fish.exe"
             ],
             "args": [
                 "--login", "-i"
