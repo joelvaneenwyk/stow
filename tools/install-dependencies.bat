@@ -12,7 +12,6 @@ exit /b
 
     set _root=%~dp1
     set STOW_ROOT=%_root:~0,-1%
-    set STARTING_DIR=%CD%
 
     :: Already installed as part of Strawberry Perl but install/update regardless.
     call cpanm --version > nul 2>&1
@@ -28,7 +27,8 @@ exit /b
     ::      - mingw-w64-x86_64-gcc
     ::      - mingw-w64-x86_64-binutils
     ::
+    set STARTING_DIR=%CD%
     cd /d "%STOW_ROOT%"
     call cpanm --installdeps --notest .
     cd /d "%STARTING_DIR%"
-exit /b 0
+exit /b

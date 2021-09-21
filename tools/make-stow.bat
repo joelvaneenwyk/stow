@@ -52,26 +52,32 @@ exit /b
     echo.
     echo PERL5LIB: '!PERL5LIB!'
 
-    call :edit "%STOW_ROOT%\bin\chkstow"
+    call :ReplaceVariables "%STOW_ROOT%\bin\chkstow"
 
-    call :edit "%STOW_ROOT%\bin\stow"
+    call :ReplaceVariables "%STOW_ROOT%\bin\stow"
     if not exist "%STOW_ROOT%\doc" mkdir "%STOW_ROOT%\doc"
     call pod2man --name stow --section 8 "%STOW_ROOT%\bin\stow" > "%STOW_ROOT%\doc\stow.8"
 
-    call :edit "%STOW_ROOT%\lib\Stow\Util.pm"
+    call :ReplaceVariables "%STOW_ROOT%\lib\Stow\Util.pm"
 
-    call :edit "%STOW_ROOT%\lib\Stow.pm"
+    call :ReplaceVariables "%STOW_ROOT%\lib\Stow.pm"
     type "%STOW_ROOT%\default-ignore-list" >> "%STOW_ROOT%\lib\Stow.pm"
 
     call "%~dp0install-dependencies.bat"
-    %PERL% "%STOW_ROOT%\Build.PL"
-    call "%STOW_ROOT%\Build.bat" installdeps
-    call "%STOW_ROOT%\Build.bat" build
 
+    set STARTING_DIR=%CD%
+    cd /d "%STOW_ROOT%"
+    echo ##[cmd] %PERL% -I "%STOW_ROOT%\lib" -I "%STOW_ROOT%\bin" "%STOW_ROOT%\Build.PL"
+    %PERL% -I "%STOW_ROOT%\lib" -I "%STOW_ROOT%\bin" "%STOW_ROOT%\Build.PL"
+    cd /d "%STARTING_DIR%"
+
+    echo ##[cmd] %PERL% "%STOW_ROOT%\bin\stow" --version
     %PERL% "%STOW_ROOT%\bin\stow" --version
-exit /b 0
+exit /b
 
-:edit
+:ReplaceVariables
+    setlocal EnableExtensions EnableDelayedExpansion
+
     set input_file=%~1.in
     set output_file=%~1
 
@@ -80,4 +86,4 @@ exit /b 0
     echo ##[cmd] %_cmd%
     %_cmd% >"%output_file%"
     echo Generated output: '%output_file%'
-exit /b 0
+endlocal & exit /b

@@ -81,12 +81,12 @@ my $grepReturnCode = $?;
 if (index($grepOutput, 'is not recognized') != -1 || index($grepOutput, 'not found') != -1) {
     print("Skipped 'use lib' check as 'grep' command is unavailable.\n")
 } elsif ($grepReturnCode >> 8 == 0) {
-    die <<'EOF';
-
-ERROR: bin/stow contains 'use lib' line which could interfere
-with CPAN-style installation via Module::Build.  To avoid this,
-you should run ./configure with parameters which result in
---with-pmdir's value being in Perl's built-in @INC, and then run
+    print <<'EOF';
+------
+⚠ WARNING: 'bin/stow' contains 'use lib' line which could interfere
+with CPAN-style installation via 'Module::Build'. To avoid this,
+you can run './configure' with parameters which results in
+'--with-pmdir' value being in Perl's built-in @INC, and then run
 'make' (NOT 'make install') to regenerate bin/stow, e.g.
 
     eval `perl -V:siteprefix`
@@ -96,13 +96,11 @@ or
 
     ./configure --with-pmdir=`PERL5LIB= perl -le 'print $INC[0]'` && make
 
-Then re-run this script.
-
-Note that these parameters are chosen purely to regenerate
-bin/stow without a 'use lib' line, so don't run 'make install'
-while Stow is configured in this way unless you really want an
-installation using these parameters.
-
+Then re-run this script. Note that these parameters are chosen purely to
+regenerate 'bin/stow' without a 'use lib' line, so don't run 'make install'
+while Stow is configured in this way unless you really want an installation
+using these parameters.
+------
 EOF
 } else {
     print("Validated that Stow library is built correctly.\n");
