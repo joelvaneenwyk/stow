@@ -25,16 +25,13 @@ function edit() {
 function make_stow() {
     VERSION=2.3.2
     PERL=$(which perl)
-    PMDIR=${prefix:-}/share/perl5/site_perl
+    PMDIR="$STOW_ROOT/lib"
 
     if ! PERL5LIB=$($PERL -V | awk '/@INC/ {p=1; next} (p==1) {print $1}' | grep "$PMDIR" | head -n 1); then
-        echo "WARNING: Failed to find '$PMDIR' in installed Perl libraries, but using it anyways."
-        PERL5LIB="$PMDIR"
+        echo "INFO: Target '$PMDIR' is not in standard include so will be inlined."
     fi
 
     cd "$STOW_ROOT" || true
-
-    echo "Perl modules will be installed to: $PMDIR"
 
     if [ -n "$PERL5LIB" ]; then
         USE_LIB_PMDIR=""
@@ -46,8 +43,6 @@ function make_stow() {
         echo "front-end scripts will have an appropriate \"use lib\""
         echo "line inserted to compensate."
     fi
-
-    echo "PERL5LIB: $PERL5LIB"
 
     edit "$STOW_ROOT/bin/chkstow"
     edit "$STOW_ROOT/bin/stow"
@@ -63,18 +58,13 @@ function _install_dependencies() {
     if [ -x "$(command -v apt-get)" ]; then
         _sudo apt-get update
         _sudo apt-get -y install \
-            perl bzip2 gawk curl libssl-dev make patch
+            sudo perl bzip2 gawk curl libssl-dev make patch cpanminus
     elif [ -x "$(command -v apk)" ]; then
         _sudo apk update
-
-        if [ ! -x "$(command -v sudo)" ]; then
-            _sudo apk add sudo
-        fi
-
         _sudo apk add \
-            wget curl unzip xclip \
+            sudo wget curl unzip xclip \
             build-base gcc g++ make musl-dev openssl-dev zlib-dev \
-            perl perl-dev perl-utils \
+            perl perl-dev perl-utils perl-app-cpanminus \
             bash openssl
     elif [ -x "$(command -v pacman)" ]; then
         pacman -S --quiet --noconfirm --needed \
@@ -89,7 +79,7 @@ function _install_dependencies() {
 
     if [ ! -x "$(command -v cpanm)" ]; then
         if [ -x "$(command -v curl)" ]; then
-            curl -L --silent https://cpanmin.us | _sudo perl - --notest --verbose App::cpanminus
+            curl -L --silent "https://cpanmin.us" | _sudo perl - --notest --verbose App::cpanminus
         fi
 
         if [ ! -x "$(command -v cpanm)" ]; then
@@ -101,7 +91,7 @@ function _install_dependencies() {
     # possible including MSYS, cygwin, Ubuntu, Alpine, etc. The more libraries we add here the more
     # seemingly obscure issues you could run into e.g., missing 'cc1' or 'poll.h' even when they are
     # in fact installed.
-    _sudo cpanm --verbose --notest Carp Inline::C
+    cpanm --verbose --notest Carp Inline::C
 
     echo "Installed Perl dependencies."
 }

@@ -10,10 +10,12 @@ exit /b
 
     set _root=%~dp1
     set STOW_ROOT=%_root:~0,-1%
-    set VERSION=2.3.2
+    set STOW_VERSION=2.3.2
     set PERL=perl
-    set PMDIR=%prefix%/perl/site/lib
     set USE_LIB_PMDIR=
+
+    set PMDIR=%STOW_ROOT%\lib
+    set "PMDIR=%PMDIR:\=/%"
 
     %PERL% --version
     if errorlevel 1 (
@@ -65,6 +67,8 @@ exit /b
     %PERL% "%STOW_ROOT%\Build.PL"
     call "%STOW_ROOT%\Build.bat" installdeps
     call "%STOW_ROOT%\Build.bat" build
+
+    %PERL% "%STOW_ROOT%\bin\stow" --version
 exit /b 0
 
 :edit
@@ -72,7 +76,7 @@ exit /b 0
     set output_file=%~1
 
     :: This is more explicit and reliable than the config file trick
-    set _cmd=%PERL% -p -e "s/\@PERL\@/$ENV{PERL}/g;" -e "s/\@VERSION\@/$ENV{VERSION}/g;" -e "s/\@USE_LIB_PMDIR\@/$ENV{USE_LIB_PMDIR}/g;" "%input_file%"
+    set _cmd=%PERL% -p -e "s/\@PERL\@/$ENV{PERL}/g;" -e "s/\@VERSION\@/$ENV{STOW_VERSION}/g;" -e "s/\@USE_LIB_PMDIR\@/$ENV{USE_LIB_PMDIR}/g;" "%input_file%"
     echo ##[cmd] %_cmd%
     %_cmd% >"%output_file%"
     echo Generated output: '%output_file%'

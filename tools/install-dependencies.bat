@@ -15,7 +15,10 @@ exit /b
     set STARTING_DIR=%CD%
 
     :: Already installed as part of Strawberry Perl but install/update regardless.
-    call cpan -i -T App::cpanminus
+    call cpanm --version > nul 2>&1
+    if errorlevel 1 (
+        call cpan -i -T App::cpanminus > nul 2>&1
+    )
 
     ::
     :: Install dependencies. Note that 'Inline::C' requires 'make' and 'gcc' to be installed. It
