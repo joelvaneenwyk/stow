@@ -4,7 +4,7 @@ set -e
 
 STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && pwd)"
 
-"$STOW_ROOT/tools/install-dependencies.sh"
+source "$STOW_ROOT/tools/install-dependencies.sh"
 
 # This will create 'configure' script
 autoreconf -iv
