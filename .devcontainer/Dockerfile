@@ -1,33 +1,39 @@
 # See here for image contents: https://github.com/microsoft/vscode-dev-containers/tree/v0.191.1/containers/debian/.devcontainer/base.Dockerfile
 
 # [Choice] Debian version: bullseye, buster, stretch
-ARG VARIANT="buster"
+ARG VARIANT="bullseye"
+
 FROM mcr.microsoft.com/vscode/devcontainers/base:0-${VARIANT}
 
-RUN apt-get update && export DEBIAN_FRONTEND=noninteractive
+RUN apt-get update
 
-RUN apt-get -y install --no-install-recommends \
-    wget curl unzip xclip \
-    software-properties-common build-essential gcc g++ make automake autoconf \
-    bzip2 \
-    cpanminus \
-    gawk \
-    git \
-    libssl-dev \
-    make \
-    patch \
-    perl \
-    perlbrew \
-    texinfo \
-    texlive \
-    texi2html
+RUN DEBIAN_FRONTEND=noninteractive apt-get -y install --no-install-recommends \
+sudo wget curl unzip xclip git \
+software-properties-common build-essential gcc g++ make automake autoconf \
+bzip2 gawk git libssl-dev make patch \
+perl cpanminus perlbrew \
+texinfo texlive texi2html
 
-RUN (echo "yes"; echo ""; echo "no"; echo "exit") | sudo cpan
+RUN (echo "yes"; echo ""; echo "no"; echo "exit") | sudo cpan -T || true
 
 # Install dependencies but skip tests
-RUN sudo cpan -i -T YAML Test::Output CPAN::DistnameInfo
+RUN sudo cpanm --notest YAML Test::Output CPAN::DistnameInfo
 
-RUN sudo cpanm -i -T Perl::LanguageServer
+# Perl development dependencies
+RUN sudo cpanm --notest Perl::Critic
 
-# Upgrade but skip tests
-#RUN sudo cpan -u -T
+RUN sudo cpanm --notest ExtUtils::MakeMaker common::sense
+RUN git clone -b master https://github.com/gitpan/IO-AIO.git
+RUN cd IO-AIO \
+&& perl Makefile.PL \
+&& make \
+&& sudo make install \
+&& make test
+
+RUN sudo cpanm --notest Moose AnyEvent AnyEvent::AIO Coro JSON Data::Dump PadWalker Scalar::Util Class::Refresh Compiler::Lexer
+RUN git clone -b master https://github.com/richterger/Perl-LanguageServer.git
+RUN cd Perl-LanguageServer \
+&& perl Makefile.PL \
+&& make \
+&& sudo make install \
+&& make test

@@ -9,7 +9,6 @@ bin/stow
 bin/stow.in
 _proverc
 .proverc
-sonar-project.properties
 Build.PL
 ChangeLog
 cpanfile
