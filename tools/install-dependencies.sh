@@ -1,6 +1,10 @@
 #!/bin/bash
 
-set -e
+# Clear out TMP as TEMP may come from Windows and we do not want tools confused
+# if they find both.
+unset TMP
+unset temp
+unset tmp
 
 STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && cd ../ && pwd)"
 
@@ -13,12 +17,6 @@ function _sudo {
 }
 
 function _install_dependencies() {
-    # Clear out TMP as TEMP may come from Windows and we do not want tools confused
-    # if they find both.
-    unset TMP
-    unset temp
-    unset tmp
-
     if [ -x "$(command -v apt-get)" ]; then
         _sudo apt-get update
         _sudo apt-get -y install \
@@ -83,7 +81,7 @@ function _install_dependencies() {
         echo "CPANM: $(cygpath --windows "${HOME:-}/.cpanm/work/")"
     fi
 
-    _sudo cpanm --local-lib=~/perl5 local::lib && eval $(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)
+    _sudo cpanm --local-lib=~/perl5 local::lib && eval "$(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)"
 
     # We intentionally install as little as possible here to support as many system combinations as
     # possible including MSYS, cygwin, Ubuntu, Alpine, etc. The more libraries we add here the more

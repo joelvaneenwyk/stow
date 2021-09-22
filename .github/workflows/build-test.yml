@@ -206,6 +206,9 @@ jobs:
         shell: msys2 {0}
         run: |
           cd $(cygpath '${{ github.workspace }}')
+          unset TMP
+          unset temp
+          unset tmp
           cpanm --installdeps --notest .
           prove -I t/ -I bin/ -I lib/ --formatter TAP::Formatter::JUnit --timer --verbose --normalize --parse t/ | tee test_results_msys2.xml
 
