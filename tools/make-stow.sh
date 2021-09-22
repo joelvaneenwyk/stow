@@ -16,8 +16,6 @@ function make_stow() {
     # shellcheck source=./tools/install-dependencies.sh
     source "$STOW_ROOT/tools/install-dependencies.sh"
 
-    make_stow
-
     cd "$STOW_ROOT" || true
 
     STOW_VERSION=2.3.2

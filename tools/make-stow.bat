@@ -71,8 +71,8 @@ exit /b
     %PERL% -I "%STOW_ROOT%\lib" -I "%STOW_ROOT%\bin" "%STOW_ROOT%\Build.PL"
     cd /d "%STARTING_DIR%"
 
-    echo ##[cmd] %PERL% "%STOW_ROOT%\bin\stow" --version
-    %PERL% "%STOW_ROOT%\bin\stow" --version
+    echo ##[cmd] %PERL% -I "%STOW_ROOT%\lib" "%STOW_ROOT%\bin\stow" --version
+    %PERL% -I "%STOW_ROOT%\lib" "%STOW_ROOT%\bin\stow" --version
 exit /b
 
 :ReplaceVariables

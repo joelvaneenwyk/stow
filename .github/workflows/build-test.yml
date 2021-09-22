@@ -142,8 +142,13 @@ jobs:
 
       - name: Release
         working-directory: ${{ github.workspace }}
+
+        # Needed so that the coveralls package knows that we are using GitHub Actions
+        # and to look for the secret key, see:
+        #   https://github.com/kan/coveralls-perl/blob/master/lib/Devel/Cover/Report/Coveralls.pm
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
         run: |
           make distcheck
           perl Build.PL
