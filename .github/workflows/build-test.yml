@@ -164,6 +164,7 @@ jobs:
     env:
       # https://cygwin.com/cygwin-ug-net/using-cygwinenv.html
       MSYS: "winsymlinks:native"
+      HOME: "${{ github.workspace }}"
 
     steps:
       - uses: actions/checkout@v2
@@ -179,23 +180,7 @@ jobs:
           # Need to use MSYS here otherwise we get errors during build of
           # the 'TAP::Formatter::JUnit' package with missing "sys/wait.h"
           msystem: MSYS
-
           update: false
-          install: >-
-            base-devel
-            msys2-devel
-            msys2-runtime-devel
-            msys2-keyring
-            openssl
-            git
-            gcc
-            make
-            autoconf
-            automake1.16
-            automake-wrapper
-            libtool
-            libcrypt-devel
-            perl
 
       - name: MSYS2 Install Dependencies
         shell: msys2 {0}

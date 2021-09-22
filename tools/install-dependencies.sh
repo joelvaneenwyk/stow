@@ -16,7 +16,7 @@ function _sudo {
     fi
 }
 
-function _install_dependencies() {
+function install_dependencies() {
     if [ -x "$(command -v apt-get)" ]; then
         _sudo apt-get update
         _sudo apt-get -y install \
@@ -30,8 +30,11 @@ function _install_dependencies() {
             bash openssl
     elif [ -x "$(command -v pacman)" ]; then
         pacman -S --quiet --noconfirm --needed \
-            msys2-keyring \
-            perl base-devel libtool libcrypt-devel openssl
+            git \
+            msys2-keyring msys2-devel msys2-runtime-devel \
+            base-devel gcc make autoconf automake1.16 automake-wrapper \
+            libtool libcrypt-devel openssl \
+            perl
 
         if [ "${MSYSTEM:-}" = "MINGW64" ] || [ "${MSYSTEM:-}" = "MINGW32" ]; then
             pacman -S --quiet --noconfirm --needed \
@@ -81,7 +84,8 @@ function _install_dependencies() {
         echo "CPANM: $(cygpath --windows "${HOME:-}/.cpanm/work/")"
     fi
 
-    _sudo cpanm --local-lib=~/perl5 local::lib && eval "$(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)"
+    # Alternative approach allowing a local install
+    #_sudo cpanm --local-lib=~/perl5 local::lib && eval "$(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)"
 
     # We intentionally install as little as possible here to support as many system combinations as
     # possible including MSYS, cygwin, Ubuntu, Alpine, etc. The more libraries we add here the more
@@ -92,8 +96,8 @@ function _install_dependencies() {
     echo "Installed required Perl dependencies."
 }
 
-function _install_optional_dependencies() {
-    _install_dependencies
+function install_optional_dependencies() {
+    install_dependencies
 
     if [ -x "$(command -v apt-get)" ]; then
         _sudo apt-get -y install \
@@ -118,8 +122,9 @@ function _install_optional_dependencies() {
 }
 
 function install_documentation_dependencies() {
+    install_dependencies
+
     if [ -x "$(command -v apt-get)" ]; then
-        _sudo apt-get update
         _sudo apt-get -y install \
             texlive texinfo
     elif [ -x "$(command -v pacman)" ]; then
@@ -129,4 +134,4 @@ function install_documentation_dependencies() {
     fi
 }
 
-_install_dependencies "$@"
+install_dependencies "$@"
