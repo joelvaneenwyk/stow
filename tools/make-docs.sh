@@ -1,7 +1,5 @@
 #!/bin/bash
 
-STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && cd ../ && pwd)"
-
 function _remove_intermediate_files() {
     rm -f "$STOW_ROOT/automake/install-sh" >/dev/null 2>&1
     rm -f "$STOW_ROOT/automake/mdate-sh" >/dev/null 2>&1
@@ -26,19 +24,16 @@ function _remove_intermediate_files() {
     rm -f "$STOW_ROOT"/stow.* >/dev/null 2>&1
 }
 
-function _install_documentation_dependencies() {
-    if [ -x "$(command -v apt-get)" ]; then
-        _sudo apt-get update
-        _sudo apt-get -y install \
-            texlive texinfo
-    elif [ -x "$(command -v pacman)" ]; then
-        pacman -S --quiet --noconfirm --needed \
-            texinfo texinfo-tex \
-            mingw-w64-x86_64-texlive-bin mingw-w64-x86_64-texlive-core mingw-w64-x86_64-texlive-extra-utils
-    fi
-}
-
 function make_docs() {
+    STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && cd ../ && pwd)"
+
+    # shellcheck source=./tools/install-dependencies.sh
+    source "$STOW_ROOT/tools/install-dependencies.sh"
+
+    install_documentation_dependencies
+
+    _remove_intermediate_files
+
     siteprefix=
     eval "$(perl -V:siteprefix)"
     echo "Site prefix (default): $siteprefix"
@@ -107,11 +102,5 @@ function make_docs() {
     #MAKEINFO='/bin/sh "$STOW_ROOT/automake/missing" makeinfo -I .  -I doc -I "$STOW_ROOT/doc"' \
     #    TEXI2DVI_USE_RECORDER=yes texi2dvi -I . -I doc/ --pdf --batch -o doc/manual.pdf "$STOW_ROOT/doc/stow.texi"
 }
-
-# shellcheck source=./tools/install-dependencies.sh
-source "$STOW_ROOT/tools/install-dependencies.sh"
-
-_install_documentation_dependencies
-_remove_intermediate_files
 
 make_docs

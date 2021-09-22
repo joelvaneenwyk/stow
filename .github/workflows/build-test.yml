@@ -124,7 +124,7 @@ jobs:
       - name: Install Dependencies
         working-directory: ${{ github.workspace }}
         run: |
-          ./tools/install-dependencies.sh
+          source ./tools/install-dependencies.sh && install_documentation_dependencies
 
       - name: Perl Dependencies
         working-directory: ${{ github.workspace }}

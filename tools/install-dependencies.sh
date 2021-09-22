@@ -117,4 +117,16 @@ function _install_optional_dependencies() {
     fi
 }
 
+function install_documentation_dependencies() {
+    if [ -x "$(command -v apt-get)" ]; then
+        _sudo apt-get update
+        _sudo apt-get -y install \
+            texlive texinfo
+    elif [ -x "$(command -v pacman)" ]; then
+        pacman -S --quiet --noconfirm --needed \
+            texinfo texinfo-tex \
+            mingw-w64-x86_64-texlive-bin mingw-w64-x86_64-texlive-core mingw-w64-x86_64-texlive-extra-utils
+    fi
+}
+
 _install_dependencies "$@"
