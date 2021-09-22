@@ -62,11 +62,12 @@ function _install_dependencies() {
             _cpanm="$STOW_ROOT/cpanm"
             curl -L --silent "https://cpanmin.us/" -o "$_cpanm"
             chmod +x "$_cpanm"
-            echo "##[cmd] sudo perl "$_cpanm" --verbose App::cpanminus"
-            _sudo perl "$_cpanm" --verbose App::cpanminus
+            echo "##[cmd] sudo perl $_cpanm --verbose App::cpanminus"
+            _sudo perl "$_cpanm" --notest App::cpanminus
             rm -f "$_cpanm"
         fi
 
+        # Use 'cpan' to install as a last resort
         if [ ! -x "$(command -v cpanm)" ]; then
             echo "##[cmd] sudo cpan -i -T App::cpanminus"
             _sudo cpan -i -T App::cpanminus
@@ -86,7 +87,7 @@ function _install_dependencies() {
     # possible including MSYS, cygwin, Ubuntu, Alpine, etc. The more libraries we add here the more
     # seemingly obscure issues you could run into e.g., missing 'cc1' or 'poll.h' even when they are
     # in fact installed.
-    cpanm --verbose --notest Carp ExtUtils::PL2Bat Inline::C
+    cpanm --notest Carp ExtUtils::PL2Bat Inline::C
 
     echo "Installed required Perl dependencies."
 }

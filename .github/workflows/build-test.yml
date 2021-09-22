@@ -105,6 +105,61 @@ jobs:
           name: Test Results
           path: test_results_ubuntu.xml
 
+  # Create a distribution release
+  build-test-linux-release:
+    name: "Linux: Build Release"
+    runs-on: ubuntu-latest
+    if: always()
+
+    env:
+      DEBIAN_FRONTEND: noninteractive
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Install Dependencies
+        working-directory: ${{ github.workspace }}
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install --no-install-recommends \
+            autoconf \
+            bzip2 \
+            cpanminus \
+            gawk \
+            curl \
+            libssl-dev \
+            make \
+            texinfo texlive \
+            patch
+
+      - name: Perl Dependencies
+        working-directory: ${{ github.workspace }}
+        run: |
+          ./tools/install-dependencies.sh
+          cpanm -n Devel::Cover::Report::Coveralls
+
+      - name: Install
+        working-directory: ${{ github.workspace }}
+        run: |
+          autoreconf --install
+          eval `perl -V:siteprefix`
+          ./configure --prefix=$siteprefix
+          make
+          make cpanm
+
+      - name: Release
+        working-directory: ${{ github.workspace }}
+        run: |
+          make distcheck
+          perl Build.PL
+          ./Build build
+          cover -test -report coveralls
+          ./Build distcheck
+
   build-test-msys2:
     name: "MSYS2: Build and Test"
     runs-on: windows-latest

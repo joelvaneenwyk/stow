@@ -1,7 +1,5 @@
 #!/bin/bash
 
-STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && cd ../ && pwd)"
-
 function edit() {
     input_file="$1.in"
     output_file="$1"
@@ -15,8 +13,9 @@ function edit() {
 function make_stow() {
     cd "$STOW_ROOT" || true
 
-    export STOW_VERSION=2.3.2
-    export STOW_PERL=$(which perl)
+    STOW_VERSION=2.3.2
+    STOW_PERL=$(which perl)
+    export STOW_VERSION STOW_PERL
 
     rm -rf "$STOW_ROOT/_Inline"
 
@@ -65,6 +64,8 @@ function make_stow() {
     echo "##[cmd] perl -I $STOW_ROOT/lib -I $STOW_ROOT/bin $STOW_ROOT/bin/stow --version"
     perl -I "$STOW_ROOT/lib" -I "$STOW_ROOT/bin" "$STOW_ROOT/bin/stow" --version
 }
+
+STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && cd ../ && pwd)"
 
 # shellcheck source=./tools/install-dependencies.sh
 source "$STOW_ROOT/tools/install-dependencies.sh"
