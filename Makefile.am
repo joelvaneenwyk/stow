@@ -234,12 +234,12 @@ $(HTML): $(doc_deps)
 		-c USE_TITLEPAGE_FOR_TITLE=1 --no-split -o $@ \
 		`test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi
 
-$(PDF): $(doc_deps) $(HTML)
+$(PDF): $(HTML)
 	TEXINPUTS="$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
 	MAKEINFO='$(MAKEINFO) $(AM_MAKEINFOFLAGS) $(MAKEINFOFLAGS) -I doc -I $(srcdir)/doc' \
 	$(TEXI2PDF) -o $@ `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi
 
-doc/manual-split: $(doc_deps) $(PDF)
+doc/manual-split: $(doc_deps)
 	rm -rf $@.new
 	if $(MAKEINFOHTML) $(AM_MAKEINFOHTMLFLAGS) $(MAKEINFOFLAGS) -I $(srcdir) -I doc -I $(srcdir)/doc \
 	 -o $@.new `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi; \
@@ -279,14 +279,14 @@ dist-hook: doc/manual-split
 dist-hook: $(dist_man_MANS)
 ## If we are creating a distribution from a git checkout, ensure
 ## the ChangeLog file is in sync the git repository.
-	if test -d $(top_srcdir)/.git; then \
+	if test -d $(srcdir)/.git; then \
 	  rm -f ChangeLog \
 	    && $(MAKE) $(AM_MAKEFLAGS) ChangeLog \
 	    && cp -f ChangeLog $(distdir)/ChangeLog; \
 	fi
 
 ChangeLog: doc/ChangeLog.OLD
-	@if [ -d .git ]; then \
+	if [ -e $(srcdir)/.git ]; then \
 	    ( \
 	        git log \
 		    --format="format:%ad  %aN <%aE>%n%n    * %w(70,0,4)%s%+b%n" \

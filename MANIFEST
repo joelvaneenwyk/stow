@@ -66,7 +66,6 @@ tools/make-clean.bat
 tools/make-clean.sh
 tools/make-stow.bat
 tools/make-stow.sh
-tools/make-test.bat
 tools/make-docs.bat
 tools/make-docs.sh
 tools/run-tests.bat

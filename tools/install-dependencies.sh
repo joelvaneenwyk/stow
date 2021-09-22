@@ -83,11 +83,13 @@ function _install_dependencies() {
         echo "CPANM: $(cygpath --windows "${HOME:-}/.cpanm/work/")"
     fi
 
+    _sudo cpanm --local-lib=~/perl5 local::lib && eval $(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)
+
     # We intentionally install as little as possible here to support as many system combinations as
     # possible including MSYS, cygwin, Ubuntu, Alpine, etc. The more libraries we add here the more
     # seemingly obscure issues you could run into e.g., missing 'cc1' or 'poll.h' even when they are
     # in fact installed.
-    _sudo cpanm --notest Carp ExtUtils::PL2Bat Inline::C
+    _sudo cpanm --notest Carp Test::Output ExtUtils::PL2Bat Inline::C
 
     echo "Installed required Perl dependencies."
 }
