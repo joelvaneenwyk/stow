@@ -142,6 +142,8 @@ jobs:
 
       - name: Release
         working-directory: ${{ github.workspace }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           make distcheck
           perl Build.PL
@@ -241,22 +243,31 @@ jobs:
         run: |
           call tools\install-dependencies.bat
 
-      - name: Build
+      - name: Make Stow
         working-directory: ${{ github.workspace }}
         shell: cmd
         run: |
           call tools\make-stow.bat
+
+      - name: Build
+        working-directory: ${{ github.workspace }}
+        shell: cmd
+        run: |
           perl Build.PL
           call Build.bat installdeps
           call Build.bat build
 
-      # This will fail until symlinks are supported
-      - name: Test
+      - name: Install Test Dependencies
         working-directory: ${{ github.workspace }}
         shell: cmd
         run: |
           call cpanm --installdeps --notest .
-          prove -I t/ -I bin/ -I lib/ --formatter TAP::Formatter::JUnit --timer --verbose --normalize --parse t/ > test_results_windows.xml
+
+      - name: Test
+        working-directory: ${{ github.workspace }}
+        shell: cmd
+        run: |
+          prove -I t/ -I bin/ -I lib/ --formatter TAP::Formatter::JUnit --timer --verbose --normalize --parse t/ >test_results_windows.xml
 
       - uses: actions/upload-artifact@v2
         name: Upload Logs
