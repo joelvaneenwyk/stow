@@ -11,6 +11,13 @@ function edit() {
 }
 
 function make_stow() {
+    STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && cd ../ && pwd)"
+
+    # shellcheck source=./tools/install-dependencies.sh
+    source "$STOW_ROOT/tools/install-dependencies.sh"
+
+    make_stow
+
     cd "$STOW_ROOT" || true
 
     STOW_VERSION=2.3.2
@@ -64,10 +71,3 @@ function make_stow() {
     echo "##[cmd] perl -I $STOW_ROOT/lib -I $STOW_ROOT/bin $STOW_ROOT/bin/stow --version"
     perl -I "$STOW_ROOT/lib" -I "$STOW_ROOT/bin" "$STOW_ROOT/bin/stow" --version
 }
-
-STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && cd ../ && pwd)"
-
-# shellcheck source=./tools/install-dependencies.sh
-source "$STOW_ROOT/tools/install-dependencies.sh"
-
-make_stow

@@ -87,7 +87,7 @@ function _install_dependencies() {
     # possible including MSYS, cygwin, Ubuntu, Alpine, etc. The more libraries we add here the more
     # seemingly obscure issues you could run into e.g., missing 'cc1' or 'poll.h' even when they are
     # in fact installed.
-    cpanm --notest Carp ExtUtils::PL2Bat Inline::C
+    _sudo cpanm --notest Carp ExtUtils::PL2Bat Inline::C
 
     echo "Installed required Perl dependencies."
 }
