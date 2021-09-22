@@ -2,7 +2,7 @@
 
 STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && cd ../ && pwd)"
 
-source "$STOW_ROOT/tools/make-stow-minimal.sh"
+source "$STOW_ROOT/tools/make-stow.sh"
 
 if [ -x "$(command -v pacman)" ]; then
     cpanm --notest Carp Inline::C Test::Output Test::More Test::Exception Win32::Mutex

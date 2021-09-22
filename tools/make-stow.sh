@@ -7,40 +7,36 @@ function edit() {
     output_file="$1"
 
     # This is more explicit and reliable than the config file trick
-    sed -e "s|[@]PERL[@]|$PERL|g" \
-        -e "s|[@]VERSION[@]|$VERSION|g" \
+    sed -e "s|[@]STOW_PERL[@]|$STOW_PERL|g" \
+        -e "s|[@]VERSION[@]|$STOW_VERSION|g" \
         -e "s|[@]USE_LIB_PMDIR[@]|$USE_LIB_PMDIR|g" "$input_file" >"$output_file"
 }
 
 function make_stow() {
     cd "$STOW_ROOT" || true
 
-    VERSION=2.3.2
-    PERL=$(which perl)
+    export STOW_VERSION=2.3.2
+    export STOW_PERL=$(which perl)
+
+    rm -rf "$STOW_ROOT/_Inline"
 
     if [ ! -x "$(command -v autoreconf)" ]; then
-        PMDIR=${prefix:-}/share/perl5/site_perl
+        PMDIR="$STOW_ROOT/lib"
 
-        if ! PERL5LIB=$($PERL -V | awk '/@INC/ {p=1; next} (p==1) {print $1}' | grep "$PMDIR" | head -n 1); then
-            echo "ERROR: Failed to check installed Perl libraries."
-            PERL5LIB="$PMDIR"
+        if ! PERL5LIB=$($STOW_PERL -V | awk '/@INC/ {p=1; next} (p==1) {print $1}' | grep "$PMDIR" | head -n 1); then
+            echo "INFO: Target '$PMDIR' is not in standard include so will be inlined."
         fi
 
-        echo "# Perl modules will be installed to $PMDIR"
-        echo "#"
         if [ -n "$PERL5LIB" ]; then
             USE_LIB_PMDIR=""
-            echo "# This is in $PERL's built-in @INC, so everything"
-            echo "# should work fine with no extra effort."
+            echo "Module directory is listed in standard @INC, so everything"
+            echo "should work fine with no extra effort."
         else
             USE_LIB_PMDIR="use lib \"$PMDIR\";"
-            echo "# This is *not* in $PERL's built-in @INC, so the"
-            echo "# front-end scripts will have an appropriate \"use lib\""
-            echo "# line inserted to compensate."
+            echo "This is *not* in the built-in @INC, so the"
+            echo "front-end scripts will have an appropriate \"use lib\""
+            echo "line inserted to compensate."
         fi
-
-        echo "#"
-        echo "# PERL5LIB: $PERL5LIB"
 
         edit "$STOW_ROOT/bin/chkstow"
         edit "$STOW_ROOT/bin/stow"
@@ -63,9 +59,14 @@ function make_stow() {
         ./configure --prefix="${siteprefix:-}" --with-pmdir="$PERL5LIB"
         make bin/stow bin/chkstow lib/Stow.pm lib/Stow/Util.pm
     fi
+
+    echo "✔ Generated Stow binaries and libraries."
+
+    echo "##[cmd] perl -I $STOW_ROOT/lib -I $STOW_ROOT/bin $STOW_ROOT/bin/stow --version"
+    perl -I "$STOW_ROOT/lib" -I "$STOW_ROOT/bin" "$STOW_ROOT/bin/stow" --version
 }
 
 # shellcheck source=./tools/install-dependencies.sh
-. "$STOW_ROOT/tools/install-dependencies.sh"
+source "$STOW_ROOT/tools/install-dependencies.sh"
 
 make_stow

@@ -1,8 +1,5 @@
 #!/bin/bash
 
-set -e
-#set -x
-
 STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && cd ../ && pwd)"
 
 function _remove_intermediate_files() {
@@ -29,18 +26,7 @@ function _remove_intermediate_files() {
     rm -f "$STOW_ROOT"/stow.* >/dev/null 2>&1
 }
 
-function _sudo {
-    if [ -x "$(command -v sudo)" ]; then
-        sudo "$@"
-    else
-        "$@"
-    fi
-}
-
-function _install_dependencies() {
-    # shellcheck source=./tools/install-dependencies.sh
-    . "$STOW_ROOT/tools/install-dependencies.sh"
-
+function _install_documentation_dependencies() {
     if [ -x "$(command -v apt-get)" ]; then
         _sudo apt-get update
         _sudo apt-get -y install \
@@ -122,7 +108,10 @@ function make_docs() {
     #    TEXI2DVI_USE_RECORDER=yes texi2dvi -I . -I doc/ --pdf --batch -o doc/manual.pdf "$STOW_ROOT/doc/stow.texi"
 }
 
-_install_dependencies
+# shellcheck source=./tools/install-dependencies.sh
+source "$STOW_ROOT/tools/install-dependencies.sh"
+
+_install_documentation_dependencies
 _remove_intermediate_files
 
 make_docs

@@ -5,66 +5,115 @@ set -e
 STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && cd ../ && pwd)"
 
 function _sudo {
-    if [ -x "$(command -v sudo)" ]; then
+    if [ -x "$(command -v sudo)" ] && [ ! -x "$(command -v cygpath)" ]; then
         sudo "$@"
     else
         "$@"
     fi
 }
 
-# Clear out TMP as TEMP may come from Windows and we do not want tools confused
-# if they find both.
-unset TMP
-unset temp
-unset tmp
+function _install_dependencies() {
+    # Clear out TMP as TEMP may come from Windows and we do not want tools confused
+    # if they find both.
+    unset TMP
+    unset temp
+    unset tmp
 
-if [ -x "$(command -v apt-get)" ]; then
-    _sudo apt-get update
-    _sudo apt-get -y install \
-        texlive texinfo cpanminus \
-        autoconf bzip2 \
-        gawk curl libssl-dev make patch
-elif [ -x "$(command -v pacman)" ]; then
-    pacman -S --quiet --noconfirm --needed \
-        msys2-devel msys2-runtime-devel msys2-keyring \
-        curl wget \
-        base-devel git autoconf automake1.16 automake-wrapper libtool libcrypt-devel openssl \
-        mingw-w64-x86_64-make mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils mingw-w64-i686-gcc \
-        mingw-w64-x86_64-perl \
-        mingw-w64-x86_64-poppler
-    echo "CPANM: $(cygpath --windows "${HOME:-}/.cpanm/work/")"
-fi
+    if [ -x "$(command -v apt-get)" ]; then
+        _sudo apt-get update
+        _sudo apt-get -y install \
+            sudo perl bzip2 gawk curl libssl-dev make patch cpanminus
+    elif [ -x "$(command -v apk)" ]; then
+        _sudo apk update
+        _sudo apk add \
+            sudo wget curl unzip xclip \
+            build-base gcc g++ make musl-dev openssl-dev zlib-dev \
+            perl perl-dev perl-utils perl-app-cpanminus \
+            bash openssl
+    elif [ -x "$(command -v pacman)" ]; then
+        pacman -S --quiet --noconfirm --needed \
+            msys2-keyring \
+            perl base-devel libtool libcrypt-devel openssl
 
-if [ ! -f "$HOME/.cpan/CPAN/MyConfig.pm" ]; then
-    (
-        echo "yes"
-        echo ""
-        echo "no"
-        echo "exit"
-    ) | _sudo cpan -T || true
-
-    echo ""
-    echo "##[cmd] sudo perl $STOW_ROOT/tools/initialize-cpan-config.pl"
-    _sudo perl "$STOW_ROOT/tools/initialize-cpan-config.pl" || true
-fi
-
-if [ ! -x "$(command -v cpanm)" ]; then
-    if [ -x "$(command -v curl)" ]; then
-        echo "##[cmd] curl -L --silent https://cpanmin.us | sudo perl - --verbose App::cpanminus"
-        curl -L --silent https://cpanmin.us | _sudo perl - --verbose App::cpanminus
-    else
-        echo "##[cmd] sudo cpan -i -T App::cpanminus"
-        _sudo cpan -i -T App::cpanminus
+        if [ "${MSYSTEM:-}" = "MINGW64" ] || [ "${MSYSTEM:-}" = "MINGW32" ]; then
+            pacman -S --quiet --noconfirm --needed \
+                mingw-w64-x86_64-perl \
+                mingw-w64-x86_64-make mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils mingw-w64-i686-gcc \
+                mingw-w64-x86_64-poppler
+        fi
     fi
-fi
 
-if [ -x "$(command -v cpanm)" ]; then
-    (
-        cd "$STOW_ROOT" || true
-        echo "##[cmd] sudo cpanm --installdeps --notest ."
-        _sudo cpanm --installdeps --notest .
-    )
-else
-    echo "❌ ERROR: 'cpanm' not found."
-    exit 11
-fi
+    if [ ! -e "$HOME/.cpan/CPAN/MyConfig.pm" ]; then
+        (
+            echo "yes"
+            echo ""
+            echo "no"
+            echo "exit"
+        ) | _sudo cpan -T || true
+
+        echo ""
+        echo "##[cmd] sudo perl $STOW_ROOT/tools/initialize-cpan-config.pl"
+        _sudo perl "$STOW_ROOT/tools/initialize-cpan-config.pl" || true
+    fi
+
+    if [ ! -x "$(command -v cpanm)" ]; then
+        if [ -x "$(command -v curl)" ]; then
+            local _cpanm
+            _cpanm="$STOW_ROOT/cpanm"
+            curl -L --silent "https://cpanmin.us/" -o "$_cpanm"
+            chmod +x "$_cpanm"
+            echo "##[cmd] sudo perl "$_cpanm" --verbose App::cpanminus"
+            _sudo perl "$_cpanm" --verbose App::cpanminus
+            rm -f "$_cpanm"
+        fi
+
+        if [ ! -x "$(command -v cpanm)" ]; then
+            echo "##[cmd] sudo cpan -i -T App::cpanminus"
+            _sudo cpan -i -T App::cpanminus
+        fi
+    fi
+
+    if [ ! -x "$(command -v cpanm)" ]; then
+        echo "❌ ERROR: 'cpanm' not found."
+        return 11
+    fi
+
+    if [ -x "$(command -v cygpath)" ]; then
+        echo "CPANM: $(cygpath --windows "${HOME:-}/.cpanm/work/")"
+    fi
+
+    # We intentionally install as little as possible here to support as many system combinations as
+    # possible including MSYS, cygwin, Ubuntu, Alpine, etc. The more libraries we add here the more
+    # seemingly obscure issues you could run into e.g., missing 'cc1' or 'poll.h' even when they are
+    # in fact installed.
+    cpanm --verbose --notest Carp ExtUtils::PL2Bat Inline::C
+
+    echo "Installed required Perl dependencies."
+}
+
+function _install_optional_dependencies() {
+    _install_dependencies
+
+    if [ -x "$(command -v apt-get)" ]; then
+        _sudo apt-get -y install \
+            texlive texinfo cpanminus \
+            autoconf bzip2 \
+            perl \
+            gawk curl libssl-dev make patch
+    elif [ -x "$(command -v pacman)" ]; then
+        pacman -S --quiet --noconfirm --needed \
+            msys2-devel msys2-runtime-devel msys2-keyring \
+            curl wget \
+            base-devel git autoconf automake1.16 automake-wrapper \
+            libtool libcrypt-devel openssl
+
+        if [ "${MSYSTEM:-}" = "MINGW64" ] || [ "${MSYSTEM:-}" = "MINGW32" ]; then
+            pacman -S --quiet --noconfirm --needed \
+                mingw-w64-x86_64-make mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils mingw-w64-i686-gcc \
+                mingw-w64-x86_64-perl \
+                mingw-w64-x86_64-poppler
+        fi
+    fi
+}
+
+_install_dependencies "$@"
