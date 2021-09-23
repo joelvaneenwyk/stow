@@ -1,8 +1,5 @@
 #!/bin/bash
 
-set -e
-#set -x
-
 STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && cd ../ && pwd)"
 
 function _remove_intermediate_files() {
@@ -20,18 +17,21 @@ function _remove_intermediate_files() {
     rm -f "$STOW_ROOT/doc/version.texi" >/dev/null 2>&1
     rm -rf "$STOW_ROOT/doc/doc!manual.t2d" >/dev/null 2>&1
     rm -rf "$STOW_ROOT/doc/manual-split" >/dev/null 2>&1
-    rm -f "$STOW_ROOT/"config.* >/dev/null 2>&1
+    rm -f "$STOW_ROOT/config."* >/dev/null 2>&1
     rm -f "$STOW_ROOT/Makefile" >/dev/null 2>&1
     rm -f "$STOW_ROOT/Makefile.in" >/dev/null 2>&1
     rm -f "$STOW_ROOT/MYMETA.json" >/dev/null 2>&1
     rm -f "$STOW_ROOT/MYMETA.yml" >/dev/null 2>&1
     rm -f "$STOW_ROOT/configure" >/dev/null 2>&1
+    rm -f "$STOW_ROOT/configure~" >/dev/null 2>&1
     rm -f "$STOW_ROOT/ChangeLog" >/dev/null 2>&1
     rm -f "$STOW_ROOT/Build" >/dev/null 2>&1
     rm -f "$STOW_ROOT/Build.bat" >/dev/null 2>&1
-    rm -f "$STOW_ROOT"/stow-* >/dev/null 2>&1
+    rm -f "$STOW_ROOT/stow-"* >/dev/null 2>&1
     rm -f "$STOW_ROOT/stow.log" >/dev/null 2>&1
-    rm -f "$STOW_ROOT"/stow.* >/dev/null 2>&1
+    rm -f "$STOW_ROOT/stow."* >/dev/null 2>&1
+
+    git -C "$STOW_ROOT" checkout -- "$STOW_ROOT/aclocal.m4" >/dev/null 2>&1 || true
 }
 
 _remove_intermediate_files

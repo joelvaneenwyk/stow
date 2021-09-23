@@ -30,11 +30,11 @@ function install_dependencies() {
             bash openssl
     elif [ -x "$(command -v pacman)" ]; then
         pacman -S --quiet --noconfirm --needed \
-            git \
-            msys2-keyring msys2-devel msys2-runtime-devel \
+            git perl \
+            msys2-keyring \
             base-devel gcc make autoconf automake1.16 automake-wrapper \
             libtool libcrypt-devel openssl \
-            perl
+            msys2-runtime-devel msys2-w32api-headers msys2-w32api-runtime
 
         if [ "${MSYSTEM:-}" = "MINGW64" ] || [ "${MSYSTEM:-}" = "MINGW32" ]; then
             pacman -S --quiet --noconfirm --needed \
