@@ -17,6 +17,8 @@ function _sudo {
 }
 
 function install_dependencies() {
+    export STOW_PERL="$(which perl)"
+
     if [ -x "$(command -v apt-get)" ]; then
         _sudo apt-get update
         _sudo apt-get -y install \
@@ -32,15 +34,18 @@ function install_dependencies() {
         pacman -S --quiet --noconfirm --needed \
             git perl \
             msys2-keyring \
+            msys2-runtime-devel msys2-w32api-headers msys2-w32api-runtime \
             base-devel gcc make autoconf automake1.16 automake-wrapper \
-            libtool libcrypt-devel openssl \
-            msys2-runtime-devel msys2-w32api-headers msys2-w32api-runtime
+            libtool libcrypt-devel openssl
 
         if [ "${MSYSTEM:-}" = "MINGW64" ] || [ "${MSYSTEM:-}" = "MINGW32" ]; then
             pacman -S --quiet --noconfirm --needed \
                 mingw-w64-x86_64-perl \
-                mingw-w64-x86_64-make mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils mingw-w64-i686-gcc \
-                mingw-w64-x86_64-poppler
+                mingw-w64-x86_64-make mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils
+
+            if [ -f "/mingw64/bin/perl" ]; then
+                export STOW_PERL="/mingw64/bin/perl"
+            fi
         fi
     fi
 
@@ -50,11 +55,11 @@ function install_dependencies() {
             echo ""
             echo "no"
             echo "exit"
-        ) | _sudo cpan -T || true
+        ) | _sudo "$STOW_PERL" -MCPAN -e "shell" || true
 
         echo ""
-        echo "##[cmd] sudo perl $STOW_ROOT/tools/initialize-cpan-config.pl"
-        _sudo perl "$STOW_ROOT/tools/initialize-cpan-config.pl" || true
+        echo "##[cmd] sudo "$STOW_PERL" $STOW_ROOT/tools/initialize-cpan-config.pl"
+        _sudo "$STOW_PERL" "$STOW_ROOT/tools/initialize-cpan-config.pl" || true
     fi
 
     if [ ! -x "$(command -v cpanm)" ]; then
@@ -64,14 +69,14 @@ function install_dependencies() {
             curl -L --silent "https://cpanmin.us/" -o "$_cpanm"
             chmod +x "$_cpanm"
             echo "##[cmd] sudo perl $_cpanm --verbose App::cpanminus"
-            _sudo perl "$_cpanm" --notest App::cpanminus
+            _sudo "$STOW_PERL" "$_cpanm" --notest App::cpanminus
             rm -f "$_cpanm"
         fi
 
         # Use 'cpan' to install as a last resort
         if [ ! -x "$(command -v cpanm)" ]; then
-            echo "##[cmd] sudo cpan -i -T App::cpanminus"
-            _sudo cpan -i -T App::cpanminus
+            echo "##[cmd] sudo $STOW_PERL -MCPAN -e \"CPAN::Shell->notest('install', 'App::cpanminus'\""
+            _sudo "$STOW_PERL" -MCPAN -e "CPAN::Shell->notest('install', 'App::cpanminus')"
         fi
     fi
 
@@ -112,11 +117,10 @@ function install_optional_dependencies() {
             base-devel git autoconf automake1.16 automake-wrapper \
             libtool libcrypt-devel openssl
 
-        if [ "${MSYSTEM:-}" = "MINGW64" ] || [ "${MSYSTEM:-}" = "MINGW32" ]; then
+        if [ "${MSYSTEM:-}" = "MINGW64" ]; then
             pacman -S --quiet --noconfirm --needed \
-                mingw-w64-x86_64-make mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils mingw-w64-i686-gcc \
-                mingw-w64-x86_64-perl \
-                mingw-w64-x86_64-poppler
+                mingw-w64-x86_64-make mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils \
+                mingw-w64-x86_64-perl
         fi
     fi
 }
@@ -129,8 +133,14 @@ function install_documentation_dependencies() {
             texlive texinfo
     elif [ -x "$(command -v pacman)" ]; then
         pacman -S --quiet --noconfirm --needed \
-            texinfo texinfo-tex \
-            mingw-w64-x86_64-texlive-bin mingw-w64-x86_64-texlive-core mingw-w64-x86_64-texlive-extra-utils
+            texinfo texinfo-tex
+
+        if [ "${MSYSTEM:-}" = "MINGW64" ]; then
+            pacman -S --quiet --noconfirm --needed \
+                mingw-w64-x86_64-texlive-bin mingw-w64-x86_64-texlive-core \
+                mingw-w64-x86_64-texlive-extra-utils \
+                mingw-w64-x86_64-poppler
+        fi
     fi
 }
 
