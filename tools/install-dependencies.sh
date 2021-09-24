@@ -39,11 +39,11 @@ function install_dependencies() {
             bash openssl
     elif [ -x "$(command -v pacman)" ]; then
         pacman -S --quiet --noconfirm --needed \
-            git perl \
-            msys2-keyring \
-            msys2-runtime-devel msys2-w32api-headers msys2-w32api-runtime \
+            git \
+            msys2-keyring msys2-runtime-devel msys2-w32api-headers msys2-w32api-runtime \
             base-devel gcc make autoconf automake1.16 automake-wrapper \
-            libtool libcrypt-devel openssl
+            libtool libcrypt-devel openssl \
+            perl perl-devel
 
         if [ "${MSYSTEM:-}" = "MINGW64" ] || [ "${MSYSTEM:-}" = "MINGW32" ]; then
             pacman -S --quiet --noconfirm --needed \
@@ -78,7 +78,7 @@ function install_dependencies() {
     # folder at '/mingw64/bin/core_perl/pl2bat.bat'
     _cmd "$STOW_PERL" -MCPAN -e "CPAN::Shell->notest('install', 'ExtUtils::MakeMaker')"
     if [ -n "${MSYS:-}" ]; then
-        pl2bat $(which pl2bat) 2>/dev/null || true
+        pl2bat "$(which pl2bat)" 2>/dev/null || true
     fi
 
     if ! "$STOW_PERL" -MApp::cpanminus -le 1 2>/dev/null; then
