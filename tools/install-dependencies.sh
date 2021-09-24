@@ -52,6 +52,10 @@ function install_dependencies() {
         fi
     fi
 
+    if [ -x "$(command -v cygpath)" ]; then
+        echo "CPANM: $(cygpath --windows "${HOME:-}/.cpanm/work/")"
+    fi
+
     # Update version we use after we install in case the default version should be
     # different e.g., we just installed mingw64 version of perl
     STOW_PERL="$(command -v perl)"
@@ -77,6 +81,9 @@ function install_dependencies() {
     # installed and then calling 'pl2bat' to generate it. It should be located under bin
     # folder at '/mingw64/bin/core_perl/pl2bat.bat'
     if [ -n "${MSYS:-}" ]; then
+        if [ "${MSYSTEM:-}" = "MINGW64" ]; then
+            export PATH="$PATH:/mingw64/bin:/mingw64/bin/core_perl"
+        fi
         pl2bat "$(which pl2bat)" 2>/dev/null || true
     fi
 
@@ -101,10 +108,6 @@ function install_dependencies() {
     if ! "$STOW_PERL" -MApp::cpanminus -le 1 2>/dev/null; then
         echo "❌ ERROR: 'cpanm' not found."
         return 11
-    fi
-
-    if [ -x "$(command -v cygpath)" ]; then
-        echo "CPANM: $(cygpath --windows "${HOME:-}/.cpanm/work/")"
     fi
 
     # We intentionally install as little as possible here to support as many system combinations as
