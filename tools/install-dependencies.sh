@@ -9,7 +9,11 @@ unset tmp
 STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && cd ../ && pwd)"
 
 function _cmd {
-    echo "##[cmd] $*"
+    local cmd
+    cmd="$*"
+    cmd=${cmd//$'\n'/} # Remove all newlines
+    cmd=${cmd%$'\n'}   # Remove trailing newline
+    echo "##[cmd] $cmd"
     "$@"
 }
 
@@ -68,6 +72,15 @@ function install_dependencies() {
 
     _cmd _sudo "$STOW_PERL" "$STOW_ROOT/tools/initialize-cpan-config.pl" || true
 
+    # Depending on install order it is possible in an MSYS environment to get errors about
+    # the 'pl2bat' file being missing. Workaround here is to ensure ExtUtils::MakeMaker is
+    # installed and then calling 'pl2bat' to generate it. It should be located under bin
+    # folder at '/mingw64/bin/core_perl/pl2bat.bat'
+    _cmd "$STOW_PERL" -MCPAN -e "CPAN::Shell->notest('install', 'ExtUtils::MakeMaker')"
+    if [ -n "${MSYS:-}" ]; then
+        pl2bat $(which pl2bat) 2>/dev/null || true
+    fi
+
     if ! "$STOW_PERL" -MApp::cpanminus -le 1 2>/dev/null; then
         local _cpanm
         _cpanm="$STOW_ROOT/cpanm"
@@ -100,7 +113,9 @@ function install_dependencies() {
     # seemingly obscure issues you could run into e.g., missing 'cc1' or 'poll.h' even when they are
     # in fact installed.
     # shellcheck disable=SC2016
-    _cmd _sudo "$STOW_PERL" -MApp::cpanminus::fatscript -le 'my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;' -- --notest Carp Test::Output ExtUtils::PL2Bat Inline::C
+    _cmd _sudo "$STOW_PERL" -MApp::cpanminus::fatscript -le \
+        'my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;' -- \
+        --notest Carp Test::Output ExtUtils::PL2Bat Inline::C
 
     echo "Installed required Perl dependencies."
 }

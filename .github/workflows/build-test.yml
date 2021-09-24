@@ -259,7 +259,7 @@ jobs:
           name: cpanm-logs
 
           # https://github.com/msys2/setup-msys2/blob/master/main.js
-          path: C:\msys64\home\runneradmin\.cpanm\work\**\*.log
+          path: C:\msys64\home\runneradmin\.cpan*\work\**\*.log
 
       - name: Upload Unit Test Results
         if: always()
@@ -288,14 +288,6 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           path: artifacts
-
-      - name: Publish Unit Test Results
-        if: always()
-        uses: EnricoMi/publish-unit-test-result-action@v1
-        with:
-          check_name: "Stow Test Results"
-          report_individual_runs: true
-          files: artifacts/**/*.xml
 
       - name: Test Report
         if: always()
