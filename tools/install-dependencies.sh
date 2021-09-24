@@ -8,6 +8,11 @@ unset tmp
 
 STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && cd ../ && pwd)"
 
+function _cmd {
+    echo "##[cmd] $*"
+    "$@"
+}
+
 function _sudo {
     if [ -x "$(command -v sudo)" ] && [ ! -x "$(command -v cygpath)" ]; then
         sudo "$@"
@@ -17,8 +22,6 @@ function _sudo {
 }
 
 function install_dependencies() {
-    export STOW_PERL="$(which perl)"
-
     if [ -x "$(command -v apt-get)" ]; then
         _sudo apt-get update
         _sudo apt-get -y install \
@@ -42,45 +45,48 @@ function install_dependencies() {
             pacman -S --quiet --noconfirm --needed \
                 mingw-w64-x86_64-perl \
                 mingw-w64-x86_64-make mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils
-
-            if [ -f "/mingw64/bin/perl" ]; then
-                export STOW_PERL="/mingw64/bin/perl"
-            fi
         fi
     fi
 
-    if [ ! -e "$HOME/.cpan/CPAN/MyConfig.pm" ]; then
-        (
-            echo "yes"
-            echo ""
-            echo "no"
-            echo "exit"
-        ) | _sudo "$STOW_PERL" -MCPAN -e "shell" || true
+    # Update version we use after we install in case the default version should be
+    # different e.g., we just installed mingw64 version of perl
+    STOW_PERL="$(command -v perl)"
 
+    if [ -f "/mingw64/bin/perl" ]; then
+        STOW_PERL="/mingw64/bin/perl"
+    fi
+
+    PERL="$STOW_PERL"
+    export STOW_PERL STOW_VERSION STOW_PERL PERL
+
+    (
+        echo "yes"
         echo ""
-        echo "##[cmd] sudo "$STOW_PERL" $STOW_ROOT/tools/initialize-cpan-config.pl"
-        _sudo "$STOW_PERL" "$STOW_ROOT/tools/initialize-cpan-config.pl" || true
-    fi
+        echo "no"
+        echo "exit"
+    ) | _cmd _sudo "$STOW_PERL" -MCPAN -e "shell" || true
 
-    if [ ! -x "$(command -v cpanm)" ]; then
+    _cmd _sudo "$STOW_PERL" "$STOW_ROOT/tools/initialize-cpan-config.pl" || true
+
+    if ! "$STOW_PERL" -MApp::cpanminus -le 1 2>/dev/null; then
+        local _cpanm
+        _cpanm="$STOW_ROOT/cpanm"
+
         if [ -x "$(command -v curl)" ]; then
-            local _cpanm
-            _cpanm="$STOW_ROOT/cpanm"
             curl -L --silent "https://cpanmin.us/" -o "$_cpanm"
-            chmod +x "$_cpanm"
-            echo "##[cmd] sudo perl $_cpanm --verbose App::cpanminus"
-            _sudo "$STOW_PERL" "$_cpanm" --notest App::cpanminus
-            rm -f "$_cpanm"
         fi
+
+        chmod +x "$_cpanm"
+        _cmd _sudo "$STOW_PERL" "$_cpanm" --notest App::cpanminus
+        rm -f "$_cpanm"
 
         # Use 'cpan' to install as a last resort
-        if [ ! -x "$(command -v cpanm)" ]; then
-            echo "##[cmd] sudo $STOW_PERL -MCPAN -e \"CPAN::Shell->notest('install', 'App::cpanminus'\""
-            _sudo "$STOW_PERL" -MCPAN -e "CPAN::Shell->notest('install', 'App::cpanminus')"
+        if ! "$STOW_PERL" -MApp::cpanminus -le 1 2>/dev/null; then
+            _cmd "$STOW_PERL" -MCPAN -e "CPAN::Shell->notest('install', 'App::cpanminus')"
         fi
     fi
 
-    if [ ! -x "$(command -v cpanm)" ]; then
+    if ! "$STOW_PERL" -MApp::cpanminus -le 1 2>/dev/null; then
         echo "❌ ERROR: 'cpanm' not found."
         return 11
     fi
@@ -89,14 +95,12 @@ function install_dependencies() {
         echo "CPANM: $(cygpath --windows "${HOME:-}/.cpanm/work/")"
     fi
 
-    # Alternative approach allowing a local install
-    #_sudo cpanm --local-lib=~/perl5 local::lib && eval "$(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)"
-
     # We intentionally install as little as possible here to support as many system combinations as
     # possible including MSYS, cygwin, Ubuntu, Alpine, etc. The more libraries we add here the more
     # seemingly obscure issues you could run into e.g., missing 'cc1' or 'poll.h' even when they are
     # in fact installed.
-    _sudo cpanm --notest Carp Test::Output ExtUtils::PL2Bat Inline::C
+    # shellcheck disable=SC2016
+    _cmd _sudo "$STOW_PERL" -MApp::cpanminus::fatscript -le 'my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;' -- --notest Carp Test::Output ExtUtils::PL2Bat Inline::C
 
     echo "Installed required Perl dependencies."
 }

@@ -26,9 +26,11 @@
 set -ef -o pipefail
 IFS=$'\n\t'
 
-test_perl_version () {
-    perl_version="$1"
-    perlbrew use "$perl_version"
+test_perl_version() {
+    local input_perl_version
+
+    input_perl_version="$1"
+    perlbrew use "$input_perl_version"
 
     # shellcheck disable=SC2005
     echo "$(perl --version)"
@@ -52,8 +54,8 @@ if [[ -n "$LIST_PERL_VERSIONS" ]]; then
     perlbrew list
 elif [[ -z "$PERL_VERSION" ]]; then
     echo "Testing all versions ..."
-    for perl_version in $(perlbrew list | sed 's/ //g'); do
-        test_perl_version "$perl_version"
+    for input_perl_version in $(perlbrew list | sed 's/ //g'); do
+        test_perl_version "$input_perl_version"
     done
     make distclean
 else

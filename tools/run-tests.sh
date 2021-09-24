@@ -2,6 +2,7 @@
 
 STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && cd ../ && pwd)"
 
+# shellcheck source=tools/make-stow.sh
 source "$STOW_ROOT/tools/make-stow.sh"
 
 if [ -x "$(command -v pacman)" ]; then
