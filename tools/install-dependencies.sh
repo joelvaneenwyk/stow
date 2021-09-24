@@ -76,7 +76,6 @@ function install_dependencies() {
     # the 'pl2bat' file being missing. Workaround here is to ensure ExtUtils::MakeMaker is
     # installed and then calling 'pl2bat' to generate it. It should be located under bin
     # folder at '/mingw64/bin/core_perl/pl2bat.bat'
-    _cmd "$STOW_PERL" -MCPAN -e "CPAN::Shell->notest('install', 'ExtUtils::MakeMaker')"
     if [ -n "${MSYS:-}" ]; then
         pl2bat "$(which pl2bat)" 2>/dev/null || true
     fi
