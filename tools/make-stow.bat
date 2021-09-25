@@ -17,7 +17,7 @@ exit /b
     set PMDIR=%STOW_ROOT%\lib
     set "PMDIR=%PMDIR:\=/%"
 
-    %STOW_PERL% -e "print 'Perl v' . substr($^V, 1)"
+    %STOW_PERL% -e "print 'Perl v' . substr($^V, 1) . ""\n"""
     if errorlevel 1 (
         echo Perl executable invalid or missing: '%STOW_PERL%'
         exit /b 1

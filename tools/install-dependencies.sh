@@ -84,6 +84,9 @@ function install_dependencies() {
         if [ "${MSYSTEM:-}" = "MINGW64" ]; then
             export PATH="$PATH:/mingw64/bin:/mingw64/bin/core_perl"
         fi
+
+        # We intentionally use 'which' here as we are on Windows
+        # shellcheck disable=SC2230
         pl2bat "$(which pl2bat)" 2>/dev/null || true
     fi
 
