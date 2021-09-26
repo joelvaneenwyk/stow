@@ -39,6 +39,7 @@ exit /b
     rmdir /q /s "%STOW_ROOT%\_build\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\_Inline\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\bin\_Inline\" > nul 2>&1
+    rmdir /q /s "%STOW_ROOT%\tools\_Inline\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\_test\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\autom4te.cache\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\blib\" > nul 2>&1
@@ -46,4 +47,5 @@ exit /b
     rmdir /q /s "%STOW_ROOT%\stow\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\cover_db\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\tmp-testing-trees\" > nul 2>&1
+    rmdir /q /s "%STOW_ROOT%\stow-*\" > nul 2>&1
 exit /b 0
