@@ -461,7 +461,10 @@ sub link_windows {
 
     # Cannot *usually* (& usefully?) create hard links to directories: Windows & Linux
     return 0 if is_directory($oldfile);
-    return 1 & CreateHardLink( _to($newfile), _to($oldfile) );
+
+    if (IS_WIN32) {
+        return 1 & CreateHardLink( _to($newfile), _to($oldfile) );
+    }
 }
 
 sub readlink_windows {
@@ -690,7 +693,7 @@ $code = <<'END_OF_C';
 END_OF_C
 }
 
-use Inline C =>
+use if IS_WIN32, 'Inline C' =>
     $code =>
     name => 'Stow::Util', LIBS => '-lKernel32.lib' => PREFIX => 'my_';
 

@@ -5,10 +5,10 @@ STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && cd
 # shellcheck source=tools/make-stow.sh
 source "$STOW_ROOT/tools/make-stow.sh"
 
-if [ -x "$(command -v pacman)" ]; then
-    cpanm --notest Carp Inline::C Test::Output Test::More Test::Exception Win32::Mutex
-else
-    cpanm --notest Carp Inline::C Test::Output Test::More Test::Exception
+install_perl_packages Carp IO::Scalar Test::Output Test::More Test::Exception
+
+if [ -n "${MSYSTEM:-}" ]; then
+    install_perl_packages Inline::C Win32::Mutex
 fi
 
 prove -I "$STOW_ROOT/t" -I "$STOW_ROOT/lib" -I "$STOW_ROOT/bin" "$STOW_ROOT/t"

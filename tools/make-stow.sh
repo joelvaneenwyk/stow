@@ -5,7 +5,7 @@ function edit() {
     output_file="$1"
 
     # This is more explicit and reliable than the config file trick
-    sed -e "s|[@]STOW_PERL[@]|$STOW_PERL|g" \
+    sed -e "s|[@]PERL[@]|$STOW_PERL|g" \
         -e "s|[@]VERSION[@]|$STOW_VERSION|g" \
         -e "s|[@]USE_LIB_PMDIR[@]|$USE_LIB_PMDIR|g" "$input_file" >"$output_file"
 }

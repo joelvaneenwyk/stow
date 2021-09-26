@@ -8,7 +8,7 @@ unset tmp
 
 STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && cd ../ && pwd)"
 
-function _cmd {
+function run_command {
     local cmd
     cmd="$*"
     cmd=${cmd//$'\n'/} # Remove all newlines
@@ -17,7 +17,7 @@ function _cmd {
     "$@"
 }
 
-function _sudo {
+function use_sudo {
     if [ -x "$(command -v sudo)" ] && [ ! -x "$(command -v cygpath)" ]; then
         sudo "$@"
     else
@@ -25,14 +25,27 @@ function _sudo {
     fi
 }
 
+function install_perl_packages() {
+    if "$STOW_PERL" -MApp::cpanminus -le 1 2>/dev/null; then
+        # shellcheck disable=SC2016
+        run_command use_sudo "$STOW_PERL" -MApp::cpanminus::fatscript -le \
+            'my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;' -- \
+            --notest "$@"
+    else
+        for package in "$@"; do
+            run_command use_sudo "$STOW_PERL" -MCPAN -e "CPAN::Shell->notest('install', '$package')"
+        done
+    fi
+}
+
 function install_dependencies() {
     if [ -x "$(command -v apt-get)" ]; then
-        _sudo apt-get update
-        _sudo apt-get -y install \
+        use_sudo apt-get update
+        use_sudo apt-get -y install \
             sudo perl bzip2 gawk curl libssl-dev make patch cpanminus
     elif [ -x "$(command -v apk)" ]; then
-        _sudo apk update
-        _sudo apk add \
+        use_sudo apk update
+        use_sudo apk add \
             sudo wget curl unzip xclip \
             build-base gcc g++ make musl-dev openssl-dev zlib-dev \
             perl perl-dev perl-utils perl-app-cpanminus \
@@ -72,15 +85,15 @@ function install_dependencies() {
         echo ""
         echo "no"
         echo "exit"
-    ) | _cmd _sudo "$STOW_PERL" -MCPAN -e "shell" || true
+    ) | run_command use_sudo "$STOW_PERL" -MCPAN -e "shell" || true
 
-    _cmd _sudo "$STOW_PERL" "$STOW_ROOT/tools/initialize-cpan-config.pl" || true
+    run_command use_sudo "$STOW_PERL" "$STOW_ROOT/tools/initialize-cpan-config.pl" || true
 
     # Depending on install order it is possible in an MSYS environment to get errors about
     # the 'pl2bat' file being missing. Workaround here is to ensure ExtUtils::MakeMaker is
     # installed and then calling 'pl2bat' to generate it. It should be located under bin
     # folder at '/mingw64/bin/core_perl/pl2bat.bat'
-    if [ -n "${MSYS:-}" ]; then
+    if [ -n "${MSYSTEM:-}" ]; then
         if [ "${MSYSTEM:-}" = "MINGW64" ]; then
             export PATH="$PATH:/mingw64/bin:/mingw64/bin/core_perl"
         fi
@@ -99,28 +112,24 @@ function install_dependencies() {
         fi
 
         chmod +x "$_cpanm"
-        _cmd _sudo "$STOW_PERL" "$_cpanm" --notest App::cpanminus
+        run_command use_sudo "$STOW_PERL" "$_cpanm" --notest App::cpanminus || true
         rm -f "$_cpanm"
 
         # Use 'cpan' to install as a last resort
         if ! "$STOW_PERL" -MApp::cpanminus -le 1 2>/dev/null; then
-            _cmd "$STOW_PERL" -MCPAN -e "CPAN::Shell->notest('install', 'App::cpanminus')"
+            install_perl_packages App::cpanminus || true
         fi
-    fi
-
-    if ! "$STOW_PERL" -MApp::cpanminus -le 1 2>/dev/null; then
-        echo "❌ ERROR: 'cpanm' not found."
-        return 11
     fi
 
     # We intentionally install as little as possible here to support as many system combinations as
     # possible including MSYS, cygwin, Ubuntu, Alpine, etc. The more libraries we add here the more
     # seemingly obscure issues you could run into e.g., missing 'cc1' or 'poll.h' even when they are
     # in fact installed.
-    # shellcheck disable=SC2016
-    _cmd _sudo "$STOW_PERL" -MApp::cpanminus::fatscript -le \
-        'my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;' -- \
-        --notest Carp Test::Output ExtUtils::PL2Bat Inline::C
+    install_perl_packages Carp Test::Output
+
+    if [ -n "${MSYSTEM:-}" ]; then
+        install_perl_packages ExtUtils::PL2Bat Inline::C
+    fi
 
     echo "Installed required Perl dependencies."
 }
@@ -129,7 +138,7 @@ function install_optional_dependencies() {
     install_dependencies
 
     if [ -x "$(command -v apt-get)" ]; then
-        _sudo apt-get -y install \
+        use_sudo apt-get -y install \
             texlive texinfo cpanminus \
             autoconf bzip2 \
             perl \
@@ -153,7 +162,7 @@ function install_documentation_dependencies() {
     install_dependencies
 
     if [ -x "$(command -v apt-get)" ]; then
-        _sudo apt-get -y install \
+        use_sudo apt-get -y install \
             texlive texinfo
     elif [ -x "$(command -v pacman)" ]; then
         pacman -S --quiet --noconfirm --needed \
