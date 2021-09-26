@@ -20,7 +20,19 @@
 # perlbrew scripts from breaking due to
 # unset variables.
 # shellcheck disable=SC1090
-. "${PERLBREW_ROOT:-/usr/local/perlbrew/etc/bashrc}"
+PERLBREW_ROOT="${PERLBREW_ROOT:-/usr/local/perlbrew}"
+
+if [ ! -f "$PERLBREW_ROOT/etc/bashrc" ]; then
+    PERLBREW_ROOT="$HOME/perl5/perlbrew"
+fi
+
+_perlbrew_setup="$PERLBREW_ROOT/etc/bashrc"
+
+if [ -f "$_perlbrew_setup" ]; then
+    . "$_perlbrew_setup"
+else
+    echo "ERROR: Failed to find perlbrew setup: '$_perlbrew_setup'"
+fi
 
 # Standard safety protocol
 set -ef -o pipefail
@@ -54,7 +66,7 @@ if [[ -n "$LIST_PERL_VERSIONS" ]]; then
     perlbrew list
 elif [[ -z "$PERL_VERSION" ]]; then
     echo "Testing all versions ..."
-    for input_perl_version in $(perlbrew list | sed 's/ //g'); do
+    for input_perl_version in $(perlbrew list | sed 's/ //g' | sed 's/\*//g'); do
         test_perl_version "$input_perl_version"
     done
     make distclean

@@ -55,7 +55,9 @@ function install_dependencies() {
     if [ -x "$(command -v apt-get)" ]; then
         use_sudo apt-get update
         use_sudo apt-get -y install \
-            sudo perl bzip2 gawk curl libssl-dev make patch cpanminus
+            sudo bzip2 gawk curl libssl-dev make autoconf patch \
+            perl cpanmins \
+            texlive texinfo
     elif [ -x "$(command -v apk)" ]; then
         use_sudo apk update
         use_sudo apk add \
@@ -136,49 +138,6 @@ function install_dependencies() {
     fi
 
     echo "Installed required Perl dependencies."
-}
-
-function install_optional_dependencies() {
-    install_dependencies
-
-    if [ -x "$(command -v apt-get)" ]; then
-        use_sudo apt-get -y install \
-            texlive texinfo cpanminus \
-            autoconf bzip2 \
-            perl \
-            gawk curl libssl-dev make patch
-    elif [ -x "$(command -v pacman)" ]; then
-        pacman -S --quiet --noconfirm --needed \
-            msys2-devel msys2-runtime-devel msys2-keyring \
-            curl wget \
-            base-devel git autoconf automake1.16 automake-wrapper \
-            libtool libcrypt-devel openssl
-
-        if [ "${MSYSTEM:-}" = "MINGW64" ]; then
-            pacman -S --quiet --noconfirm --needed \
-                mingw-w64-x86_64-make mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils \
-                mingw-w64-x86_64-perl
-        fi
-    fi
-}
-
-function install_documentation_dependencies() {
-    install_dependencies
-
-    if [ -x "$(command -v apt-get)" ]; then
-        use_sudo apt-get -y install \
-            texlive texinfo
-    elif [ -x "$(command -v pacman)" ]; then
-        pacman -S --quiet --noconfirm --needed \
-            texinfo texinfo-tex
-
-        if [ "${MSYSTEM:-}" = "MINGW64" ]; then
-            pacman -S --quiet --noconfirm --needed \
-                mingw-w64-x86_64-texlive-bin mingw-w64-x86_64-texlive-core \
-                mingw-w64-x86_64-texlive-extra-utils \
-                mingw-w64-x86_64-poppler
-        fi
-    fi
 }
 
 update_stow_environment

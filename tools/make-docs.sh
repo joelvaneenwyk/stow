@@ -1,5 +1,22 @@
 #!/bin/bash
 
+function install_texlive() {
+    if [ -x "$(command -v apt-get)" ]; then
+        use_sudo apt-get -y install \
+            texlive texinfo
+    elif [ -x "$(command -v pacman)" ]; then
+        pacman -S --quiet --noconfirm --needed \
+            texinfo texinfo-tex
+
+        if [ "${MSYSTEM:-}" = "MINGW64" ]; then
+            pacman -S --quiet --noconfirm --needed \
+                mingw-w64-x86_64-texlive-bin mingw-w64-x86_64-texlive-core \
+                mingw-w64-x86_64-texlive-extra-utils \
+                mingw-w64-x86_64-poppler
+        fi
+    fi
+}
+
 function make_docs() {
     STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && cd ../ && pwd)"
 
@@ -9,7 +26,7 @@ function make_docs() {
     # shellcheck source=tools/make-clean.sh
     source "$STOW_ROOT/tools/make-clean.sh"
 
-    install_documentation_dependencies
+    install_texlive
 
     siteprefix=
     eval "$(perl -V:siteprefix)"

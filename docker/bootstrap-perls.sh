@@ -18,12 +18,17 @@
 # Load perlbrew environment
 # shellcheck disable=SC1090
 PERLBREW_ROOT="${PERLBREW_ROOT:-/usr/local/perlbrew}"
-_perlbrewSetup="$PERLBREW_ROOT/etc/bashrc"
 
-if [ -f "$_perlbrewSetup" ]; then
-    . "$_perlbrewSetup"
+if [ ! -f "$PERLBREW_ROOT/etc/bashrc" ]; then
+    PERLBREW_ROOT="$HOME/perl5/perlbrew"
+fi
+
+_perlbrew_setup="$PERLBREW_ROOT/etc/bashrc"
+
+if [ -f "$_perlbrew_setup" ]; then
+    . "$_perlbrew_setup"
 else
-    echo "ERROR: Failed to find perlbrew setup script."
+    echo "ERROR: Failed to find perlbrew setup: '$_perlbrew_setup'"
 fi
 
 # For each perl version installed.
