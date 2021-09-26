@@ -2,8 +2,8 @@
 
 STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && cd ../ && pwd)"
 
-# shellcheck source=tools/make-stow.sh
-source "$STOW_ROOT/tools/make-stow.sh"
+# shellcheck source=tools/stow-lib.sh
+source "$STOW_ROOT/tools/stow-lib.sh"
 
 install_perl_packages Carp IO::Scalar Test::Output Test::More Test::Exception
 

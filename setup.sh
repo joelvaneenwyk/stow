@@ -21,9 +21,15 @@ if [ -x "$(command -v cygpath)" ]; then
     echo "Site prefix    (unix): $siteprefix"
 fi
 
+cd "$STOW_ROOT" || true
+
 # Run configure to generate 'Makefile' and then run make to create the
 # stow library and binary files e.g., 'stow', 'chkstow', etc.
 ./configure --srcdir="$STOW_ROOT" --prefix="${siteprefix:-}" && make
 
 # This will create 'Build' or 'Build.bat' depending on platform
 perl -I "$STOW_ROOT" -I "$STOW_ROOT/lib" "$STOW_ROOT/Build.PL"
+
+"$STOW_ROOT/tools/make-stow.sh"
+
+"$STOW_ROOT/tools/run-tests.sh"

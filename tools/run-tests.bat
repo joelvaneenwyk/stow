@@ -1,7 +1,5 @@
 @echo off
 
-call "%~dp0make-stow.bat"
-
 call :RunStowTests "%~dp0..\"
 exit /b
 

@@ -47,5 +47,5 @@ exit /b
     rmdir /q /s "%STOW_ROOT%\stow\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\cover_db\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\tmp-testing-trees\" > nul 2>&1
-    rmdir /q /s "%STOW_ROOT%\stow-*\" > nul 2>&1
+    rmdir /q /s "%STOW_ROOT%\stow-2.3.2\" > nul 2>&1
 exit /b 0

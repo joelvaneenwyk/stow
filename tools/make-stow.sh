@@ -15,18 +15,10 @@ function make_stow() {
 
     STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && cd ../ && pwd)"
 
-    # shellcheck source=./tools/install-dependencies.sh
-    source "$STOW_ROOT/tools/install-dependencies.sh"
+    # shellcheck source=./tools/stow-lib.sh
+    source "$STOW_ROOT/tools/stow-lib.sh"
 
     cd "$STOW_ROOT" || true
-
-    if [ ! -f "${STOW_PERL:-}" ]; then
-        STOW_PERL=$(command -v perl)
-    fi
-
-    PERL="$STOW_PERL"
-    STOW_VERSION=2.3.2
-    export STOW_VERSION STOW_PERL PERL
 
     rm -rf "$STOW_ROOT/_Inline"
     rm -f "$STOW_ROOT/bin/chkstow"

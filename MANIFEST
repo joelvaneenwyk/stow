@@ -27,6 +27,7 @@ doc/version.texi
 INSTALL.md
 lib/Stow.pm
 lib/Stow.pm.in
+lib/Stow/Util.cpp
 lib/Stow/Util.pm
 lib/Stow/Util.pm.in
 Makefile.am
@@ -69,6 +70,7 @@ tools/make-docs.bat
 tools/make-docs.sh
 tools/run-tests.bat
 tools/run-tests.sh
+tools/stow-lib.sh
 THANKS
 TODO
 META.yml

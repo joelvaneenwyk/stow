@@ -23,8 +23,6 @@ exit /b
         exit /b 1
     )
 
-    call "%~dp0install-dependencies.bat"
-
     set _inc=0
     for /f "tokens=*" %%a in ('%STOW_PERL% -V') do (
         if "!_inc!"=="1" (
