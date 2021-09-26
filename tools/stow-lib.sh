@@ -56,7 +56,7 @@ function install_dependencies() {
         use_sudo apt-get update
         use_sudo apt-get -y install \
             sudo bzip2 gawk curl libssl-dev make autoconf patch \
-            perl cpanmins \
+            perl cpanminus \
             texlive texinfo
     elif [ -x "$(command -v apk)" ]; then
         use_sudo apk update
