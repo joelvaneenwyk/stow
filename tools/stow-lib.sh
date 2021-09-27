@@ -37,6 +37,11 @@ function update_stow_environment() {
     unset temp
     unset tmp
 
+    if [ ! -f "${STOW_ROOT:-}/Build.PL" ]; then
+        STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && cd ../ && pwd)"
+    fi
+    export STOW_ROOT
+
     # Update version we use after we install in case the default version should be
     # different e.g., we just installed mingw64 version of perl
     STOW_PERL="$(command -v perl)"
@@ -45,16 +50,17 @@ function update_stow_environment() {
         STOW_PERL="/mingw64/bin/perl"
     fi
 
-    PERL="$STOW_PERL"
-    export STOW_PERL STOW_VERSION STOW_PERL PERL
-
     if [ ! -f "${STOW_PERL:-}" ]; then
         STOW_PERL=$(command -v perl)
     fi
 
+    export STOW_PERL
+
     PERL="$STOW_PERL"
+    export PERL
+
     STOW_VERSION="$("$STOW_PERL" "$STOW_ROOT/tools/get-version")"
-    export STOW_VERSION STOW_PERL PERL
+    export STOW_VERSION
 }
 
 function install_dependencies() {

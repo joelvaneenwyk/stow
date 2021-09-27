@@ -89,7 +89,10 @@ function run_stow_tests() {
         source "$STOW_ROOT/tools/install-dependencies.sh"
 
         for input_perl_version in $(perlbrew list | sed 's/ //g' | sed 's/\*//g'); do
-            test_perl_version "$input_perl_version"
+            if ! test_perl_version "$input_perl_version"; then
+                echo "❌ Stow tests failed for Perl: '$input_perl_version'"
+                return 5
+            fi
         done
 
         make distclean
@@ -100,24 +103,28 @@ function run_stow_tests() {
         # Test a specific version requested via $PERL_VERSION environment
         # variable.  Make sure set -e doesn't cause us to bail on failure
         # before we start an interactive shell.
-        test_perl_version "$PERL_VERSION" || true
-
-        # N.B. Don't distclean since we probably want to debug this Perl
-        # version interactively.
-        cat <<EOF
-To run a specific test, type something like:
+        if ! test_perl_version "$PERL_VERSION"; then
+            cat <<EOF
+NOTE: To run a specific test, type something like:
 
     perl -Ilib -Ibin -It t/cli_options.t
 
 Code can be edited on the host and will immediately take effect inside
 this container.
-
 EOF
+            return 3
+        fi
 
-        return 3
+        # We intentionally do not 'make distclean' since we probably want to
+        # debug this Perl version interactively.
     fi
+
+    return 0
 }
 
-if ! run_stow_tests "$@"; then
+if run_stow_tests "$@"; then
+    echo "✔ Stow tests succeeded."
+else
+    # Launch a bash instance so we can debug failures
     bash
 fi
