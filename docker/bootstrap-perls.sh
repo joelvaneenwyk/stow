@@ -36,8 +36,11 @@ for p_version in $(perlbrew list | sed 's/ //g'); do
     # Switch to it.
     perlbrew use "$p_version"
 
-    # And install the needed modules.
-    "$PERLBREW_ROOT/bin/cpanm" -n Devel::Cover::Report::Coveralls Test::More Test::Output
+    # Install the needed modules.
+    "$PERLBREW_ROOT/bin/cpanm" -n \
+        Carp IO:Scalar \
+        Devel::Cover::Report::Coveralls \
+        Test::More Test::Output Test::Exception
 done
 
 # Cleanup to remove any temp files.

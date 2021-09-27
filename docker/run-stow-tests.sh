@@ -19,26 +19,8 @@
 # Load before setting safety to keep
 # perlbrew scripts from breaking due to
 # unset variables.
-# shellcheck disable=SC1090
-PERLBREW_ROOT="${PERLBREW_ROOT:-/usr/local/perlbrew}"
 
-if [ ! -f "$PERLBREW_ROOT/etc/bashrc" ]; then
-    PERLBREW_ROOT="$HOME/perl5/perlbrew"
-fi
-
-_perlbrew_setup="$PERLBREW_ROOT/etc/bashrc"
-
-if [ -f "$_perlbrew_setup" ]; then
-    . "$_perlbrew_setup"
-else
-    echo "ERROR: Failed to find perlbrew setup: '$_perlbrew_setup'"
-fi
-
-# Standard safety protocol
-set -ef -o pipefail
-IFS=$'\n\t'
-
-test_perl_version() {
+function test_perl_version() {
     local input_perl_version
 
     input_perl_version="$1"
@@ -61,6 +43,23 @@ test_perl_version() {
     ./Build distcheck
 }
 
+PERLBREW_ROOT="${PERLBREW_ROOT:-/usr/local/perlbrew}"
+
+if [ ! -f "$PERLBREW_ROOT/etc/bashrc" ]; then
+    PERLBREW_ROOT="$HOME/perl5/perlbrew"
+fi
+
+if [ -f "$PERLBREW_ROOT/etc/bashrc" ]; then
+    # shellcheck disable=SC1090,SC1091
+    source "$PERLBREW_ROOT/etc/bashrc"
+else
+    echo "ERROR: Failed to find perlbrew setup: '$PERLBREW_ROOT/etc/bashrc'"
+fi
+
+# Standard safety protocol
+set -ef -o pipefail
+IFS=$'\n\t'
+
 if [[ -n "$LIST_PERL_VERSIONS" ]]; then
     echo "Listing Perl versions available from perlbrew ..."
     perlbrew list
@@ -72,20 +71,23 @@ elif [[ -z "$PERL_VERSION" ]]; then
     make distclean
 else
     echo "Testing with Perl $PERL_VERSION"
+
     # Test a specific version requested via $PERL_VERSION environment
     # variable.  Make sure set -e doesn't cause us to bail on failure
     # before we start an interactive shell.
-    test_perl_version "$PERL_VERSION" || :
+    test_perl_version "$PERL_VERSION" || true
+
     # N.B. Don't distclean since we probably want to debug this Perl
     # version interactively.
     cat <<EOF
 To run a specific test, type something like:
 
-perl -Ilib -Ibin -It t/cli_options.t
+    perl -Ilib -Ibin -It t/cli_options.t
 
 Code can be edited on the host and will immediately take effect inside
 this container.
 
 EOF
+
     bash
 fi

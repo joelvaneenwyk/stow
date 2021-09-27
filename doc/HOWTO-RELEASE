@@ -66,8 +66,8 @@ Release procedure
 
 - Run the tests on various Perl versions via Docker:
 
-    ./docker-build.sh
-    ./docker-test.sh
+    ./docker/docker-build.sh
+    ./docker/docker-test.sh
 
   Obviously if there are any failures, they will need to be fixed
   first, and then repeat the above steps.

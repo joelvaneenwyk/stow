@@ -17,7 +17,7 @@ function use_sudo {
     fi
 }
 
-function install_perl_packages() {
+function install_perl_modules() {
     if "$STOW_PERL" -MApp::cpanminus -le 1 2>/dev/null; then
         # shellcheck disable=SC2016
         run_command use_sudo "$STOW_PERL" -MApp::cpanminus::fatscript -le \
@@ -47,7 +47,7 @@ function update_stow_environment() {
     fi
 
     PERL="$STOW_PERL"
-    STOW_VERSION=2.3.2
+    STOW_VERSION="$("$STOW_PERL" "$STOW_ROOT/get-version")"
     export STOW_VERSION STOW_PERL PERL
 }
 
@@ -123,7 +123,7 @@ function install_dependencies() {
 
         # Use 'cpan' to install as a last resort
         if ! "$STOW_PERL" -MApp::cpanminus -le 1 2>/dev/null; then
-            install_perl_packages App::cpanminus || true
+            install_perl_modules App::cpanminus || true
         fi
     fi
 
@@ -131,10 +131,10 @@ function install_dependencies() {
     # possible including MSYS, cygwin, Ubuntu, Alpine, etc. The more libraries we add here the more
     # seemingly obscure issues you could run into e.g., missing 'cc1' or 'poll.h' even when they are
     # in fact installed.
-    install_perl_packages Carp Test::Output
+    install_perl_modules Carp Test::Output
 
     if [ -n "${MSYSTEM:-}" ]; then
-        install_perl_packages ExtUtils::PL2Bat Inline::C
+        install_perl_modules ExtUtils::PL2Bat Inline::C
     fi
 
     echo "Installed required Perl dependencies."

@@ -10,12 +10,13 @@ exit /b
 
     set _root=%~dp1
     set STOW_ROOT=%_root:~0,-1%
-    set STOW_VERSION=2.3.2
     set STOW_PERL=perl
     set USE_LIB_PMDIR=
     set PERL5LIB=
     set PMDIR=%STOW_ROOT%\lib
     set "PMDIR=%PMDIR:\=/%"
+
+    for /f %%a in ('%STOW_PERL% %STOW_ROOT%\tools\get-version') do set "STOW_VERSION=%%a"
 
     %STOW_PERL% -e "print 'Perl v' . substr($^V, 1) . ""\n"""
     if errorlevel 1 (

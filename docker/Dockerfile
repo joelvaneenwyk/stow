@@ -44,23 +44,28 @@ ENV HOME=/root \
     PERLBREW_ROOT=/usr/local/perlbrew \
     PERLBREW_HOME=/root/.perlbrew \
     PERLBREW_PATH=/usr/local/perlbrew/bin
+
 RUN mkdir -p /usr/local/perlbrew /root \
     && perlbrew init \
     && perlbrew install-cpanm \
     && perlbrew install-patchperl
+
 RUN perlbrew install-multiple -j 4 --notest \
-        perl-5.22.2 \
-        perl-5.20.3 \
-        perl-5.18.4 \
-        perl-5.16.3 \
-        perl-5.14.4 \
-&& perlbrew clean
+    perl-5.22.2 \
+    perl-5.20.3 \
+    perl-5.18.4 \
+    perl-5.16.3 \
+    perl-5.14.4
+
+RUN perlbrew clean
+
+COPY ./ /
+
+WORKDIR /
 
 # Bootstrap the perl environments
-COPY ./bootstrap-perls.sh /bootstrap-perls.sh
-RUN /bootstrap-perls.sh && rm /bootstrap-perls.sh
+RUN ./bootstrap-perls.sh
 
-# Add test script to container filesystem
-COPY ./run-stow-tests.sh /run-stow-tests.sh
+ENTRYPOINT ["bash -c"]
 
-ENTRYPOINT ["/run-stow-tests.sh"]
+CMD ["./run-stow-tests.sh"]
