@@ -47,7 +47,7 @@ function update_stow_environment() {
     fi
 
     PERL="$STOW_PERL"
-    STOW_VERSION="$("$STOW_PERL" "$STOW_ROOT/get-version")"
+    STOW_VERSION="$("$STOW_PERL" "$STOW_ROOT/tools/get-version")"
     export STOW_VERSION STOW_PERL PERL
 }
 
