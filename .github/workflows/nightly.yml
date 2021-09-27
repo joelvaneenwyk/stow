@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  perlbrew-ubuntu:
+  test-perl-versions:
     runs-on: ubuntu-latest
 
     env:
@@ -78,59 +78,3 @@ jobs:
       - name: Stow Tests
         working-directory: ${{ github.workspace }}
         run: ./docker/run-stow-tests.sh
-
-  perlbrew-windows:
-    runs-on: windows-latest
-    env:
-      # https://cygwin.com/cygwin-ug-net/using-cygwinenv.html
-      MSYS: "winsymlinks:native"
-
-    steps:
-      - uses: msys2/setup-msys2@v2
-        with:
-          msystem: MINGW64
-
-          # Minimal here so that we use the MSYS perl and not the version
-          # already installed (if there is one)
-          path-type: minimal
-
-          update: false
-          install: >-
-            base-devel
-            git
-            mingw-w64-x86_64-gcc
-            make
-            autoconf
-            automake1.16
-            automake-wrapper
-            libtool
-            perl
-            texinfo
-            texinfo-tex
-            mingw-w64-x86_64-texlive-core
-            mingw-w64-x86_64-texlive-bin
-            mingw-w64-x86_64-texlive-plain-generic
-
-      - uses: actions/checkout@v2
-        with:
-          submodules: recursive
-
-      - name: Perl Setup
-        shell: msys2 {0}
-        run: |
-          cd $(cygpath '${{ github.workspace }}')
-          ./tools/install-dependencies.sh
-
-      - name: Configure and Make
-        shell: msys2 {0}
-        run: |
-          cd $(cygpath '${{ github.workspace }}')
-          ./tools/make-stow-all.sh
-
-      - name: Build and Test
-        shell: msys2 {0}
-        run: |
-          cd $(cygpath '${{ github.workspace }}')
-          perl Build.PL
-          perl Build installdeps
-          perl Build test
