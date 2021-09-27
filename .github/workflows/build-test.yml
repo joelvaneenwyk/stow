@@ -54,21 +54,6 @@ jobs:
       - name: Install Dependencies
         working-directory: ${{ github.workspace }}
         run: |
-          sudo apt-get update
-          sudo apt-get -y install --no-install-recommends \
-            autoconf \
-            bzip2 \
-            cpanminus \
-            gawk \
-            curl \
-            libssl-dev \
-            make \
-            texinfo texlive \
-            patch
-
-      - name: Perl Dependencies
-        working-directory: ${{ github.workspace }}
-        run: |
           ./tools/install-dependencies.sh
 
       - name: Build
@@ -192,9 +177,7 @@ jobs:
         shell: msys2 {0}
         run: |
           cd $(cygpath '${{ github.workspace }}')
-          unset TMP
-          unset temp
-          unset tmp
+          source ./tools/stow-lib.sh
           cpanm --installdeps --notest .
           prove -I t/ -I bin/ -I lib/ --formatter TAP::Formatter::JUnit --timer --verbose --normalize --parse t/ | tee test_results_msys2.xml
 

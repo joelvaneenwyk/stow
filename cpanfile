@@ -3,12 +3,12 @@ requires 'perl', '>=5.006';
 use constant IS_WIN32 => $^O eq 'MSWin32';
 
 requires 'Carp';
-requires 'Inline::C';
 requires 'IO::File';
 requires 'IO::Scalar';
 
 if (IS_WIN32) {
     requires 'Win32::Mutex';
+    requires 'Inline::C';
 }
 
 recommends 'App::cpanminus';

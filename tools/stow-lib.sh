@@ -31,6 +31,12 @@ function install_perl_modules() {
 }
 
 function update_stow_environment() {
+    # Clear out TMP as TEMP may come from Windows and we do not want tools confused
+    # if they find both.
+    unset TMP
+    unset temp
+    unset tmp
+
     # Update version we use after we install in case the default version should be
     # different e.g., we just installed mingw64 version of perl
     STOW_PERL="$(command -v perl)"
@@ -55,7 +61,8 @@ function install_dependencies() {
     if [ -x "$(command -v apt-get)" ]; then
         use_sudo apt-get update
         use_sudo apt-get -y install \
-            sudo bzip2 gawk curl libssl-dev make autoconf patch \
+            sudo bzip2 gawk curl libssl-dev patch \
+            build-essential make autotools-dev automake autoconf \
             perl cpanminus \
             texlive texinfo
     elif [ -x "$(command -v apk)" ]; then

@@ -38,7 +38,7 @@ for p_version in $(perlbrew list | sed 's/ //g'); do
 
     # Install the needed modules.
     "$PERLBREW_ROOT/bin/cpanm" -n \
-        Carp IO:Scalar \
+        Carp IO:Scalar Inline::C \
         Devel::Cover::Report::Coveralls \
         Test::More Test::Output Test::Exception
 done

@@ -12,29 +12,32 @@
 
 STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && cd ../ && pwd)"
 STOW_VERSION=$(perl "$STOW_ROOT/tools/get-version")
+STOW_DOCKER_ROOT="/stow"
+STOW_DOCKER_TESTS="$STOW_DOCKER_ROOT/docker/run-stow-tests.sh"
 
 _test_argument="${1:-}"
 
 if [ -z "$_test_argument" ]; then
     # Normal non-interactive run
     docker run --rm -it \
-        -v "$STOW_ROOT:$STOW_ROOT" \
-        -w "$STOW_ROOT" \
-        "stowtest:$STOW_VERSION"
+        -v "$STOW_ROOT:$STOW_DOCKER_ROOT" \
+        -w "$STOW_DOCKER_ROOT" \
+        "stowtest:$STOW_VERSION" \
+        "$STOW_DOCKER_TESTS"
 elif [ "$_test_argument" == list ]; then
     # List available Perl versions
     docker run --rm -it \
-        -v "$STOW_ROOT:$STOW_ROOT" \
-        -v "$STOW_ROOT/docker/run-stow-tests.sh:/run-stow-tests.sh" \
-        -w "$STOW_ROOT" \
+        -v "$STOW_ROOT:$STOW_DOCKER_ROOT" \
+        -w "$STOW_DOCKER_ROOT" \
         -e LIST_PERL_VERSIONS=1 \
-        "stowtest:$STOW_VERSION"
+        "stowtest:$STOW_VERSION" \
+        "$STOW_DOCKER_TESTS"
 else
     # Interactive run for testing / debugging a particular version
     docker run --rm -it \
-        -v "$STOW_ROOT:$STOW_ROOT" \
-        -v "$STOW_ROOT/docker/run-stow-tests.sh:/run-stow-tests.sh" \
-        -w "$STOW_ROOT" \
+        -v "$STOW_ROOT:$STOW_DOCKER_ROOT" \
+        -w "$STOW_DOCKER_ROOT" \
         -e "PERL_VERSION=$_test_argument" \
-        "stowtest:$STOW_VERSION"
+        "stowtest:$STOW_VERSION" \
+        "$STOW_DOCKER_TESTS"
 fi

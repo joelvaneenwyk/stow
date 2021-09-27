@@ -19,43 +19,42 @@
 ARG DEBIAN_VERSION=stretch
 FROM debian:${DEBIAN_VERSION}
 
-ENV DEBIAN_FRONTEND=noninteractive
+RUN DEBIAN_FRONTEND=noninteractive apt-get update
+RUN DEBIAN_FRONTEND=noninteractive apt-get -y install --no-install-recommends \
+    autoconf bzip2 gawk git libssl-dev make patch wget curl ca-certificates \
+    build-essential libssl-dev \
+    perl cpanminus \
+    texinfo texlive texi2html
 
-RUN \
-apt-get update \
-&& apt-get -y install \
-    autoconf \
-    bzip2 \
-    cpanminus \
-    gawk \
-    git \
-    libssl-dev \
-    make \
-    patch \
-    perlbrew \
-    texinfo \
-    texlive \
-    texi2html \
-&& apt-get clean \
-&& rm -rf /var/lib/apt/lists/*
+# Set up perlbrew environment
+ENV HOME=/root
+ENV PERLBREW_HOME=${HOME}/.perlbrew
+ENV PERLBREW_ROOT_DEFAULT=${HOME}/perl5/perlbrew
+ENV PERLBREW_ROOT=/usr/local/perlbrew
+ENV PERLBREW_PATH=${PERLBREW_ROOT}/bin
+ENV PATH="${PERLBREW_ROOT_DEFAULT}:${PERLBREW_PATH}:${PATH}"
 
-# Set up perlbrew
-ENV HOME=/root \
-    PERLBREW_ROOT=/usr/local/perlbrew \
-    PERLBREW_HOME=/root/.perlbrew \
-    PERLBREW_PATH=/usr/local/perlbrew/bin
+RUN mkdir -p "$HOME" "$PERLBREW_ROOT_DEFAULT" "$PERLBREW_ROOT"
 
-RUN mkdir -p /usr/local/perlbrew /root \
-    && perlbrew init \
-    && perlbrew install-cpanm \
-    && perlbrew install-patchperl
+RUN curl -k -L https://install.perlbrew.pl | bash
+RUN echo 'source "$PERLBREW_ROOT/etc/bashrc"' >>".bash_profile"
 
+RUN perlbrew init
+RUN perlbrew install-cpanm
+RUN perlbrew install-patchperl
+
+# Archive of old versions which we install first so that we have to rebuild
+# these infrequently
 RUN perlbrew install-multiple -j 4 --notest \
-    perl-5.22.2 \
     perl-5.20.3 \
     perl-5.18.4 \
     perl-5.16.3 \
     perl-5.14.4
+
+# We then add new versions as needed
+RUN perlbrew install-multiple -j 4 --notest perl-5.22.2
+RUN perlbrew install-multiple -j 4 --notest perl-5.28.0
+RUN perlbrew install-multiple -j 4 --notest perl-5.34.0
 
 RUN perlbrew clean
 
@@ -66,6 +65,9 @@ WORKDIR /
 # Bootstrap the perl environments
 RUN ./bootstrap-perls.sh
 
-ENTRYPOINT ["bash -c"]
+# Clean up at the end after we bootstrap
+RUN apt-get clean \
+&& rm -rf /var/lib/apt/lists/*
 
-CMD ["./run-stow-tests.sh"]
+ENTRYPOINT [ "/bin/bash", "-c" ]
+CMD ["/run-stow-tests.sh"]

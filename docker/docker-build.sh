@@ -8,4 +8,9 @@ DOCKER_BASE_IMAGE="stowtest"
 DOCKER_IMAGE="$DOCKER_BASE_IMAGE:$STOW_VERSION"
 
 echo "Building Docker DOCKER_IMAGE $DOCKER_IMAGE ..."
-docker build -t "$DOCKER_IMAGE" -f "$STOW_ROOT/docker/Dockerfile" "$STOW_ROOT/docker"
+docker build \
+    --progress plain \
+    -t "$DOCKER_BASE_IMAGE:latest" \
+    -t "$DOCKER_IMAGE" \
+    -f "$STOW_ROOT/docker/Dockerfile" \
+    "$STOW_ROOT/docker"
