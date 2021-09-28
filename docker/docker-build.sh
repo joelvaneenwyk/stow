@@ -13,4 +13,4 @@ docker build \
     -t "$DOCKER_BASE_IMAGE:latest" \
     -t "$DOCKER_IMAGE" \
     -f "$STOW_ROOT/docker/Dockerfile" \
-    "$STOW_ROOT/docker"
+    "$STOW_ROOT"

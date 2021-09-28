@@ -17,6 +17,8 @@ function _remove_intermediate_files() {
     rm -f "$STOW_ROOT/doc/version.texi" >/dev/null 2>&1
     rm -rf "$STOW_ROOT/doc/doc!manual.t2d" >/dev/null 2>&1
     rm -rf "$STOW_ROOT/doc/manual-split" >/dev/null 2>&1
+    rm -rf "$STOW_ROOT/cover_db" >/dev/null 2>&1
+    rm -rf "$STOW_ROOT/stow-"* >/dev/null 2>&1
     rm -f "$STOW_ROOT/config."* >/dev/null 2>&1
     rm -f "$STOW_ROOT/Makefile" >/dev/null 2>&1
     rm -f "$STOW_ROOT/Makefile.in" >/dev/null 2>&1

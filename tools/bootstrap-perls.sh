@@ -15,8 +15,9 @@
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see https://www.gnu.org/licenses/.
 
-# Load perlbrew environment
-# shellcheck disable=SC1090
+# Standard safety protocol
+set -ef -o pipefail
+
 PERLBREW_ROOT="${PERLBREW_ROOT:-/usr/local/perlbrew}"
 
 if [ ! -f "$PERLBREW_ROOT/etc/bashrc" ]; then
@@ -26,22 +27,25 @@ fi
 _perlbrew_setup="$PERLBREW_ROOT/etc/bashrc"
 
 if [ -f "$_perlbrew_setup" ]; then
-    . "$_perlbrew_setup"
+    # Load perlbrew environment
+    # shellcheck disable=SC1090
+    source "$_perlbrew_setup"
 else
     echo "ERROR: Failed to find perlbrew setup: '$_perlbrew_setup'"
+    return 5
 fi
 
-# For each perl version installed.
-for p_version in $(perlbrew list | sed 's/ //g'); do
+# For each Perl version install required modules.
+for p_version in $(perlbrew list | sed 's/ //g' | sed 's/\*//g'); do
     # Switch to it.
     perlbrew use "$p_version"
 
     # Install the needed modules.
-    "$PERLBREW_ROOT/bin/cpanm" -n \
-        Carp IO:Scalar Inline::C \
+    "$PERLBREW_ROOT/bin/cpanm" --notest \
+        Carp IO::Scalar Inline::C \
         Devel::Cover::Report::Coveralls \
         Test::More Test::Output Test::Exception
 done
 
-# Cleanup to remove any temp files.
+# Cleanup to remove any temporary files.
 perlbrew clean

@@ -4,7 +4,6 @@ function run_command {
     local cmd
     cmd="$*"
     cmd=${cmd//$'\n'/} # Remove all newlines
-    cmd=${cmd%$'\n'}   # Remove trailing newline
     echo "##[cmd] $cmd"
     "$@"
 }
@@ -25,7 +24,10 @@ function install_perl_modules() {
             --notest "$@"
     else
         for package in "$@"; do
-            run_command use_sudo "$STOW_PERL" -MCPAN -e "CPAN::Shell->notest('install', '$package')"
+            if ! run_command use_sudo "$STOW_PERL" -MCPAN -e "CPAN::Shell->notest('install', '$package')"; then
+                echo "❌ Failed to install '$package' module."
+                return $?
+            fi
         done
     fi
 }
@@ -37,9 +39,21 @@ function update_stow_environment() {
     unset temp
     unset tmp
 
-    if [ ! -f "${STOW_ROOT:-}/Build.PL" ]; then
-        STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && cd ../ && pwd)"
+    STOW_ROOT="${STOW_ROOT:-$(pwd)}"
+
+    if [ ! -f "$STOW_ROOT/Build.PL" ]; then
+        if [ -f "/stow/Build.PL" ]; then
+            STOW_ROOT="/stow"
+        else
+            STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && cd ../ && pwd)"
+        fi
+
+        if [ ! -f "$STOW_ROOT/Build.PL" ]; then
+            echo "ERROR: Stow source root not found: '$STOW_ROOT'"
+            return 2
+        fi
     fi
+
     export STOW_ROOT
 
     # Update version we use after we install in case the default version should be

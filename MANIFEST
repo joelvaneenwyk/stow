@@ -7,6 +7,7 @@ bin/chkstow
 bin/chkstow.in
 bin/stow
 bin/stow.in
+.dockerignore
 _proverc
 .proverc
 Build.PL
@@ -55,6 +56,7 @@ t/unstow.t
 t/unstow_orig.t
 t/make_links.t
 t/make_links.pl
+tools/bootstrap-perls.sh
 tools/get-version
 tools/initialize-cpan-config.pl
 tools/install-dependencies.bat

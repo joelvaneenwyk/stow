@@ -21,8 +21,9 @@ FROM debian:${DEBIAN_VERSION}
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update
 RUN DEBIAN_FRONTEND=noninteractive apt-get -y install --no-install-recommends \
-    autoconf bzip2 gawk git libssl-dev make patch wget curl ca-certificates \
-    build-essential libssl-dev \
+    vim nano \
+    sudo bzip2 gawk git curl wget ca-certificates patch \
+    build-essential make autotools-dev automake autoconf libssl-dev libz-dev \
     perl cpanminus \
     texinfo texlive texi2html
 
@@ -46,10 +47,10 @@ RUN perlbrew install-patchperl
 # Archive of old versions which we install first so that we have to rebuild
 # these infrequently
 RUN perlbrew install-multiple -j 4 --notest \
-    perl-5.20.3 \
-    perl-5.18.4 \
+    perl-5.14.4 \
     perl-5.16.3 \
-    perl-5.14.4
+    perl-5.18.4 \
+    perl-5.20.3
 
 # We then add new versions as needed
 RUN perlbrew install-multiple -j 4 --notest perl-5.22.2
@@ -58,16 +59,23 @@ RUN perlbrew install-multiple -j 4 --notest perl-5.34.0
 
 RUN perlbrew clean
 
-COPY ./ /
+ENV STOW_ROOT=/stow
 
-WORKDIR /
+WORKDIR ${STOW_ROOT}
+
+# Only copy the one script we need here instead of all files to prevent
+# us re-bootstrapping all Perl versions if we modify another script.
+COPY ./tools/bootstrap-perls.sh ./tools/
 
 # Bootstrap the perl environments
-RUN ./bootstrap-perls.sh
+RUN ./tools/bootstrap-perls.sh
+
+# Now copy over the rest
+COPY ./tools/run-tests.sh ./tools/
 
 # Clean up at the end after we bootstrap
 RUN apt-get clean \
 && rm -rf /var/lib/apt/lists/*
 
 ENTRYPOINT [ "/bin/bash", "-c" ]
-CMD ["/run-stow-tests.sh"]
+CMD ["${STOW_ROOT}/tools/run-tests.sh"]
