@@ -57,23 +57,29 @@ my $build = Module::Build->new(
             repository => 'git://git.savannah.gnu.org/stow.git',
         },
     },
+
     requires => {
         'perl'        => '5.006',
         'Carp'        => 0,
         'IO::File'    => 0,
     },
+
     script_files => [ 'bin/stow', 'bin/chkstow' ],
+
     all_from => 'lib/Stow.pm.in',
+
     configure_requires => {
         'Module::Build' => 0,
     },
+
     build_requires => {
         'Test::More'        => 0,
         'Test::Output'      => 0,
+        'Test::Exception'      => 0,
         'Parse::RecDescent' => 0,
         'Inline::C'         => 0,
         'IO::Scalar'        => 0,
-    },
+    }
 );
 
 my $grepOutput = qx(grep "^use lib " "bin/stow" 2>&1);

@@ -73,8 +73,8 @@ jobs:
 
       - name: Bootstrap Perls
         working-directory: ${{ github.workspace }}
-        run: ./docker/bootstrap-perls.sh
+        run: ./tools/bootstrap-perls.sh
 
       - name: Stow Tests
         working-directory: ${{ github.workspace }}
-        run: ./docker/run-stow-tests.sh
+        run: ./tools/run-tests.sh
