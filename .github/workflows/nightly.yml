@@ -31,8 +31,11 @@ jobs:
 
     env:
       DEBIAN_FRONTEND: noninteractive
-      CMD_EXTENSION: "${{ matrix.platform == 'windows-latest' && '.bat' || '.sh' }}"
-      CMD_PREFIX: "${{ matrix.platform == 'windows-latest' && 'cmd /c tools\\' || 'bash tools/' }}"
+
+      # Define variants by platform
+      shell: ${{ startsWith(matrix.platform, 'windows') && 'cmd' || 'bash' }}
+      script_extension: ${{ startsWith(matrix.platform, 'windows') && '.bat' || '.sh' }}
+      script_prefix: ${{ startsWith(matrix.platform, 'windows') && 'cmd /c tools\\' || 'bash tools/' }}
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -44,26 +47,28 @@ jobs:
       - name: Setup Perl ${{ matrix.perl }}
         uses: shogo82148/actions-setup-perl@v1
         with:
-          install-modules-with: cpanm
           perl-version: ${{ matrix.perl }}
 
           # Only applies to Windows and uses fallback for other platforms
           distribution: strawberry
 
       - name: Install Dependencies
+        shell: ${{ env.shell }}
         working-directory: ${{ github.workspace }}
         run: |
-          ${{ env.CMD_PREFIX }}install-dependencies${{ env.CMD_EXTENSION }}
+          ${{ env.script_prefix }}install-dependencies${{ env.script_extension }}
 
       - name: Make Stow
+        shell: ${{ env.shell }}
         working-directory: ${{ github.workspace }}
         run: |
-          ${{ env.CMD_PREFIX }}make-stow${{ env.CMD_EXTENSION }}
+          ${{ env.script_prefix }}make-stow${{ env.script_extension }}
 
       - name: Run Tests
+        shell: ${{ env.shell }}
         working-directory: ${{ github.workspace }}
         run: |
-          ${{ env.CMD_PREFIX }}run-tests${{ env.CMD_EXTENSION }}
+          ${{ env.script_prefix }}run-tests${{ env.script_extension }}
 
   docker_build:
     name: Docker Perl Tests
