@@ -63,6 +63,8 @@ EOF
 }
 
 function test_perl_version() {
+    echo "::group::Test Perl v$input_perl_version"
+
     # Use the version of Perl passed in
     if [ -x "$(command -v perlbrew)" ]; then
         perlbrew use "$1"
@@ -85,23 +87,33 @@ function test_perl_version() {
         cd "$STOW_ROOT" || true
 
         # Install stow
+        echo "[command]autoreconf --install"
         autoreconf --install
 
         eval "$(perl -V:siteprefix)"
 
         # shellcheck disable=SC2154
+        echo "[command]./configure --prefix=$siteprefix"
         ./configure --prefix="$siteprefix"
+
+        echo "[command]make"
         make
-        make cpanm
 
         # Run tests
+        echo "[command]make distcheck"
         make distcheck
 
+        echo "[command]perl Build.PL"
         perl Build.PL
         ./Build build
+
+        echo "[command]cover -test"
         cover -test
+
         ./Build distcheck
     )
+
+    echo "::endgroup::"
 }
 
 function run_stow_tests() {
@@ -119,6 +131,7 @@ function run_stow_tests() {
     fi
 
     if [[ "$LIST_PERL_VERSIONS" = "0" ]]; then
+        echo "::group::Install dependencies"
         if ! "$STOW_ROOT/tools/install-dependencies.sh"; then
             echo "Failed to install dependencies."
             return 4
@@ -129,21 +142,24 @@ function run_stow_tests() {
 
         echo "==========================="
         echo ""
+        echo "::endgroup::"
     fi
 
     if [[ "$LIST_PERL_VERSIONS" = "1" ]]; then
         echo "Listing Perl versions available from perlbrew ..."
         perlbrew list
     elif [[ -z "$PERL_VERSION" ]] && [[ -x "$(command -v perlbrew)" ]]; then
-        echo "Testing all versions ..."
+        echo "Testing all Perl versions"
 
         for input_perl_version in $(perlbrew list | sed 's/ //g' | sed 's/\*//g'); do
             test_perl_version "$input_perl_version"
         done
 
+        echo "::group::make distclean"
+        echo "[command]make distclean"
         make distclean
+        echo "::endgroup::"
     else
-        echo "Testing with Perl $PERL_VERSION"
 
         # Test a specific version requested via $PERL_VERSION environment
         # variable.  Make sure set -e doesn't cause us to bail on failure
@@ -154,11 +170,12 @@ function run_stow_tests() {
         # debug this Perl version interactively.
     fi
 
-    echo "✔ Tests succeeded."
-
     # We clean up only if we have succeeded because on failure we may want to
     # examine the artifacts and logs.
+    echo "[command]make-clean.sh"
     "$STOW_ROOT/tools/make-clean.sh"
+
+    echo "✔ Tests succeeded."
 }
 
 initialize_brewperl
