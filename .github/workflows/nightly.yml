@@ -34,7 +34,8 @@ jobs:
 
       # Define variants by platform
       script_extension: ${{ startsWith(matrix.platform, 'windows') && '.bat' || '.sh' }}
-      script_prefix: ${{ startsWith(matrix.platform, 'windows') && 'cmd /c tools\\' || 'bash tools/' }}
+      script_call: ${{ startsWith(matrix.platform, 'windows') && 'tools\\' || 'bash -c tools/' }}
+      script_sudo: ${{ startsWith(matrix.platform, 'windows') && 'tools\\' || 'sudo bash -c tools/' }}
 
     defaults:
       run:
@@ -57,16 +58,13 @@ jobs:
           distribution: strawberry
 
       - name: Install Dependencies
-        run: |
-          ${{ env.script_prefix }}install-dependencies${{ env.script_extension }}
+        run: ${{ env.script_sudo }}install-dependencies${{ env.script_extension }}
 
       - name: Make Stow
-        run: |
-          ${{ env.script_prefix }}make-stow${{ env.script_extension }}
+        run: ${{ env.script_call }}make-stow${{ env.script_extension }}
 
       - name: Run Tests
-        run: |
-          ${{ env.script_prefix }}run-tests${{ env.script_extension }}
+        run: ${{ env.script_call }}run-tests${{ env.script_extension }}
 
   docker_build:
     name: Docker Perl Tests
