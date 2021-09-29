@@ -130,7 +130,7 @@ function run_stow_tests() {
     if [[ "$LIST_PERL_VERSIONS" = "1" ]]; then
         echo "Listing Perl versions available from perlbrew ..."
         perlbrew list
-    elif [[ -z "$PERL_VERSION" ]]; then
+    elif [[ -z "$PERL_VERSION" ]] && [[ -x "$(command -v perlbrew)" ]]; then
         echo "Testing all versions ..."
 
         for input_perl_version in $(perlbrew list | sed 's/ //g' | sed 's/\*//g'); do
