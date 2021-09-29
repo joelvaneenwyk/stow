@@ -14,9 +14,6 @@ jobs:
     name: Validate Perl Versions
 
     env:
-      PERLBREW_PATH: /home/runner/perl5/perlbrew
-      PERLBREW_ROOT: /home/runner/perl5/perlbrew
-      PERLBREW_HOME: /home/runner/.perlbrew
       DEBIAN_FRONTEND: noninteractive
 
     # Steps represent a sequence of tasks that will be executed as part of the job
@@ -29,17 +26,21 @@ jobs:
       - name: Install Dependencies
         working-directory: ${{ github.workspace }}
         run: |
-          ./tools/install-dependencies.sh
+          bash ./tools/install-dependencies.sh
 
       - name: Install perlbrew
         working-directory: ${{ env.HOME }}
         run: |
+          set -e
           curl -L https://install.perlbrew.pl | bash
-          echo "${PERLBREW_ROOT}/bin" >> $GITHUB_PATH
+          echo "$HOME/perl5/perlbrew/bin" >> $GITHUB_PATH
+          echo "PERLBREW_PATH=$HOME/perl5/perlbrew" >> $GITHUB_ENV
+          echo "PERLBREW_ROOT=$HOME/perl5/perlbrew" >> $GITHUB_ENV
+          echo "PERLBREW_HOME=$HOME/.perlbrew" >> $GITHUB_ENV
+          "$HOME/perl5/perlbrew/bin/perlbrew" init
           echo "source ${PERLBREW_ROOT}/etc/bashrc" >> "${HOME}/.bash_profile"
 
       - name: Setup perlbrew
-        working-directory: ${{ env.HOME }}
         run: |
           perlbrew init
           perlbrew install-cpanm
@@ -54,7 +55,8 @@ jobs:
 
       - name: Bootstrap Perls
         working-directory: ${{ github.workspace }}
-        run: ./tools/bootstrap-perls.sh
+        run: |
+          bash ./tools/bootstrap-perls.sh
 
       - name: Build
         working-directory: ${{ github.workspace }}
@@ -72,4 +74,5 @@ jobs:
 
       - name: Stow Tests
         working-directory: ${{ github.workspace }}
-        run: ./tools/run-tests.sh
+        run: |
+          bash ./tools/run-tests.sh
