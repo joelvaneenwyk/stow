@@ -35,8 +35,9 @@ jobs:
         working-directory: ${{ env.HOME }}
         run: |
           curl -L https://install.perlbrew.pl | bash
+          echo "${PERLBREW_ROOT}/bin" >> $GITHUB_PATH
           echo "${HOME}/perl5/perlbrew/bin" >> $GITHUB_PATH
-          echo "source ${HOME}/perl5/perlbrew/etc/bashrc" >> "${HOME}/.bash_profile"
+          echo "source ${PERLBREW_ROOT}/etc/bashrc" >> "${HOME}/.bash_profile"
 
       - name: Setup perlbrew
         working-directory: ${{ env.HOME }}
