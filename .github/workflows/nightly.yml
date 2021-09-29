@@ -13,9 +13,6 @@ jobs:
     name: Docker - Perl Tests
     runs-on: ubuntu-latest
 
-    # Only build this if the main tasks complete
-    needs: init
-
     steps:
       - uses: actions/checkout@v2
         with:
@@ -27,20 +24,15 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
-      - name: Inject GitHub slug variables
-        uses: rlespinasse/github-slug-action@v3.x
+      - name: Docker build image
+        working-directory: ${{ github.workspace }}
+        run: |
+          bash ./docker/docker-build.sh
 
-      - name: Docker build
-        id: docker_build
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          file: docker/Dockerfile
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-
-      - name: Docker image digestt
-        run: echo ${{ steps.docker_build.outputs.digest }}
+      - name: Docker test
+        working-directory: ${{ github.workspace }}
+        run: |
+          bash ./docker/docker-test.sh
 
 
   perl_test_matrix:
