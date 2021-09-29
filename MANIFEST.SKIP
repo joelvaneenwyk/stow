@@ -88,10 +88,11 @@
 
 \btools/texinfo/\b
 
-# Avoid test files
+# Avoid test files and intermediate data
 tmp-testing-trees
 .travis.yml
 ^docker/
 ^.devcontainer/
 ^.github/
 ^.vscode/
+^local/
