@@ -46,8 +46,8 @@ jobs:
           - macos-latest
           - windows-latest
         perl:
-          - '5.34'
-          - '5.14'
+          - '5.32.1'
+          - '5.14.4'
 
         install:
           - bash tools/install-dependencies.sh
@@ -57,6 +57,9 @@ jobs:
           - bash tools/run-tests.sh
 
         include:
+          - platform: ubuntu-latest
+            perl: '5.34'
+
           - platform: windows-latest
             install: cmd /c tools\install-dependencies.bat
             make: cmd /c tools\make-stow.bat
@@ -78,6 +81,7 @@ jobs:
       - name: Setup Perl ${{ matrix.perl }}
         uses: shogo82148/actions-setup-perl@v1
         with:
+          install-modules-with: cpanm
           perl-version: ${{ matrix.perl }}
 
           # Only applies to Windows and uses fallback for other platforms

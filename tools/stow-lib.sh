@@ -83,14 +83,14 @@ function install_dependencies() {
         use_sudo apt-get -y install \
             sudo bzip2 gawk curl libssl-dev patch \
             build-essential make autotools-dev automake autoconf \
-            perl cpanminus \
+            cpanminus \
             texlive texinfo
     elif [ -x "$(command -v apk)" ]; then
         use_sudo apk update
         use_sudo apk add \
             sudo wget curl unzip xclip \
             build-base gcc g++ make musl-dev openssl-dev zlib-dev \
-            perl perl-dev perl-utils perl-app-cpanminus \
+            perl-dev perl-utils perl-app-cpanminus \
             bash openssl
     elif [ -x "$(command -v pacman)" ]; then
         pacman -S --quiet --noconfirm --needed \
@@ -98,11 +98,10 @@ function install_dependencies() {
             msys2-keyring msys2-runtime-devel msys2-w32api-headers msys2-w32api-runtime \
             base-devel gcc make autoconf automake1.16 automake-wrapper \
             libtool libcrypt-devel openssl \
-            perl perl-devel
+            perl-devel
 
         if [ "${MSYSTEM:-}" = "MINGW64" ] || [ "${MSYSTEM:-}" = "MINGW32" ]; then
             pacman -S --quiet --noconfirm --needed \
-                mingw-w64-x86_64-perl \
                 mingw-w64-x86_64-make mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils
         fi
     fi
