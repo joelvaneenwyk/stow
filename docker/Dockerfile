@@ -50,12 +50,8 @@ RUN perlbrew install-multiple -j 4 --notest \
     perl-5.14.4 \
     perl-5.16.3 \
     perl-5.18.4 \
-    perl-5.20.3
-
-# We then add new versions as needed
-RUN perlbrew install-multiple -j 4 --notest perl-5.22.2
-RUN perlbrew install-multiple -j 4 --notest perl-5.28.0
-RUN perlbrew install-multiple -j 4 --notest perl-5.34.0
+    perl-5.28.0 \
+    perl-5.34.0
 
 RUN perlbrew clean
 
