@@ -2,12 +2,8 @@
 
 setlocal EnableExtensions EnableDelayedExpansion
 
-echo ##[cmd] perl "%~dp0initialize-cpan-config.pl"
-perl "%~dp0initialize-cpan-config.pl"
-
-powershell -NoLogo -NoProfile -Command "Set-ExecutionPolicy RemoteSigned -scope CurrentUser;"
-powershell -NoLogo -NoProfile -File "%~dp0install-dependencies.ps1"
-
+call :Run powershell -NoLogo -NoProfile -Command "Set-ExecutionPolicy RemoteSigned -scope CurrentUser;"
+call :Run powershell -NoLogo -NoProfile -File "%~dp0install-dependencies.ps1"
 call :InstallPerlDependencies "%~dp0..\"
 
 ::call :InstallTexLive "%~dp0..\"
@@ -23,10 +19,12 @@ exit /b
     if "%STOW_ROOT%"=="" set STOW_ROOT=%_root:~0,-1%
     if "%STOW_PERL%"=="" set STOW_PERL=perl
 
+    call :Run !STOW_PERL! "%~dp0initialize-cpan-config.pl"
+
     :: Already installed as part of Strawberry Perl but install/update regardless.
-    call cpanm --version > nul 2>&1
-    if errorlevel 1 (
-        !STOW_PERL! -MCPAN -e "install App::cpanminus"
+    !STOW_PERL! -MApp::cpanminus -le 1 > nul 2>&1
+    if not "!ERRORLEVEL!"=="0" (
+        call :Run !STOW_PERL! -MCPAN -e "install App::cpanminus"
     )
 
     ::
@@ -39,9 +37,14 @@ exit /b
     ::      - mingw-w64-x86_64-binutils
     ::
     cd /d "!STOW_ROOT!"
-    echo ##[cmd] !STOW_PERL! -MApp::cpanminus::fatscript -le "my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;" -- --installdeps --notest .
-    !STOW_PERL! -MApp::cpanminus::fatscript -le "my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;" -- --installdeps --notest .
+    call :Run !STOW_PERL! -MApp::cpanminus::fatscript -le "my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;" -- --installdeps --notest .
     cd /d "%_starting_directory%"
+exit /b
+
+:Run
+    set _cmd=%*
+    echo ##[cmd] %_cmd%
+    %_cmd%
 exit /b
 
 :InstallTexLive
