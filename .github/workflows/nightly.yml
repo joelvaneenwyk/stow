@@ -33,9 +33,13 @@ jobs:
       DEBIAN_FRONTEND: noninteractive
 
       # Define variants by platform
-      shell: ${{ startsWith(matrix.platform, 'windows') && 'cmd' || 'bash' }}
       script_extension: ${{ startsWith(matrix.platform, 'windows') && '.bat' || '.sh' }}
       script_prefix: ${{ startsWith(matrix.platform, 'windows') && 'cmd /c tools\\' || 'bash tools/' }}
+
+    defaults:
+      run:
+        shell: ${{ startsWith(matrix.platform, 'windows') && 'cmd' || 'bash' }}
+        working-directory: ${{ github.workspace }}
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -53,20 +57,14 @@ jobs:
           distribution: strawberry
 
       - name: Install Dependencies
-        shell: ${{ env.shell }}
-        working-directory: ${{ github.workspace }}
         run: |
           ${{ env.script_prefix }}install-dependencies${{ env.script_extension }}
 
       - name: Make Stow
-        shell: ${{ env.shell }}
-        working-directory: ${{ github.workspace }}
         run: |
           ${{ env.script_prefix }}make-stow${{ env.script_extension }}
 
       - name: Run Tests
-        shell: ${{ env.shell }}
-        working-directory: ${{ github.workspace }}
         run: |
           ${{ env.script_prefix }}run-tests${{ env.script_extension }}
 
