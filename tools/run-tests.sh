@@ -63,11 +63,12 @@ EOF
 }
 
 function test_perl_version() {
-    echo "::group::Test Perl v$input_perl_version"
-
-    # Use the version of Perl passed in
+    # Use the version of Perl passed in if 'perlbrew' is installed
     if [ -x "$(command -v perlbrew)" ]; then
+        echo "::group::Test Perl v$1"
         perlbrew use "$1"
+    else
+        echo "::group::Test Perl"
     fi
 
     # Install the needed modules.
