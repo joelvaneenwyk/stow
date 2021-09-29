@@ -9,10 +9,72 @@ on:
   workflow_dispatch:
 
 jobs:
-  test-perl-versions:
+  docker_build:
+    name: Docker - Perl Tests
     runs-on: ubuntu-latest
+
+    # Only build this if the main tasks complete
+    needs: init
+
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Inject GitHub slug variables
+        uses: rlespinasse/github-slug-action@v3.x
+
+      - name: Docker build
+        id: docker_build
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: docker/Dockerfile
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+
+      - name: Docker image digestt
+        run: echo ${{ steps.docker_build.outputs.digest }}
+
+
+  perl_test_matrix:
     name: Validate Perl Versions
 
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - ubuntu-latest
+          - macos-latest
+        perl: [ '5.34' ]
+        include:
+          - platform: ubuntu-latest
+            perl: [ '5.34', '5.32', '5.30' ]
+            install: bash tools/install-dependencies.sh
+            make: bash tools/make-stow.sh
+            test: bash tools/run-tests.sh
+
+          - platform: macos-latest
+            install: bash tools/install-dependencies.sh
+            make: bash tools/make-stow.sh
+            test: bash tools/run-tests.sh
+
+          - platform: windows-latest
+            install: cmd /c tools\install-dependencies.bat
+            make: cmd /c tools\make-stow.bat
+            test: cmd /c tools\run-tests.bat
+
+    # The type of runner that the job will run on
+    runs-on: ${{ matrix.platform }}
+
+    # Always run the matrix even if another job fails
+    if: always()
     env:
       DEBIAN_FRONTEND: noninteractive
 
@@ -23,56 +85,22 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Setup Perl ${{ matrix.perl }}
+        uses: shogo82148/actions-setup-perl@v1
+        with:
+          perl-version: ${{ matrix.perl }}
+
       - name: Install Dependencies
         working-directory: ${{ github.workspace }}
         run: |
-          bash ./tools/install-dependencies.sh
+          ${{ matrix.install }}
 
-      - name: Install perlbrew
-        working-directory: ${{ env.HOME }}
-        run: |
-          set -e
-          curl -L https://install.perlbrew.pl | bash
-          echo "$HOME/perl5/perlbrew/bin" >> $GITHUB_PATH
-          echo "PERLBREW_PATH=$HOME/perl5/perlbrew" >> $GITHUB_ENV
-          echo "PERLBREW_ROOT=$HOME/perl5/perlbrew" >> $GITHUB_ENV
-          echo "PERLBREW_HOME=$HOME/.perlbrew" >> $GITHUB_ENV
-          "$HOME/perl5/perlbrew/bin/perlbrew" init
-          echo "source ${PERLBREW_ROOT}/etc/bashrc" >> "${HOME}/.bash_profile"
-
-      - name: Setup perlbrew
-        run: |
-          perlbrew init
-          perlbrew install-cpanm
-          perlbrew install-patchperl
-          perlbrew install-multiple -j 4 --notest \
-            perl-5.32.1 \
-            perl-5.22.2 \
-            perl-5.20.3 \
-            perl-5.18.0 \
-            perl-5.16.0 \
-            perl-5.14.0
-
-      - name: Bootstrap Perls
+      - name: Make Stow
         working-directory: ${{ github.workspace }}
         run: |
-          bash ./tools/bootstrap-perls.sh
+          ${{ matrix.make }}
 
-      - name: Build
+      - name: Run Tests
         working-directory: ${{ github.workspace }}
         run: |
-          autoreconf -iv
-          eval `perl -V:siteprefix`
-          ./configure --prefix=$siteprefix && make
-          perl Build.PL
-          sudo perl Build installdeps
-          ./Build test
-          sudo perl Build install
-          sudo perl Build distcheck
-          sudo perl Build distmeta
-          sudo perl Build dist
-
-      - name: Stow Tests
-        working-directory: ${{ github.workspace }}
-        run: |
-          bash ./tools/run-tests.sh
+          ${{ matrix.test }}
