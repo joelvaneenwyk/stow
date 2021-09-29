@@ -62,11 +62,8 @@ jobs:
             make: cmd /c tools\make-stow.bat
             test: cmd /c tools\run-tests.bat
 
-    # The type of runner that the job will run on
     runs-on: ${{ matrix.platform }}
-
-    # Run all versions of Perl only on Ubuntu otherwise limit to one version on other platforms
-    if: ${{ matrix.platform == 'ubuntu-latest' || matrix.perl == '5.34' }}
+    if: always()
 
     env:
       DEBIAN_FRONTEND: noninteractive
