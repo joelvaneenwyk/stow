@@ -85,7 +85,7 @@ function install_system_dependencies() {
             build-essential make autotools-dev automake autoconf \
             cpanminus \
             texlive texinfo
-    elif [ -x "$(command -v apk)" ]; then
+    elif [ -x "$(command -v brew)" ]; then
         brew install automake
     elif [ -x "$(command -v apk)" ]; then
         use_sudo apk update
