@@ -22,7 +22,7 @@ exit /b
     call :Run !STOW_PERL! "%~dp0initialize-cpan-config.pl"
 
     :: Already installed as part of Strawberry Perl but install/update regardless.
-    !STOW_PERL! -MApp::cpanminus -le 1 > nul 2>&1
+    !STOW_PERL! -MApp::cpanminus::fatscript -le 1 > nul 2>&1
     if not "!ERRORLEVEL!"=="0" (
         call :Run !STOW_PERL! -MCPAN -e "install App::cpanminus"
     )
@@ -37,7 +37,12 @@ exit /b
     ::      - mingw-w64-x86_64-binutils
     ::
     cd /d "!STOW_ROOT!"
-    call :Run !STOW_PERL! -MApp::cpanminus::fatscript -le "my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;" -- --installdeps --notest .
+    !STOW_PERL! -MApp::cpanminus::fatscript -le 1 > nul 2>&1
+    if "!ERRORLEVEL!"=="0" (
+        call :Run !STOW_PERL! -MApp::cpanminus::fatscript -le "my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;" -- --installdeps --notest .
+    else (
+        call :InstallPerlModules Carp Test::Output Module::Build IO::Scalar Devel::Cover::Report::Coveralls Test::More Test::Exception ExtUtils::PL2Bat Inline::C Win32::Mutex
+    )
     cd /d "%_starting_directory%"
 exit /b
 
@@ -45,6 +50,15 @@ exit /b
     set _cmd=%*
     echo ##[cmd] %_cmd%
     %_cmd%
+exit /b
+
+:InstallPerlModules
+    :$Install
+        set _module=%~1
+        shift
+        if "%_module%"=="" exit /b
+        call :Run !STOW_PERL! -MCPAN -e "CPAN::Shell->notest('install', '%_module%')"
+    goto:$Install
 exit /b
 
 :InstallTexLive

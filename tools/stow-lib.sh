@@ -17,7 +17,7 @@ function use_sudo {
 }
 
 function install_perl_modules() {
-    if "$STOW_PERL" -MApp::cpanminus -le 1 2>/dev/null; then
+    if "$STOW_PERL" -MApp::cpanminus::fatscript -le 1 2>/dev/null; then
         # shellcheck disable=SC2016
         run_command use_sudo "$STOW_PERL" -MApp::cpanminus::fatscript -le \
             'my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;' -- \
