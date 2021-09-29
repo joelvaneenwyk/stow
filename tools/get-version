@@ -3,7 +3,11 @@
 use strict;
 use warnings;
 
-open(my $CONF, "<", "configure.ac")
+use File::Basename;
+
+my $dirname = dirname(__FILE__);
+
+open(my $CONF, "<", "$dirname/../configure.ac")
   or die "Couldn't open configure.ac: $!\n";
 
 while (my $line = <$CONF>) {

@@ -82,14 +82,20 @@ my $build = Module::Build->new(
     }
 );
 
-my $grepOutput = qx(grep "^use lib " "bin/stow" 2>&1);
-my $grepReturnCode = $?;
-if (index($grepOutput, 'is not recognized') != -1 || index($grepOutput, 'not found') != -1) {
-    print("Skipped 'use lib' check as 'grep' command is unavailable.\n")
-} elsif ($grepReturnCode >> 8 == 0) {
+open my $stowFileHandle, '<', 'bin/stow' or die "Cannot open file: $!\n";
+
+my $useLibExists = 0;
+while(<$stowFileHandle>) {
+    if ($_ =~ /^use lib/) {
+        $useLibExists = 1;
+        last;
+    }
+}
+
+if ($useLibExists == 0) {
     print <<'EOF';
 ------
-⚠ WARNING: 'bin/stow' contains 'use lib' line which could interfere
+WARNING: 'bin/stow' contains 'use lib' line which could interfere
 with CPAN-style installation via 'Module::Build'. To avoid this,
 you can run './configure' with parameters which results in
 '--with-pmdir' value being in Perl's built-in @INC, and then run

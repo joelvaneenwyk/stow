@@ -11,13 +11,43 @@ exit /b
     set _root=%~dp1
     set STOW_ROOT=%_root:~0,-1%
     set STOW_PERL=perl
+    set TMPDIR=%STOW_ROOT%\.tmp
+    set EZWINPORTS_ROOT=%STOW_ROOT%\.tmp\ezwinports
+    set UNIX_ROOT=%EZWINPORTS_ROOT:\=/%
+
     set USE_LIB_PMDIR=
-    set PERL5LIB=
+
+    set SHELL_BIN=%EZWINPORTS_ROOT%\bin\sh
+
+    set PERL5LIB=%UNIX_ROOT%/share/automake-1.11:%UNIX_ROOT%/share/autoconf
+    set PERL5LIB=%PERL5LIB:\=/%
+
+    set PERL5INC=-I %UNIX_ROOT%/share/automake-1.11 -I %UNIX_ROOT%/share/autoconf
+    set PERL_BIN=perl %PERL5INC%
+
     set PMDIR=%STOW_ROOT%\lib
-    set "PMDIR=%PMDIR:\=/%"
+    set PMDIR=%PMDIR:\=/%
+
+    set PATH=%EZWINPORTS_ROOT%\bin;%EZWINPORTS_ROOT%\mingw32\bin;%PATH%
+
+    set SHELL=%UNIX_ROOT%/bin/sh
+    set AUTORECONF=%PERL_BIN% %UNIX_ROOT%/bin/autoreconf
+    set AUTOCONF=%SHELL_BIN% %UNIX_ROOT%/bin/autoconf
+    set AUTOHEADER=%PERL_BIN% %UNIX_ROOT%/bin/autoheader
+    set AUTOM4TE=%PERL_BIN% %UNIX_ROOT%/bin/autom4te
+    set AUTOMAKE=%PERL_BIN% %UNIX_ROOT%/bin/automake
+    set ACLOCAL=%PERL_BIN% %UNIX_ROOT%/bin/aclocal
+    set LIBTOOLIZE=libtoolize
+    set AUTOPOINT=autopoint
+    set MAKE=make
+
+    set autom4te_perllibdir=%UNIX_ROOT%/share/autoconf
+    set perllibdir=%UNIX_ROOT%/share/aclocal-1.11
+    set ACLOCAL_PATH=%UNIX_ROOT%/share/aclocal-1.11
 
     for /f %%a in ('%STOW_PERL% %STOW_ROOT%\tools\get-version') do set "STOW_VERSION=%%a"
 
+    echo Stow v!STOW_VERSION!
     %STOW_PERL% -e "print 'Perl v' . substr($^V, 1) . ""\n"""
     if errorlevel 1 (
         echo Perl executable invalid or missing: '%STOW_PERL%'

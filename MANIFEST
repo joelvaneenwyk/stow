@@ -61,9 +61,8 @@ tools/get-version
 tools/initialize-cpan-config.pl
 tools/install-dependencies.bat
 tools/install-dependencies.sh
-tools/install-texlive.bat
+tools/install-dependencies.ps1
 tools/install-texlive.profile
-tools/install-texlive.ps1
 tools/make-clean.bat
 tools/make-clean.sh
 tools/make-stow.bat

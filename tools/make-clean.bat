@@ -8,6 +8,9 @@ exit /b
 
     set _root=%~dp1
     set STOW_ROOT=%_root:~0,-1%
+
+    for /f %%a in ('perl %STOW_ROOT%\tools\get-version') do set "STOW_VERSION=%%a"
+
     del "%STOW_ROOT%\Build" > nul 2>&1
     del "%STOW_ROOT%\Build.bat" > nul 2>&1
     del "%STOW_ROOT%\config.*" > nul 2>&1
@@ -47,7 +50,7 @@ exit /b
     rmdir /q /s "%STOW_ROOT%\stow\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\cover_db\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\tmp-testing-trees\" > nul 2>&1
-    rmdir /q /s "%STOW_ROOT%\stow-2.3.2\" > nul 2>&1
+    rmdir /q /s "%STOW_ROOT%\stow-!STOW_VERSION!\" > nul 2>&1
 
     git -C "%STOW_ROOT%" checkout -- "%STOW_ROOT%\aclocal.m4" > nul 2>&1
 exit /b 0
