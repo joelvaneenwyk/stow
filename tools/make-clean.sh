@@ -1,6 +1,6 @@
 #!/bin/bash
 
-STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && cd ../ && pwd)"
+STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && cd ../ && pwd -P)"
 
 function _remove_intermediate_files() {
     rm -rf "$STOW_ROOT/autom4te.cache" >/dev/null 2>&1

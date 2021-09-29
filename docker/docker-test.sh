@@ -10,7 +10,7 @@
 # If no arguments are given test all available Perl versions non-interactively.
 #
 
-STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && cd ../ && pwd)"
+STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && cd ../ && pwd -P)"
 STOW_VERSION=$(perl "$STOW_ROOT/tools/get-version")
 STOW_DOCKER_ROOT="/stow"
 STOW_DOCKER_TESTS="$STOW_DOCKER_ROOT/docker/run-stow-tests.sh"

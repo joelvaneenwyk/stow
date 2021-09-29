@@ -18,7 +18,7 @@ function install_texlive() {
 }
 
 function make_docs() {
-    STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && cd ../ && pwd)"
+    STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && cd ../ && pwd -P)"
 
     # shellcheck source=tools/install-dependencies.sh
     source "$STOW_ROOT/tools/install-dependencies.sh"

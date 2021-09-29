@@ -45,7 +45,7 @@ function update_stow_environment() {
         if [ -f "/stow/Build.PL" ]; then
             STOW_ROOT="/stow"
         else
-            STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && cd ../ && pwd)"
+            STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && cd ../ && pwd -P)"
         fi
 
         if [ ! -f "$STOW_ROOT/Build.PL" ]; then

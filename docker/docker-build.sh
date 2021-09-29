@@ -2,7 +2,7 @@
 
 set -eu
 
-STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && cd ../ && pwd)"
+STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && cd ../ && pwd -P)"
 STOW_VERSION=$(perl "$STOW_ROOT/tools/get-version")
 DOCKER_BASE_IMAGE="stowtest"
 DOCKER_IMAGE="$DOCKER_BASE_IMAGE:$STOW_VERSION"

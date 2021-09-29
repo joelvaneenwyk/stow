@@ -3,7 +3,7 @@
 # Standard safety protocol
 set -ef -o pipefail
 
-STOW_ROOT="$(cd "$(dirname "$(realpath "${BASH_SOURCE[0]}")")" &>/dev/null && pwd)"
+STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 
 # shellcheck source=tools/install-dependencies.sh
 source "$STOW_ROOT/tools/install-dependencies.sh"

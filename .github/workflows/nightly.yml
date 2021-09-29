@@ -80,6 +80,9 @@ jobs:
         with:
           perl-version: ${{ matrix.perl }}
 
+          # Only applies to Windows and uses fallback for other platforms
+          distribution: strawberry
+
       - name: Install Dependencies
         working-directory: ${{ github.workspace }}
         run: |
