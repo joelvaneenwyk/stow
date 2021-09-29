@@ -34,8 +34,8 @@ jobs:
 
       # Define variants by platform
       script_extension: ${{ startsWith(matrix.platform, 'windows') && '.bat' || '.sh' }}
-      script_call: ${{ startsWith(matrix.platform, 'windows') && 'tools\\' || 'bash -c tools/' }}
-      script_sudo: ${{ startsWith(matrix.platform, 'windows') && 'tools\\' || 'sudo bash -c tools/' }}
+      script_call: ${{ startsWith(matrix.platform, 'windows') && 'tools\\' || './tools/' }}
+      script_sudo: ${{ startsWith(matrix.platform, 'windows') && 'tools\\' || 'sudo bash ./tools/' }}
 
     defaults:
       run:
