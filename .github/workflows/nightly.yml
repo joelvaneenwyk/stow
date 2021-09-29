@@ -44,19 +44,16 @@ jobs:
         platform:
           - ubuntu-latest
           - macos-latest
-        perl: [ '5.34' ]
+        perl: [ '5.34', '5.32', '5.20', '5.14' ]
+
+        install:
+          - bash tools/install-dependencies.sh
+        make:
+          - bash tools/make-stow.sh
+        test:
+          - bash tools/run-tests.sh
+
         include:
-          - platform: ubuntu-latest
-            perl: [ '5.34', '5.32', '5.30' ]
-            install: bash tools/install-dependencies.sh
-            make: bash tools/make-stow.sh
-            test: bash tools/run-tests.sh
-
-          - platform: macos-latest
-            install: bash tools/install-dependencies.sh
-            make: bash tools/make-stow.sh
-            test: bash tools/run-tests.sh
-
           - platform: windows-latest
             install: cmd /c tools\install-dependencies.bat
             make: cmd /c tools\make-stow.bat
@@ -65,8 +62,9 @@ jobs:
     # The type of runner that the job will run on
     runs-on: ${{ matrix.platform }}
 
-    # Always run the matrix even if another job fails
-    if: always()
+    # Run all versions of Perl only on Ubuntu otherwise limit to one version on other platforms
+    if: ${{ matrix.platform == 'ubuntu-latest' || matrix.perl == '5.34' }}
+
     env:
       DEBIAN_FRONTEND: noninteractive
 
