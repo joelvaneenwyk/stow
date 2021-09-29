@@ -3,6 +3,7 @@
 call "%~dp0make-clean.bat"
 
 call :MakeStow "%~dp0..\"
+
 exit /b
 
 :MakeStow
@@ -102,7 +103,7 @@ exit /b
 
     echo ##[cmd] %STOW_PERL% -I "%STOW_ROOT%\lib" "%STOW_ROOT%\bin\stow" --version
     %STOW_PERL% -I "%STOW_ROOT%\lib" "%STOW_ROOT%\bin\stow" --version
-exit /b
+endlocal & exit /b
 
 :ReplaceVariables
     setlocal EnableExtensions EnableDelayedExpansion

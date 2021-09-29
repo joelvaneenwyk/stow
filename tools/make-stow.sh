@@ -18,15 +18,32 @@ function make_stow() {
     # shellcheck source=./tools/stow-lib.sh
     source "$STOW_ROOT/tools/stow-lib.sh"
 
-    cd "$STOW_ROOT" || true
-
     rm -rf "$STOW_ROOT/_Inline"
     rm -f "$STOW_ROOT/bin/chkstow"
     rm -f "$STOW_ROOT/bin/stow"
     rm -f "$STOW_ROOT/lib/Stow.pm"
     rm -f "$STOW_ROOT/lib/Stow/Util.pm"
 
-    if [ ! -x "$(command -v autoreconf)" ]; then
+    if [ -x "$(command -v autoreconf)" ]; then
+        cd "$STOW_ROOT" || true
+
+        autoreconf --install --verbose
+        eval "$("$STOW_PERL" -V:siteprefix)"
+
+        if [ -x "$(command -v cygpath)" ]; then
+            siteprefix=$(cygpath "$siteprefix")
+        fi
+
+        # shellcheck disable=SC2016
+        PERL5LIB=$("$STOW_PERL" -le 'print $INC[0]')
+        export PERL5LIB
+
+        echo "Site prefix: ${siteprefix:-NULL}"
+        echo "Perl lib: $PERL5LIB"
+
+        ./configure --prefix="${siteprefix:-}" --with-pmdir="$PERL5LIB"
+        make bin/stow bin/chkstow lib/Stow.pm lib/Stow/Util.pm
+    else
         PMDIR="$STOW_ROOT/lib"
 
         if ! PERL5LIB=$($STOW_PERL -V | awk '/@INC/ {p=1; next} (p==1) {print $1}' | grep "$PMDIR" | head -n 1); then
@@ -48,23 +65,6 @@ function make_stow() {
         edit "$STOW_ROOT/bin/stow"
         edit "$STOW_ROOT/lib/Stow.pm"
         edit "$STOW_ROOT/lib/Stow/Util.pm"
-    else
-        autoreconf --install --verbose
-        eval "$("$STOW_PERL" -V:siteprefix)"
-
-        if [ -x "$(command -v cygpath)" ]; then
-            siteprefix=$(cygpath "$siteprefix")
-        fi
-
-        # shellcheck disable=SC2016
-        PERL5LIB=$("$STOW_PERL" -le 'print $INC[0]')
-        export PERL5LIB
-
-        echo "Site prefix: ${siteprefix:-NULL}"
-        echo "Perl lib: $PERL5LIB"
-
-        ./configure --prefix="${siteprefix:-}" --with-pmdir="$PERL5LIB"
-        make bin/stow bin/chkstow lib/Stow.pm lib/Stow/Util.pm
     fi
 
     echo "✔ Generated Stow binaries and libraries."

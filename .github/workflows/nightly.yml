@@ -31,8 +31,8 @@ jobs:
 
     env:
       DEBIAN_FRONTEND: noninteractive
-      CMD_EXTENSION: "${{ matrix.platform == 'windows-latest' && 'bat' || 'sh' }}"
-      CMD_PREFIX: "${{ matrix.platform == 'windows-latest' && 'cmd /c' || 'bash' }}"
+      CMD_EXTENSION: "${{ matrix.platform == 'windows-latest' && '.bat' || '.sh' }}"
+      CMD_PREFIX: "${{ matrix.platform == 'windows-latest' && 'cmd /c tools\\' || 'bash tools/' }}"
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
@@ -51,19 +51,19 @@ jobs:
           distribution: strawberry
 
       - name: Install Dependencies
-        working-directory: ${{ github.workspace }}/tools
+        working-directory: ${{ github.workspace }}
         run: |
-          ${{ env.CMD_PREFIX }} install-dependencies.${{ env.CMD_EXTENSION }}
+          ${{ env.CMD_PREFIX }}install-dependencies${{ env.CMD_EXTENSION }}
 
       - name: Make Stow
-        working-directory: ${{ github.workspace }}/tools
+        working-directory: ${{ github.workspace }}
         run: |
-          ${{ env.CMD_PREFIX }} make-stow.${{ env.CMD_EXTENSION }}
+          ${{ env.CMD_PREFIX }}make-stow${{ env.CMD_EXTENSION }}
 
       - name: Run Tests
-        working-directory: ${{ github.workspace }}/tools
+        working-directory: ${{ github.workspace }}
         run: |
-          ${{ env.CMD_PREFIX }} run-tests.${{ env.CMD_EXTENSION }}
+          ${{ env.CMD_PREFIX }}run-tests${{ env.CMD_EXTENSION }}
 
   docker_build:
     name: Docker Perl Tests

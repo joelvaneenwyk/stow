@@ -81,23 +81,27 @@ function test_perl_version() {
     # shellcheck disable=SC2005
     echo "$(perl --version)"
 
-    # Install stow
-    autoreconf --install
+    (
+        cd "$STOW_ROOT" || true
 
-    eval "$(perl -V:siteprefix)"
+        # Install stow
+        autoreconf --install
 
-    # shellcheck disable=SC2154
-    ./configure --prefix="$siteprefix"
-    make
-    make cpanm
+        eval "$(perl -V:siteprefix)"
 
-    # Run tests
-    make distcheck
+        # shellcheck disable=SC2154
+        ./configure --prefix="$siteprefix"
+        make
+        make cpanm
 
-    perl Build.PL
-    ./Build build
-    cover -test
-    ./Build distcheck
+        # Run tests
+        make distcheck
+
+        perl Build.PL
+        ./Build build
+        cover -test
+        ./Build distcheck
+    )
 }
 
 function run_stow_tests() {
