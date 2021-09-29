@@ -11,12 +11,12 @@ on:
 jobs:
   test-perl-versions:
     runs-on: ubuntu-latest
+    name: Validate Perl Versions
 
     env:
-      HOME: /home/runner
+      PERLBREW_PATH: /home/runner/perl5/perlbrew
       PERLBREW_ROOT: /home/runner/perl5/perlbrew
       PERLBREW_HOME: /home/runner/.perlbrew
-      PERLBREW_PATH: /usr/local/perlbrew/bin
       DEBIAN_FRONTEND: noninteractive
 
     # Steps represent a sequence of tasks that will be executed as part of the job
@@ -36,7 +36,6 @@ jobs:
         run: |
           curl -L https://install.perlbrew.pl | bash
           echo "${PERLBREW_ROOT}/bin" >> $GITHUB_PATH
-          echo "${HOME}/perl5/perlbrew/bin" >> $GITHUB_PATH
           echo "source ${PERLBREW_ROOT}/etc/bashrc" >> "${HOME}/.bash_profile"
 
       - name: Setup perlbrew
@@ -53,10 +52,9 @@ jobs:
             perl-5.16.0 \
             perl-5.14.0
 
-      - name: CPAN Perl Dependencies
+      - name: Bootstrap Perls
         working-directory: ${{ github.workspace }}
-        run: |
-          ./tools/install-dependencies.sh
+        run: ./tools/bootstrap-perls.sh
 
       - name: Build
         working-directory: ${{ github.workspace }}
@@ -71,10 +69,6 @@ jobs:
           sudo perl Build distcheck
           sudo perl Build distmeta
           sudo perl Build dist
-
-      - name: Bootstrap Perls
-        working-directory: ${{ github.workspace }}
-        run: ./tools/bootstrap-perls.sh
 
       - name: Stow Tests
         working-directory: ${{ github.workspace }}
