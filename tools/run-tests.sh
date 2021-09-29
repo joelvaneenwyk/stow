@@ -71,15 +71,9 @@ function test_perl_version() {
         echo "::group::Test Perl"
     fi
 
-    # Install the needed modules.
-    install_perl_modules \
-        Carp IO::Scalar \
-        Devel::Cover::Report::Coveralls \
-        Test::More Test::Output Test::Exception
-
-    if [ -n "${MSYSTEM:-}" ]; then
-        install_perl_modules Inline::C Win32::Mutex
-    fi
+    # Install Perl dependencies on this particular version of Perl in case
+    # that has not been done yet.
+    install_perl_dependencies
 
     # shellcheck disable=SC2005
     echo "$(perl --version)"

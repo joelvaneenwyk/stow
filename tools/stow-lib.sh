@@ -77,7 +77,7 @@ function update_stow_environment() {
     export STOW_VERSION
 }
 
-function install_dependencies() {
+function install_system_dependencies() {
     if [ -x "$(command -v apt-get)" ]; then
         use_sudo apt-get update
         use_sudo apt-get -y install \
@@ -85,6 +85,8 @@ function install_dependencies() {
             build-essential make autotools-dev automake autoconf \
             cpanminus \
             texlive texinfo
+    elif [ -x "$(command -v apk)" ]; then
+        brew install automake
     elif [ -x "$(command -v apk)" ]; then
         use_sudo apk update
         use_sudo apk add \
@@ -105,13 +107,9 @@ function install_dependencies() {
                 mingw-w64-x86_64-make mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils
         fi
     fi
+}
 
-    update_stow_environment
-
-    if [ -x "$(command -v cygpath)" ]; then
-        echo "CPANM: $(cygpath --windows "${HOME:-}/.cpanm/work/")"
-    fi
-
+function install_perl_dependencies() {
     (
         echo "yes"
         echo ""
@@ -157,13 +155,22 @@ function install_dependencies() {
     # possible including MSYS, cygwin, Ubuntu, Alpine, etc. The more libraries we add here the more
     # seemingly obscure issues you could run into e.g., missing 'cc1' or 'poll.h' even when they are
     # in fact installed.
-    install_perl_modules Carp Test::Output
+    install_perl_modules \
+        Carp Test::Output Module::Build IO::Scalar Devel::Cover::Report::Coveralls \
+        Test::More Test::Exception
 
     if [ -n "${MSYSTEM:-}" ]; then
-        install_perl_modules ExtUtils::PL2Bat Inline::C
+        install_perl_modules ExtUtils::PL2Bat Inline::C Win32::Mutex
     fi
 
     echo "Installed required Perl dependencies."
+}
+
+function install_dependencies() {
+    update_stow_environment
+
+    install_system_dependencies
+    install_perl_dependencies
 }
 
 update_stow_environment
