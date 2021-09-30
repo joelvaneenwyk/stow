@@ -93,7 +93,16 @@ function install_system_dependencies() {
             cpanminus \
             texlive texinfo "${packages[@]}"
     elif [ -x "$(command -v brew)" ]; then
-        brew install autoconf automake libtool "${packages[@]}"
+        brew install autoconf automake libtool texinfo "${packages[@]}"
+
+        # Need to make sure that latest texinfo and makeinfo are found first as the version
+        # that comes with macOS is too old and you will get errors while building docs with
+        # errors like 'makeinfo: invalid option -- c'
+        export PATH="/usr/local/opt/texinfo/bin:$PATH"
+        if [ -n "${GITHUB_PATH:-}" ]; then
+            # Prepend to path so that next GitHub Action will have this updated path as well
+            echo "/usr/local/opt/texinfo/bin" >>"$GITHUB_PATH"
+        fi
     elif [ -x "$(command -v apk)" ]; then
         use_sudo apk update
         use_sudo apk add \

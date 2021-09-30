@@ -21,7 +21,7 @@ function install_texlive() {
 function make_docs() {
     STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && cd ../ && pwd -P)"
 
-    # shellcheck source=tools/stow-lib.sh"
+    # shellcheck source=tools/stow-lib.sh
     source "$STOW_ROOT/tools/stow-lib.sh"
 
     # shellcheck source=tools/make-clean.sh
