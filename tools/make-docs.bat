@@ -16,7 +16,7 @@ exit /b
     set STOW_PERL=perl
     set TMPDIR=%STOW_ROOT%\.tmp
 
-    set WIN_UNIX_DIR=%STOW_ROOT%\.tmp\ezwinports
+    set WIN_UNIX_DIR=%STOW_ROOT%\.tmp\git
     set WIN_UNIX_DIR_UX=%WIN_UNIX_DIR:\=/%
 
     ::set PERL5LIB=%WIN_UNIX_DIR_UX%/share/automake-1.11:%WIN_UNIX_DIR_UX%/share/autoconf
@@ -25,7 +25,7 @@ exit /b
     set PERL_INCLUDE_UX=-I %WIN_UNIX_DIR_UX%/share/automake-1.11 -I %WIN_UNIX_DIR_UX%/share/autoconf
     set PERL=perl %PERL_INCLUDE_UX%
 
-    set BASH=%WIN_UNIX_DIR%\usr\bin\bash.exe
+    set BASH=%WIN_UNIX_DIR%\bin\bash.exe
     ::set AUTORECONF=%PERL% %WIN_UNIX_DIR_UX%/bin/autoreconf
     ::set AUTOCONF=%BASH% %WIN_UNIX_DIR_UX%/bin/autoconf
     ::set AUTOHEADER=%PERL% %WIN_UNIX_DIR_UX%/bin/autoheader
@@ -37,14 +37,18 @@ exit /b
     ::set MAKE=make
     ::set WARNINGS=""
 
-    set autom4te_perllibdir=%WIN_UNIX_DIR_UX%/share/autoconf
-    set perllibdir=%WIN_UNIX_DIR_UX%/share/aclocal-1.11
+    set autom4te_perllibdir=%WIN_UNIX_DIR_UX%/usr/share/autoconf
+    ::set perllibdir=%WIN_UNIX_DIR%/share/aclocal-1.11 %WIN_UNIX_DIR_UX%/share/autoconf
+    set PERL5LIB=%WIN_UNIX_DIR%\usr\share\aclocal-1.11;%WIN_UNIX_DIR%\usr\share\autoconf;%WIN_UNIX_DIR%\usr\share\automake-1.11
     set ACLOCAL_PATH=%WIN_UNIX_DIR_UX%/share/aclocal-1.11
+
+    set GUILE_LOAD_PATH=%WIN_UNIX_DIR%\usr\share\guile\2.0
+    set GUILE_LOAD_COMPILED_PATH=%WIN_UNIX_DIR%\usr\lib\guile\2.0\ccache
 
     ::set PATH=%WIN_UNIX_DIR%\bin;%WIN_UNIX_DIR%\mingw32\bin;%PATH%
     ::set PATH=%WIN_UNIX_DIR%\bin;%gitdir%\cmd;%WIN_UNIX_DIR%\usr\bin;%WIN_UNIX_DIR%\usr\bin\core_perl;%WIN_UNIX_DIR%\mingw32\bin
     ::set PATH=%PATH:\=/%
-    set PATH=%WIN_UNIX_DIR%\bin
+    set PATH=%WIN_UNIX_DIR%\usr\bin;%WIN_UNIX_DIR%\bin
 
     set HOME=%STOW_ROOT%
     set MSYS2_PATH_TYPE=inherit
@@ -60,8 +64,12 @@ exit /b
         echo Executed post install script.
     )
 
+    set APIVERSION=1.11
+
     cd /d "%STOW_ROOT%"
-    %BASH% --login -c "source /etc/profile && which autoreconf"
+    ::%BASH% --login -c "source /etc/profile && which autoreconf"
+    ::%BASH% --login -c "autoreconf"
+    %BASH% --login
 
     ::%AUTORECONF% --install --verbose
     ::%BASH% --noprofile --norc autoreconf --install --verbose

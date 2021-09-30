@@ -101,10 +101,10 @@ exit /b
     set TEXLIVE_INSTALL_TEXMFSYSVAR=%TEXDIR%\texmf-var
     set TEXLIVE_INSTALL_TEXMFVAR=%TEXDIR%\texmf-var
 
-    if exist "%TEXLIVE_BIN%\tex.exe" (
+    if not exist "%TEXLIVE_BIN%\tex.exe" goto:$InstallTexLive
         echo Skipped install. Tex executable already exists: '%TEXLIVE_BIN%\tex.exe'
         exit /b 0
-    )
 
-    call :RunTaskGroup "%TEXLIVE_INSTALL%" -no-gui -portable -profile "%STOW_ROOT%\tools\install-texlive.profile"
+    :$InstallTexLive
+        call :RunTaskGroup call "%TEXLIVE_INSTALL%" -no-gui -portable -profile "%STOW_ROOT%\tools\install-texlive.profile"
 exit /b

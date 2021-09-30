@@ -109,18 +109,17 @@ Function Get-File {
         $Filename = [System.IO.Path]::GetFileName($Url)
     }
 
-    $FilePath = $Filename
-
     # Convert local/relative path to absolute path
     if (![System.IO.Path]::IsPathRooted($Filename)) {
         $FilePath = Join-Path (Get-Item -Path ".\" -Verbose).FullName $Filename
+    } else {
+        $FilePath = $Filename
     }
+
+    $FilePathOut = "$FilePath.out"
 
     if ($null -eq ($Url -as [System.URI]).AbsoluteURI) {
         throw "⚠ Invalid Url: $Url"
-    }
-    elseif (Test-Path -Path "$Filename" -PathType Leaf) {
-        Write-Host "File already exists: '$Filename'"
     }
     else {
         $handler = $null
@@ -129,23 +128,26 @@ Function Get-File {
         try {
             $webclient = New-Object System.Net.WebClient
             Write-Host "[web.client] Downloading: $Url"
-            $webclient.DownloadFile([System.Uri]::new($Url), "$Filename")
+            $webclient.DownloadFile([System.Uri]::new($Url), "$FilePathOut")
         }
         catch {
             try {
                 $handler = New-Object -TypeName System.Net.Http.HttpClientHandler
-                Write-Host "[http.client.handler] Downloading: $Url"
                 $handler = New-Object -TypeName System.Net.Http.HttpClientHandler
                 $client = New-Object -TypeName System.Net.Http.HttpClient -ArgumentList $handler
                 $client.Timeout = New-Object -TypeName System.TimeSpan -ArgumentList 0, 30, 0
                 $cancelTokenSource = [System.Threading.CancellationTokenSource]::new(-1)
                 $responseMsg = $client.GetAsync([System.Uri]::new($Url), $cancelTokenSource.Token)
                 $responseMsg.Wait()
+
+                Write-Host "[http.client.handler] Downloading: $Url"
+
                 if (!$responseMsg.IsCanceled) {
                     $response = $responseMsg.Result
                     if ($response.IsSuccessStatusCode) {
                         $downloadedFileStream = [System.IO.FileStream]::new(
-                            $FilePath, [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
+                            $FilePathOut,
+                            [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write, [System.IO.FileShare]::None)
 
                         $copyStreamOp = $response.Content.CopyToAsync($downloadedFileStream)
 
@@ -162,12 +164,13 @@ Function Get-File {
             catch {
                 Write-Host "[web.request] Downloading: $Url"
                 $ProgressPreference = 'SilentlyContinue'
-                Invoke-WebRequest -UseBasicParsing -Uri "$Url" -OutFile "$Filename"
+                Invoke-WebRequest -UseBasicParsing -Uri "$Url" -OutFile "$FilePathOut"
             }
         }
         finally {
-            if (Test-Path -Path "$Filename" -PathType Leaf) {
-                Write-Host "Downloaded file: '$Filename'"
+            if (Test-Path -Path "$FilePathOut" -PathType Leaf) {
+                Move-Item -Path "$FilePathOut" -Destination "$FilePath" -Force
+                Write-Host "Downloaded file: '$FilePath'"
             }
             else {
                 throw "⚠ Failed to download file: $Url"
@@ -177,22 +180,24 @@ Function Get-File {
 }
 
 Function Get-TexLive {
-    Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
-
-    if ( -not(Test-Path -Path "$script:TempDir") ) {
-        New-Item -ItemType directory -Path "$script:TempDir" | Out-Null
-    }
-
     try {
+        Write-Host "::group::Get TexLive"
+
+        Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
+
+        if ( -not(Test-Path -Path "$script:TempDir") ) {
+            New-Item -ItemType directory -Path "$script:TempDir" | Out-Null
+        }
+
         $tempTexTargetFolder = "$script:TempDir\texlive-install"
+        $tempTexFolder = "$script:TempDir\texlive-tmp"
+        $tempTexArchive = "$script:ArchivesDir\install-tl.zip"
+
         if (Test-Path -Path "$tempTexTargetFolder\install-tl-windows.bat" -PathType Leaf) {
             Write-Host "Installer already available: '$tempTexTargetFolder\install-tl-windows.bat'"
         }
         else {
-            $tempTexFolder = "$script:TempDir\texlive-tmp"
-            $tempTexArchive = "$script:ArchivesDir\install-tl.zip"
-
-            Get-File -Url 'https://mirror.ctan.org/systems/texlive/tlnet/install-tl.zip' -Filename "$tempTexArchive"
+            Get-File -Url "https://mirror.ctan.org/systems/texlive/tlnet/install-tl.zip" -Filename "$tempTexArchive"
 
             # Remove tex folder if it exists
             If (Test-Path "$tempTexFolder" -PathType Any) {
@@ -200,11 +205,19 @@ Function Get-TexLive {
             }
             Expand-File -Path "$tempTexArchive" -DestinationPath "$tempTexFolder"
 
-            Get-ChildItem -Path "$tempTexFolder" -Force -Directory | Select-Object -First 1 | Move-Item -Destination "$tempTexTargetFolder"
+            Get-ChildItem -Path "$tempTexFolder" -Force -Directory | Select-Object -First 1 | Move-Item -Destination "$tempTexTargetFolder" -Force
+        }
+
+        # Remove tex folder if it exists
+        If (Test-Path "$tempTexFolder" -PathType Any) {
+            Remove-Item -Recurse -Force "$tempTexFolder" | Out-Null
         }
     }
     catch [Exception] {
         Write-Host "Failed to download and extract TeX Live.", $_.Exception.Message
+    }
+    finally {
+        Write-Host "::endgroup::"
     }
 }
 
@@ -223,13 +236,22 @@ Function Install-Toolset {
         New-Item -ItemType directory -Path "$script:ArchivesDir" | Out-Null
     }
 
+    $git = "$script:TempDir\git"
+
+    Write-Host "::group::Install Portable Git"
+    $portableGitArchive = "$script:ArchivesDir\PortableGit-2.33.0.2-64-bit.7z.exe"
+    Get-File -Url "https://github.com/git-for-windows/git/releases/download/v2.33.0.windows.2/PortableGit-2.33.0.2-64-bit.7z.exe" -Filename $portableGitArchive
+    Expand-File -Path $portableGitArchive -DestinationPath "$git"
+    Write-Host "::endgroup::"
+
     $ezwinports = @(
         "https://sourceforge.net/projects/ezwinports/files/binutils-2.37-w32-bin.zip/download",
         "https://sourceforge.net/projects/ezwinports/files/texinfo-6.8-w32-bin.zip/download",
-        "https://sourceforge.net/projects/ezwinports/files/make-4.3-without-guile-w32-bin.zip/download",
+        "https://sourceforge.net/projects/ezwinports/files/make-4.3-with-guile-w32-bin.zip/download",
         "https://sourceforge.net/projects/ezwinports/files/autoconf-2.65-msys-bin.zip/download",
         "https://sourceforge.net/projects/ezwinports/files/automake-1.11.6-msys-bin.zip/download",
-        "https://sourceforge.net/projects/ezwinports/files/which-2.20-2-w32-bin.zip/download"
+        "https://sourceforge.net/projects/ezwinports/files/which-2.20-2-w32-bin.zip/download",
+        "https://sourceforge.net/projects/ezwinports/files/guile-2.0.11-2-w32-bin.zip/download"
     )
 
     foreach ($ezwinport in $ezwinports) {
@@ -241,11 +263,12 @@ Function Install-Toolset {
         Write-Host "::endgroup::"
     }
 
-    Write-Host "::group::Install Portable Git"
-    $portableGitArchive = "$script:ArchivesDir\PortableGit-2.33.0.2-64-bit.7z.exe"
-    Get-File -Url "https://github.com/git-for-windows/git/releases/download/v2.33.0.windows.2/PortableGit-2.33.0.2-64-bit.7z.exe" -Filename $portableGitArchive
-    Expand-File -Path $portableGitArchive -DestinationPath "$script:TempDir\git"
-    Write-Host "::endgroup::"
+    Write-Host "::group::Copy 'ezwinports' to 'git'"
+    Copy-Item -Path "$script:TempDir\ezwinports\mingw32" -Destination "$git" -Force -Recurse
+    Copy-Item -Path "$script:TempDir\ezwinports\bin" -Destination "$git\usr" -Force -Recurse
+    Copy-Item -Path "$script:TempDir\ezwinports\include" -Destination "$git\usr" -Force -Recurse
+    Copy-Item -Path "$script:TempDir\ezwinports\lib" -Destination "$git\usr" -Force -Recurse
+    Copy-Item -Path "$script:TempDir\ezwinports\share" -Destination "$git\usr" -Force -Recurse
 
     Get-TexLive
 }

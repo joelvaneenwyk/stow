@@ -53,3 +53,5 @@ Stow-v[0-9].[0-9].[0-9].tar.*
 *.html
 *.log
 test_results*.xml
+nul
+.bash_history

@@ -32,7 +32,7 @@ exit /b
     set _inc=0
     for /f "tokens=*" %%a in ('%STOW_PERL% -V') do (
         if "!_inc!"=="1" (
-            echo %%a | findstr /C:"%PMDIR%" 1>nul
+            echo %%a | findstr /C:"%PMDIR%" > nul 2>&1
 
             if not errorlevel 1 (
                 set PERL5LIB=%%a
