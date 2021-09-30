@@ -262,7 +262,7 @@ install-data-hook: doc/manual-split
 	cp -r $(srcdir)/doc/manual-split $(DESTDIR)$(docdir)
 
 uninstall-hook:
-	chmod u+w -R $(DESTDIR)$(docdir)/manual-split
+	chmod -R u+w $(DESTDIR)$(docdir)/manual-split
 	rm -rf $(DESTDIR)$(docdir)/manual-split
 
 # Using install-data-hook has the slightly annoying disadvantage that
