@@ -56,10 +56,10 @@ jobs:
       - name: Setup Perl ${{ matrix.perl }}
         uses: shogo82148/actions-setup-perl@v1
         with:
-          perl-version: ${{ env.perl_distribution }}
+          perl-version: ${{ matrix.perl }}
 
           # Only applies to Windows and uses fallback for other platforms
-          distribution: strawberry
+          distribution: ${{ env.perl_distribution }}
 
       - name: Install Dependencies
         run: ${{ env.script_sudo }} ${{ env.script_call }}install-dependencies${{ env.script_extension }}
