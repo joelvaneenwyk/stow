@@ -93,7 +93,13 @@ function install_system_dependencies() {
             cpanminus \
             texlive texinfo "${packages[@]}"
     elif [ -x "$(command -v brew)" ]; then
-        brew install autoconf automake libtool texinfo texlive "${packages[@]}"
+        brew install autoconf automake libtool texinfo "${packages[@]}"
+
+        # Needed for tex binaries
+        brew install --cask mactex
+
+        # Allows tex to be used right after installation
+        eval "$(/usr/libexec/path_helper)"
 
         # Need to make sure that latest texinfo and makeinfo are found first as the version
         # that comes with macOS is too old and you will get errors while building docs with
