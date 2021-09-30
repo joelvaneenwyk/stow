@@ -178,7 +178,7 @@ initialize_brewperl
 # Standard safety protocol but do this after we setup perlbrew otherwise
 # we get errors with unbound variables
 set -euo pipefail
-shopt -s inherit_errexit nullglob
+shopt -s inherit_errexit nullglob >/dev/null 2>&1 || true
 trap error_handler EXIT
 
 run_stow_tests "$@"

@@ -30,6 +30,8 @@ function install_perl_modules() {
             fi
         done
     fi
+
+    return $?
 }
 
 function update_stow_environment() {
@@ -78,34 +80,40 @@ function update_stow_environment() {
 }
 
 function install_system_dependencies() {
+    packages=("$@")
+
     if [ -x "$(command -v apt-get)" ]; then
         use_sudo apt-get update
         use_sudo apt-get -y install \
             sudo bzip2 gawk curl libssl-dev patch \
             build-essential make autotools-dev automake autoconf \
             cpanminus \
-            texlive texinfo
+            texlive texinfo "${packages[@]}"
     elif [ -x "$(command -v brew)" ]; then
-        brew install automake
+        brew install automake "${packages[@]}"
     elif [ -x "$(command -v apk)" ]; then
         use_sudo apk update
         use_sudo apk add \
             sudo wget curl unzip xclip \
             build-base gcc g++ make musl-dev openssl-dev zlib-dev \
             perl-dev perl-utils perl-app-cpanminus \
-            bash openssl
+            bash openssl "${packages[@]}"
     elif [ -x "$(command -v pacman)" ]; then
-        pacman -S --quiet --noconfirm --needed \
-            git \
-            msys2-keyring msys2-runtime-devel msys2-w32api-headers msys2-w32api-runtime \
-            base-devel gcc make autoconf automake1.16 automake-wrapper \
-            libtool libcrypt-devel openssl \
+        packages+=(
+            git msys2-keyring msys2-runtime-devel msys2-w32api-headers msys2-w32api-runtime
+            base-devel gcc make autoconf automake1.16 automake-wrapper
+            libtool libcrypt-devel openssl openssl-devel
             perl-devel
+        )
 
-        if [ "${MSYSTEM:-}" = "MINGW64" ] || [ "${MSYSTEM:-}" = "MINGW32" ]; then
-            pacman -S --quiet --noconfirm --needed \
-                mingw-w64-x86_64-make mingw-w64-x86_64-gcc mingw-w64-x86_64-binutils
+        if [ -n "${MINGW_PACKAGE_PREFIX:-}" ]; then
+            packages+=(
+                "$MINGW_PACKAGE_PREFIX-make" "$MINGW_PACKAGE_PREFIX-gcc" "$MINGW_PACKAGE_PREFIX-binutils"
+                "$MINGW_PACKAGE_PREFIX-openssl"
+            )
         fi
+
+        pacman -S --quiet --noconfirm --needed "${packages[@]}"
     fi
 }
 
@@ -124,8 +132,8 @@ function install_perl_dependencies() {
     # installed and then calling 'pl2bat' to generate it. It should be located under bin
     # folder at '/mingw64/bin/core_perl/pl2bat.bat'
     if [ -n "${MSYSTEM:-}" ]; then
-        if [ "${MSYSTEM:-}" = "MINGW64" ]; then
-            export PATH="$PATH:/mingw64/bin:/mingw64/bin/core_perl"
+        if [ ! "${MSYSTEM:-}" = "MSYS" ]; then
+            export PATH="$PATH:$MSYSTEM_PREFIX/bin:$MSYSTEM_PREFIX/bin/core_perl"
         fi
 
         # We intentionally use 'which' here as we are on Windows
@@ -155,13 +163,16 @@ function install_perl_dependencies() {
     # possible including MSYS, cygwin, Ubuntu, Alpine, etc. The more libraries we add here the more
     # seemingly obscure issues you could run into e.g., missing 'cc1' or 'poll.h' even when they are
     # in fact installed.
-    install_perl_modules \
-        Carp Test::Output Module::Build IO::Scalar Devel::Cover::Report::Coveralls \
+    modules=(
+        Carp Test::Output Module::Build IO::Scalar Devel::Cover::Report::Coveralls
         Test::More Test::Exception
+    )
 
     if [ -n "${MSYSTEM:-}" ]; then
-        install_perl_modules ExtUtils::PL2Bat Inline::C Win32::Mutex
+        modules+=(ExtUtils::PL2Bat Inline::C Win32::Mutex)
     fi
+
+    install_perl_modules "${modules[@]}"
 
     echo "Installed required Perl dependencies."
 }

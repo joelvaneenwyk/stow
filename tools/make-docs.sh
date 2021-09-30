@@ -2,29 +2,30 @@
 
 function install_texlive() {
     if [ -x "$(command -v apt-get)" ]; then
-        use_sudo apt-get -y install \
-            texlive texinfo
+        install_system_dependencies texlive texinfo
     elif [ -x "$(command -v pacman)" ]; then
-        pacman -S --quiet --noconfirm --needed \
-            texinfo texinfo-tex
+        packages+=(texinfo texinfo-tex)
 
-        if [ "${MSYSTEM:-}" = "MINGW64" ]; then
-            pacman -S --quiet --noconfirm --needed \
-                mingw-w64-x86_64-texlive-bin mingw-w64-x86_64-texlive-core \
-                mingw-w64-x86_64-texlive-extra-utils \
-                mingw-w64-x86_64-poppler
+        if [ -n "${MINGW_PACKAGE_PREFIX:-}" ]; then
+            packages+=(
+                "$MINGW_PACKAGE_PREFIX-texlive-bin" "$MINGW_PACKAGE_PREFIX-texlive-core"
+                "$MINGW_PACKAGE_PREFIX-texlive-extra-utils"
+                "$MINGW_PACKAGE_PREFIX-poppler"
+            )
         fi
+
+        install_system_dependencies "${packages[@]}"
     fi
 }
 
 function make_docs() {
     STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && cd ../ && pwd -P)"
 
-    # shellcheck source=tools/install-dependencies.sh
-    source "$STOW_ROOT/tools/install-dependencies.sh"
+    # shellcheck source=tools/stow-lib.sh"
+    source "$STOW_ROOT/tools/stow-lib.sh"
 
     # shellcheck source=tools/make-clean.sh
-    source "$STOW_ROOT/tools/make-clean.sh"
+    "$STOW_ROOT/tools/make-clean.sh"
 
     install_texlive
 
@@ -59,7 +60,8 @@ function make_docs() {
     #MAKEINFO='sh automake/missing makeinfo -I doc'
     #MAKEINFO="$STOW_ROOT/automake/missing" makeinfo -I "$STOW_ROOT/doc/" -o "$STOW_ROOT/doc/" "$STOW_ROOT/doc/stow.texi"
 
-    TEXI2DVI="$STOW_ROOT/tools/texinfo/util/texi2dvi"
+    #TEXI2DVI="$STOW_ROOT/tools/texinfo/util/texi2dvi"
+    TEXI2DVI="texi2dvi"
 
     # Generate stow.info
     makeinfo -I ./doc/ -o ./doc/ ./doc/stow.texi
