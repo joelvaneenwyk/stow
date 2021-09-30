@@ -2,8 +2,8 @@
 
 setlocal EnableExtensions EnableDelayedExpansion
 
-call :Run powershell -NoLogo -NoProfile -Command "Set-ExecutionPolicy RemoteSigned -scope CurrentUser;"
-call :Run powershell -NoLogo -NoProfile -File "%~dp0install-dependencies.ps1"
+call :RunCommand powershell -NoLogo -NoProfile -Command "Set-ExecutionPolicy RemoteSigned -scope CurrentUser;"
+call :RunCommand powershell -NoLogo -NoProfile -File "%~dp0install-dependencies.ps1"
 call :InstallPerlDependencies "%~dp0..\"
 
 ::call :InstallTexLive "%~dp0..\"
@@ -19,12 +19,12 @@ exit /b
     if "%STOW_ROOT%"=="" set STOW_ROOT=%_root:~0,-1%
     if "%STOW_PERL%"=="" set STOW_PERL=perl
 
-    call :Run !STOW_PERL! "%~dp0initialize-cpan-config.pl"
+    call :RunTaskGroup !STOW_PERL! "%~dp0initialize-cpan-config.pl"
 
     :: Already installed as part of Strawberry Perl but install/update regardless.
     !STOW_PERL! -MApp::cpanminus::fatscript -le 1 > nul 2>&1
     if not "!ERRORLEVEL!"=="0" (
-        call :Run !STOW_PERL! -MCPAN -e "install App::cpanminus"
+        call :RunTaskGroup !STOW_PERL! -MCPAN -e "install App::cpanminus"
     )
 
     ::
@@ -43,13 +43,13 @@ exit /b
     goto:$InstallDone
 
     :$UseCpanm
-    call :Run !STOW_PERL! -MApp::cpanminus::fatscript -le "my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;" -- --installdeps --notest .
+    call :RunTaskGroup !STOW_PERL! -MApp::cpanminus::fatscript -le "my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;" -- --installdeps --notest .
 
     :$InstallDone
     cd /d "%_starting_directory%"
 exit /b
 
-:Run
+:RunTaskGroup
     set _cmd=%*
     echo ::group::%_cmd%
     echo [command]%_cmd%
@@ -57,12 +57,18 @@ exit /b
     echo ::endgroup::
 exit /b
 
+:RunCommand
+    set _cmd=%*
+    echo [command]%_cmd%
+    %_cmd%
+exit /b
+
 :InstallPerlModules
     :$Install
         set _module=%~1
         shift
         if "%_module%"=="" exit /b
-        call :Run !STOW_PERL! -MCPAN -e "CPAN::Shell->notest('install', '%_module%')"
+        call :RunTaskGroup !STOW_PERL! -MCPAN -e "CPAN::Shell->notest('install', '%_module%')"
     goto:$Install
 exit /b
 

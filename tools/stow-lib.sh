@@ -183,7 +183,7 @@ function install_perl_dependencies() {
 function install_dependencies() {
     update_stow_environment
 
-    install_system_dependencies
+    install_system_dependencies "$@"
     install_perl_dependencies
 }
 
