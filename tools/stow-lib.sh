@@ -96,7 +96,7 @@ function install_system_dependencies() {
         brew install autoconf automake libtool texinfo "${packages[@]}"
 
         # Needed for tex binaries
-        brew install --cask mactex
+        brew install --cask basictex
 
         # Allows tex to be used right after installation
         eval "$(/usr/libexec/path_helper)"
