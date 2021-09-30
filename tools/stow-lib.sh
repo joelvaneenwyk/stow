@@ -108,6 +108,7 @@ function install_system_dependencies() {
         if [ -n "${GITHUB_PATH:-}" ]; then
             # Prepend to path so that next GitHub Action will have this updated path as well
             echo "/usr/local/opt/texinfo/bin" >>"$GITHUB_PATH"
+            echo "/Library/TeX/texbin/" >>"$GITHUB_PATH"
         fi
     elif [ -x "$(command -v apk)" ]; then
         use_sudo apk update
