@@ -93,7 +93,7 @@ function install_system_dependencies() {
             cpanminus \
             texlive texinfo "${packages[@]}"
     elif [ -x "$(command -v brew)" ]; then
-        brew install autoconf automake libtool texinfo "${packages[@]}"
+        brew install autoconf automake libtool texinfo texlive "${packages[@]}"
 
         # Need to make sure that latest texinfo and makeinfo are found first as the version
         # that comes with macOS is too old and you will get errors while building docs with
