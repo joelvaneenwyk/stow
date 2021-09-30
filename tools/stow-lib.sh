@@ -4,7 +4,7 @@ function run_command {
     local cmd
     cmd="$*"
     cmd=${cmd//$'\n'/} # Remove all newlines
-    echo "##[cmd] $cmd"
+    echo "[command]$cmd"
     "$@"
 }
 
@@ -24,10 +24,13 @@ function install_perl_modules() {
             --notest "$@"
     else
         for package in "$@"; do
+            echo "::group::cpan install $package"
             if ! run_command use_sudo "$STOW_PERL" -MCPAN -e "CPAN::Shell->notest('install', '$package')"; then
+                echo "::endgroup::"
                 echo "❌ Failed to install '$package' module."
                 return $?
             fi
+            echo "::endgroup::"
         done
     fi
 
@@ -90,7 +93,7 @@ function install_system_dependencies() {
             cpanminus \
             texlive texinfo "${packages[@]}"
     elif [ -x "$(command -v brew)" ]; then
-        brew install automake "${packages[@]}"
+        brew install autoconf automake libtool "${packages[@]}"
     elif [ -x "$(command -v apk)" ]; then
         use_sudo apk update
         use_sudo apk add \

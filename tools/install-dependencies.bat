@@ -38,18 +38,23 @@ exit /b
     ::
     cd /d "!STOW_ROOT!"
     !STOW_PERL! -MApp::cpanminus::fatscript -le 1 > nul 2>&1
-    if "!ERRORLEVEL!"=="0" (
-        call :Run !STOW_PERL! -MApp::cpanminus::fatscript -le "my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;" -- --installdeps --notest .
-    else (
-        call :InstallPerlModules Carp Test::Output Module::Build IO::Scalar Devel::Cover::Report::Coveralls Test::More Test::Exception ExtUtils::PL2Bat Inline::C Win32::Mutex
-    )
+    if "!ERRORLEVEL!"=="0" goto:$UseCpanm
+    call :InstallPerlModules Carp Test::Output Module::Build IO::Scalar Devel::Cover::Report::Coveralls Test::More Test::Exception ExtUtils::PL2Bat Inline::C Win32::Mutex
+    goto:$InstallDone
+
+    :$UseCpanm
+    call :Run !STOW_PERL! -MApp::cpanminus::fatscript -le "my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;" -- --installdeps --notest .
+
+    :$InstallDone
     cd /d "%_starting_directory%"
 exit /b
 
 :Run
     set _cmd=%*
-    echo ##[cmd] %_cmd%
+    echo ::group::%_cmd%
+    echo [command]%_cmd%
     %_cmd%
+    echo ::endgroup::
 exit /b
 
 :InstallPerlModules

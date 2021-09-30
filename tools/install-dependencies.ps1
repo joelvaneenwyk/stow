@@ -244,8 +244,10 @@ Function Install-Toolset {
     foreach ($ezwinport in $ezwinports) {
         $filename = ([System.Uri]($ezwinport -replace "/download", "")).Segments[-1]
         $outPath = "$script:TempDir\$filename"
+        Write-Host "::group::Install '$filename'"
         Get-File -Url $ezwinport -Filename "$outPath"
         Expand-File -Path "$outPath" -DestinationPath "$script:TempDir\ezwinports"
+        Write-Host "::endgroup::"
     }
 }
 
