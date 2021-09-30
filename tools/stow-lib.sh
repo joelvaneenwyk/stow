@@ -1,11 +1,37 @@
 #!/bin/bash
 
 function run_command {
-    local cmd
-    cmd="$*"
-    cmd=${cmd//$'\n'/} # Remove all newlines
-    echo "[command]$cmd"
+    local command_display
+
+    command_display="$*"
+    command_display=${command_display//$'\n'/} # Remove all newlines
+
+    if [ -n "${GITHUB_ACTIONS:-}" ]; then
+        echo "[command]$command_display"
+    else
+        echo "##[cmd] $command_display"
+    fi
+
     "$@"
+}
+
+function run_command_group() {
+    local command_display
+
+    command_display="$*"
+    command_display=${command_display//$'\n'/} # Remove all newlines
+
+    if [ -n "${GITHUB_ACTIONS:-}" ]; then
+        echo "::group::$command_display"
+    else
+        echo "##[cmd] $command_display"
+    fi
+
+    "$@"
+
+    if [ -n "${GITHUB_ACTIONS:-}" ]; then
+        echo "::endgroup::"
+    fi
 }
 
 function use_sudo {

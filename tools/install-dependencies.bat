@@ -4,9 +4,10 @@ setlocal EnableExtensions EnableDelayedExpansion
 
 call :RunCommand powershell -NoLogo -NoProfile -Command "Set-ExecutionPolicy RemoteSigned -scope CurrentUser;"
 call :RunCommand powershell -NoLogo -NoProfile -File "%~dp0install-dependencies.ps1"
-call :InstallPerlDependencies "%~dp0..\"
 
-::call :InstallTexLive "%~dp0..\"
+call :InstallTexLive "%~dp0..\"
+
+call :InstallPerlDependencies "%~dp0..\"
 
 exit /b
 
@@ -77,7 +78,7 @@ exit /b
 
     set _root=%~dp1
     set STOW_ROOT=%_root:~0,-1%
-    set BUILD_TEMP_ROOT=%STOW_ROOT%\.build
+    set BUILD_TEMP_ROOT=%STOW_ROOT%\.tmp
 
     set TEXLIVE_ROOT=%BUILD_TEMP_ROOT%\texlive-install
     set TEXLIVE_INSTALL=%TEXLIVE_ROOT%\install-tl-windows.bat
@@ -100,11 +101,10 @@ exit /b
     set TEXLIVE_INSTALL_TEXMFSYSVAR=%TEXDIR%\texmf-var
     set TEXLIVE_INSTALL_TEXMFVAR=%TEXDIR%\texmf-var
 
-    set _texInstallCommand="%TEXLIVE_INSTALL%" -no-gui -portable -profile "%STOW_ROOT%\tools\install-texlive.profile"
-    if not exist "%TEXLIVE_BIN%\tex.exe" (
-        echo ##[cmd] %_texInstallCommand%
-        call %_texInstallCommand%
-    ) else (
+    if exist "%TEXLIVE_BIN%\tex.exe" (
         echo Skipped install. Tex executable already exists: '%TEXLIVE_BIN%\tex.exe'
+        exit /b 0
     )
-exit /b 0
+
+    call :RunTaskGroup "%TEXLIVE_INSTALL%" -no-gui -portable -profile "%STOW_ROOT%\tools\install-texlive.profile"
+exit /b

@@ -2,7 +2,7 @@
 
 STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && cd ../ && pwd -P)"
 
-function _remove_intermediate_files() {
+function remove_intermediate_files() {
     rm -rf "$STOW_ROOT/autom4te.cache" >/dev/null 2>&1
     rm -f "$STOW_ROOT/automake/install-sh" >/dev/null 2>&1
     rm -f "$STOW_ROOT/automake/mdate-sh" >/dev/null 2>&1
@@ -34,6 +34,8 @@ function _remove_intermediate_files() {
     rm -f "$STOW_ROOT/stow."* >/dev/null 2>&1
 
     git -C "$STOW_ROOT" checkout -- "$STOW_ROOT/aclocal.m4" >/dev/null 2>&1 || true
+
+    echo "✔ Removed intermediate Stow files from root: '$STOW_ROOT'"
 }
 
-_remove_intermediate_files
+remove_intermediate_files

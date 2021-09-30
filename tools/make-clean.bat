@@ -50,6 +50,7 @@ exit /b
     rmdir /q /s "%STOW_ROOT%\stow\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\cover_db\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\tmp-testing-trees\" > nul 2>&1
+    rmdir /q /s "%STOW_ROOT%\tools\tmp-testing-trees\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\stow-!STOW_VERSION!\" > nul 2>&1
 
     git -C "%STOW_ROOT%" checkout -- "%STOW_ROOT%\aclocal.m4" > nul 2>&1

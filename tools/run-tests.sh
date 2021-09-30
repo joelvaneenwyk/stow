@@ -65,15 +65,12 @@ EOF
 function test_perl_version() {
     # Use the version of Perl passed in if 'perlbrew' is installed
     if [ -x "$(command -v perlbrew)" ]; then
-        echo "::group::Test Perl v$1"
         perlbrew use "$1"
-    else
-        echo "::group::Test Perl"
     fi
 
     # Install Perl dependencies on this particular version of Perl in case
     # that has not been done yet.
-    install_perl_dependencies
+    run_command_group install_perl_dependencies
 
     # shellcheck disable=SC2005
     echo "$(perl --version)"
@@ -82,33 +79,23 @@ function test_perl_version() {
         cd "$STOW_ROOT" || true
 
         # Install stow
-        echo "[command]autoreconf --install"
-        autoreconf --install
+        run_command_group autoreconf --install
 
         eval "$(perl -V:siteprefix)"
 
         # shellcheck disable=SC2154
-        echo "[command]./configure --prefix=$siteprefix"
-        ./configure --prefix="$siteprefix"
+        run_command_group ./configure --prefix="$siteprefix"
 
-        echo "[command]make"
-        make
+        run_command_group make
 
         # Run tests
-        echo "[command]make distcheck"
-        make distcheck
+        run_command_group make distcheck
 
-        echo "[command]perl Build.PL"
-        perl Build.PL
-        ./Build build
-
-        echo "[command]cover -test"
-        cover -test
-
-        ./Build distcheck
+        run_command_group perl Build.PL
+        run_command_group ./Build build
+        run_command_group cover -test
+        run_command_group ./Build distcheck
     )
-
-    echo "::endgroup::"
 }
 
 function run_stow_tests() {
@@ -126,18 +113,13 @@ function run_stow_tests() {
     fi
 
     if [[ "$LIST_PERL_VERSIONS" = "0" ]]; then
-        echo "::group::Install dependencies"
-        if ! "$STOW_ROOT/tools/install-dependencies.sh"; then
+        if ! run_command_group "$STOW_ROOT/tools/install-dependencies.sh"; then
             echo "Failed to install dependencies."
             return 4
         fi
 
         # Remove all intermediate files before we start to ensure a clean test
-        "$STOW_ROOT/tools/make-clean.sh"
-
-        echo "==========================="
-        echo ""
-        echo "::endgroup::"
+        run_command_group "$STOW_ROOT/tools/make-clean.sh"
     fi
 
     if [[ "$LIST_PERL_VERSIONS" = "1" ]]; then
@@ -150,10 +132,7 @@ function run_stow_tests() {
             test_perl_version "$input_perl_version"
         done
 
-        echo "::group::make distclean"
-        echo "[command]make distclean"
-        make distclean
-        echo "::endgroup::"
+        run_command_group make distclean
     else
 
         # Test a specific version requested via $PERL_VERSION environment
@@ -167,8 +146,7 @@ function run_stow_tests() {
 
     # We clean up only if we have succeeded because on failure we may want to
     # examine the artifacts and logs.
-    echo "[command]make-clean.sh"
-    "$STOW_ROOT/tools/make-clean.sh"
+    run_command "$STOW_ROOT/tools/make-clean.sh"
 
     echo "✔ Tests succeeded."
 }
