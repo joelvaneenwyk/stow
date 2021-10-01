@@ -61,4 +61,6 @@ exit /b
     rmdir /q /s "%STOW_ROOT%\stow-!STOW_VERSION!\" > nul 2>&1
 
     git -C "%STOW_ROOT%" checkout -- "%STOW_ROOT%\aclocal.m4" > nul 2>&1
+
+    echo Removed intermediate Stow files from root: '%STOW_ROOT%'
 exit /b 0

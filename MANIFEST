@@ -67,8 +67,6 @@ tools/make-clean.bat
 tools/make-clean.sh
 tools/make-stow.bat
 tools/make-stow.sh
-tools/make-docs.bat
-tools/make-docs.sh
 tools/run-tests.bat
 tools/run-tests.sh
 tools/stow-lib.sh
