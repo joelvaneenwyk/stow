@@ -38,6 +38,7 @@ function remove_intermediate_files() {
     rm -f "$STOW_ROOT/stow-"* >/dev/null 2>&1
     rm -f "$STOW_ROOT/stow.log" >/dev/null 2>&1
     rm -f "$STOW_ROOT/stow."* >/dev/null 2>&1
+    rm -f "$STOW_ROOT/nul"* >/dev/null 2>&1
 
     git -C "$STOW_ROOT" checkout -- "$STOW_ROOT/aclocal.m4" >/dev/null 2>&1 || true
 

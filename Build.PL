@@ -23,77 +23,101 @@ use Module::Build;
 use lib "t";
 use lib "bin";
 
-my $build = Module::Build->new(
-    module_name => 'Stow',
-    keywords    => [ qw/stow symlink software package management install/ ],
-    license     => 'gpl',
+sub create_build_script {
+    print "Creating build configuration for 'Stow' module.\n";
 
-    # Module::Build forces us to use v1.4 of the CPAN Meta Spec:
-    # https://rt.cpan.org/Ticket/Display.html?id=71502
-    # 'meta-spec' =>  {
-    #     version => '2.0',
-    #     url     => 'http://search.cpan.org/perldoc?CPAN::Meta::Spec',
-    # },
-    meta_add => {
-        resources => {
-            license => 'http://www.gnu.org/licenses/gpl-2.0.html' ,
-            homepage => 'https://savannah.gnu.org/projects/stow',
+    my $build = Module::Build->new(
+        module_name => 'Stow',
+        keywords    => [ qw/stow symlink software package management install/ ],
+        license     => 'gpl',
 
-            # Module::Build forces us to use v1.4 of the CPAN Meta Spec:
-            # https://rt.cpan.org/Ticket/Display.html?id=71502
-            # bugtracker => {
-            #     web    => 'http://rt.cpan.org/Public/Dist/Display.html?Name=Stow',
-            #     mailto => 'stow-devel@gnu.org',
-            # },
-            #bugtracker => 'http://rt.cpan.org/Public/Dist/Display.html?Name=Stow',
+        # Module::Build forces us to use v1.4 of the CPAN Meta Spec:
+        # https://rt.cpan.org/Ticket/Display.html?id=71502
+        # 'meta-spec' =>  {
+        #     version => '2.0',
+        #     url     => 'http://search.cpan.org/perldoc?CPAN::Meta::Spec',
+        # },
+        meta_add => {
+            resources => {
+                license => 'http://www.gnu.org/licenses/gpl-2.0.html' ,
+                homepage => 'https://savannah.gnu.org/projects/stow',
 
-            # Module::Build forces us to use v1.4 of the CPAN Meta Spec:
-            # https://rt.cpan.org/Ticket/Display.html?id=71502
-            # repository => {
-            #     url  => 'git://git.savannah.gnu.org/stow.git',
-            #     web  => 'https://savannah.gnu.org/git/?group=stow',
-            #     type => 'git',
-            # },
-            repository => 'git://git.savannah.gnu.org/stow.git',
+                # Module::Build forces us to use v1.4 of the CPAN Meta Spec:
+                # https://rt.cpan.org/Ticket/Display.html?id=71502
+                # bugtracker => {
+                #     web    => 'http://rt.cpan.org/Public/Dist/Display.html?Name=Stow',
+                #     mailto => 'stow-devel@gnu.org',
+                # },
+                #bugtracker => 'http://rt.cpan.org/Public/Dist/Display.html?Name=Stow',
+
+                # Module::Build forces us to use v1.4 of the CPAN Meta Spec:
+                # https://rt.cpan.org/Ticket/Display.html?id=71502
+                # repository => {
+                #     url  => 'git://git.savannah.gnu.org/stow.git',
+                #     web  => 'https://savannah.gnu.org/git/?group=stow',
+                #     type => 'git',
+                # },
+                repository => 'git://git.savannah.gnu.org/stow.git',
+            },
         },
-    },
 
-    requires => {
-        'perl'        => '5.006',
-        'Carp'        => 0,
-        'IO::File'    => 0,
-    },
+        requires => {
+            'perl'        => '5.006',
+            'Carp'        => 0,
+            'IO::File'    => 0,
+        },
 
-    script_files => [ 'bin/stow', 'bin/chkstow' ],
+        script_files => [ 'bin/stow', 'bin/chkstow' ],
 
-    all_from => 'lib/Stow.pm.in',
+        all_from => 'lib/Stow.pm.in',
 
-    configure_requires => {
-        'Module::Build' => 0,
-    },
+        configure_requires => {
+            'Module::Build' => 0,
+        },
 
-    build_requires => {
-        'Test::More'        => 0,
-        'Test::Output'      => 0,
-        'Test::Exception'      => 0,
-        'Parse::RecDescent' => 0,
-        'Inline::C'         => 0,
-        'IO::Scalar'        => 0,
-    }
-);
+        build_requires => {
+            'Test::More'        => 0,
+            'Test::Output'      => 0,
+            'Test::Exception'   => 0,
+            'Parse::RecDescent' => 0,
+            'Inline::C'         => 0,
+            'IO::Scalar'        => 0,
+        }
+    );
 
-open my $stowFileHandle, '<', 'bin/stow' or die "Cannot open file: $!\n";
+    $build->create_build_script();
 
-my $useLibExists = 0;
-while(<$stowFileHandle>) {
-    if ($_ =~ /^use lib/) {
-        $useLibExists = 1;
-        last;
-    }
+    print "Created build script for 'Stow' module.\n";
 }
 
-if ($useLibExists == 0) {
-    print <<'EOF';
+sub check_stow_binary {
+    print "Checking 'bin/stow' for 'use lib' directive.\n";
+
+    my $dirname = dirname(__FILE__);
+    my $binStow = "$dirname/bin/stow";
+
+    unless (-e "$binStow") {
+        $binStow = "$dirname/../bin/stow";
+    }
+
+    unless (-e "$binStow") {
+        print "Failed to find 'bin/stow' file: '$binStow'";
+        return 0;
+    }
+
+    open my $stowFileHandle, '<', "$binStow"
+        or die "Cannot open 'bin/stow' file: $!\n";
+
+    my $useLibExists = 0;
+    while(<$stowFileHandle>) {
+        if ($_ =~ /^use lib/) {
+            $useLibExists = 1;
+            last;
+        }
+    }
+
+    if ($useLibExists == 0) {
+        print <<'EOF';
 ------
 WARNING: 'bin/stow' contains 'use lib' line which could interfere
 with CPAN-style installation via 'Module::Build'. To avoid this,
@@ -114,8 +138,10 @@ while Stow is configured in this way unless you really want an installation
 using these parameters.
 ------
 EOF
-} else {
-    print("Validated that Stow library is built correctly.\n");
+    } else {
+        print("Validated that Stow library is built correctly.\n");
+    }
 }
 
-$build->create_build_script();
+check_stow_binary();
+create_build_script();

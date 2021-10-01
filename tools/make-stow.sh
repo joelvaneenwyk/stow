@@ -23,6 +23,7 @@ function make_stow() {
     rm -f "$STOW_ROOT/bin/stow"
     rm -f "$STOW_ROOT/lib/Stow.pm"
     rm -f "$STOW_ROOT/lib/Stow/Util.pm"
+    echo "✔ Removed output files."
 
     if [ -x "$(command -v autoreconf)" ]; then
         cd "$STOW_ROOT" || true
@@ -72,9 +73,10 @@ function make_stow() {
     echo "##[cmd] $STOW_PERL -I $STOW_ROOT/lib -I $STOW_ROOT/bin $STOW_ROOT/bin/stow --version"
     "$STOW_PERL" -I "$STOW_ROOT/lib" -I "$STOW_ROOT/bin" "$STOW_ROOT/bin/stow" --version
 
-    # Remove intermediate files
-    rm -f "$STOW_ROOT/configure~" "$STOW_ROOT/Build.bat" "$STOW_ROOT/Build" >/dev/null 2>&1 || true
+    # Revert build changes and remove intermediate files
     git -C "$STOW_ROOT" restore aclocal.m4 >/dev/null 2>&1 || true
+    rm -f "$STOW_ROOT/nul" "$STOW_ROOT/configure~" "$STOW_ROOT/Build.bat" "$STOW_ROOT/Build" >/dev/null 2>&1 || true
+    echo "✔ Removed intermediate output files."
 }
 
 make_stow

@@ -43,35 +43,14 @@ endlocal & exit /b
     :: Get Stow version number
     for /f %%a in ('%STOW_PERL% %STOW_ROOT%\tools\get-version') do set "STOW_VERSION=%%a"
 
-    ::set PERL5LIB=%WIN_UNIX_DIR_UX%/share/automake-1.11:%WIN_UNIX_DIR_UX%/share/autoconf
-    ::set PERL5LIB=%PERL5LIB:\=/%
-
     set PERL_INCLUDE_UX=-I %WIN_UNIX_DIR_UX%/share/automake-1.11 -I %WIN_UNIX_DIR_UX%/share/autoconf
     set PERL=perl %PERL_INCLUDE_UX%
 
-    set SHELL=%WIN_UNIX_DIR%\bin\bash.exe
-    ::set AUTORECONF=%PERL% %WIN_UNIX_DIR_UX%/bin/autoreconf
-    ::set AUTOCONF=%SHELL% %WIN_UNIX_DIR_UX%/bin/autoconf
-    ::set AUTOHEADER=%PERL% %WIN_UNIX_DIR_UX%/bin/autoheader
-    ::set AUTOM4TE=%PERL% %WIN_UNIX_DIR_UX%/bin/autom4te
-    ::set AUTOMAKE=%PERL% %WIN_UNIX_DIR_UX%/bin/automake
-    ::set ACLOCAL=%PERL% %WIN_UNIX_DIR_UX%/bin/aclocal
-    ::set LIBTOOLIZE=libtoolize
-    ::set AUTOPOINT=autopoint
-    ::set MAKE=make
-    ::set WARNINGS=""
+    set SHELL=%WIN_UNIX_DIR%\bin\sh.exe
 
-    ::set autom4te_perllibdir=%WIN_UNIX_DIR_UX%/usr/share/autoconf
-    ::set perllibdir=%WIN_UNIX_DIR%/share/aclocal-1.11 %WIN_UNIX_DIR_UX%/share/autoconf
-    ::set PERL5LIB=%WIN_UNIX_DIR%\usr\share\aclocal-1.11;%WIN_UNIX_DIR%\usr\share\autoconf;%WIN_UNIX_DIR%\usr\share\automake-1.11
-    ::set ACLOCAL_PATH=%WIN_UNIX_DIR_UX%/share/aclocal-1.11
+    set GUILE_LOAD_PATH=%WIN_UNIX_DIR%\usr\share\guile\2.0
+    set GUILE_LOAD_COMPILED_PATH=%WIN_UNIX_DIR%\usr\lib\guile\2.0\ccache
 
-    ::set GUILE_LOAD_PATH=%WIN_UNIX_DIR%\usr\share\guile\2.0
-    ::set GUILE_LOAD_COMPILED_PATH=%WIN_UNIX_DIR%\usr\lib\guile\2.0\ccache
-
-    ::set PATH=%WIN_UNIX_DIR%\bin;%WIN_UNIX_DIR%\mingw32\bin;%PATH%
-    ::set PATH=%WIN_UNIX_DIR%\bin;%gitdir%\cmd;%WIN_UNIX_DIR%\usr\bin;%WIN_UNIX_DIR%\usr\bin\core_perl;%WIN_UNIX_DIR%\mingw32\bin
-    ::set PATH=%PATH:\=/%
     set PATH_ORIGINAL=%PATH%
     set TEX=%TMPDIR%\texlive\bin\win32\tex.exe
 
@@ -99,15 +78,13 @@ endlocal & exit /b
     set BASH="%WIN_UNIX_DIR%\usr\bin\bash.exe" --noprofile --norc -c
 
     cd /d "%STOW_ROOT%"
-    set PATH=%WIN_UNIX_DIR%\usr\bin;%WIN_UNIX_DIR%\bin;%TMPDIR%\texlive\bin\win32
+    set PATH=%WIN_UNIX_DIR%\usr\bin;%WIN_UNIX_DIR%\bin;%TMPDIR%\texlive\bin\win32;%WIN_UNIX_DIR%\usr\bin\core_perl;%WIN_UNIX_DIR%\mingw32\bin
     call :Run %BASH% "source ./tools/stow-lib.sh && install_system_base_dependencies"
     call :Run %BASH% "autoreconf --install --verbose"
     call :Run %BASH% "./configure --prefix='' --with-pmdir='%PERL5LIB%'"
     call :Run %BASH% "make doc/manual.pdf"
     call :Run %BASH% "make bin/stow bin/chkstow lib/Stow.pm lib/Stow/Util.pm"
     call :Run %BASH% "make doc/manual-single.html"
-
-    "%WIN_UNIX_DIR%\usr\bin\bash.exe" --noprofile --norc
 
     :$MakeDocsEnd
         :: Restore original directory

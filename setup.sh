@@ -5,8 +5,11 @@ set -ef -o pipefail
 
 STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 
+# shellcheck source=tools/stow-lib.sh
+source "$STOW_ROOT/tools/stow-lib.sh"
+
 # shellcheck source=tools/install-dependencies.sh
-source "$STOW_ROOT/tools/install-dependencies.sh"
+"$STOW_ROOT/tools/install-dependencies.sh"
 
 # This will create 'configure' script
 autoreconf -iv
@@ -14,13 +17,13 @@ autoreconf -iv
 # Set the 'siteprefix' variable based on configuration settings of Perl
 siteprefix=
 eval "$(perl -V:siteprefix)"
-echo "Site prefix: $siteprefix"
 
 # Convert to unix path if on Cygwin/MSYS
 if [ -x "$(command -v cygpath)" ]; then
     siteprefix=$(cygpath "$siteprefix")
-    echo "Site prefix (cygpath): $siteprefix"
 fi
+
+echo "Site prefix: $siteprefix"
 
 (
     cd "$STOW_ROOT" || true

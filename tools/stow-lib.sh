@@ -115,7 +115,7 @@ function update_stow_environment() {
 
 function install_system_base_dependencies() {
     if [ -x "$(command -v apt-get)" ]; then
-        use_sudo apt-get update
+        use_sudo apt-get update --allow-releaseinfo-change
         use_sudo apt-get -y install \
             sudo bzip2 gawk curl patch \
             build-essential make autotools-dev automake autoconf \

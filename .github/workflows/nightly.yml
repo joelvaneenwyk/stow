@@ -9,68 +9,6 @@ on:
   workflow_dispatch:
 
 jobs:
-  perl_test_matrix:
-    strategy:
-      fail-fast: false
-      matrix:
-        platform:
-          - ubuntu-latest
-          - macos-latest
-          - windows-latest
-
-        perl:
-          - '5.32'
-          - '5.14'
-
-        include:
-          - platform: ubuntu-latest
-            perl: '5.34'
-
-    name: ${{ matrix.platform }} Perl v${{ matrix.perl }}
-    runs-on: ${{ matrix.platform }}
-    if: always()
-
-    env:
-      DEBIAN_FRONTEND: noninteractive
-
-      # Define variants by platform
-      script_extension: ${{ startsWith(matrix.platform, 'windows') && '.bat' || '.sh' }}
-      script_call: ${{ startsWith(matrix.platform, 'windows') && 'tools\\' || './tools/' }}
-      script_sudo: ${{ startsWith(matrix.platform, 'ubuntu') && 'sudo' || '' }}
-
-      # Need to specify 'strawberry' on Windows. Can pass 'strawberry' to other platforms as it just falls
-      # back to default but it does generate a warning.
-      perl_distribution: ${{ startsWith(matrix.platform, 'windows') && 'strawberry' || 'default' }}
-
-    defaults:
-      run:
-        shell: ${{ startsWith(matrix.platform, 'windows') && 'cmd' || 'bash' }}
-        working-directory: ${{ github.workspace }}
-
-    steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v2
-        with:
-          submodules: recursive
-
-      - name: Setup Perl ${{ matrix.perl }}
-        uses: shogo82148/actions-setup-perl@v1
-        with:
-          perl-version: ${{ matrix.perl }}
-
-          # Only applies to Windows and uses fallback for other platforms
-          distribution: ${{ env.perl_distribution }}
-
-      - name: Install Dependencies
-        run: ${{ env.script_sudo }} ${{ env.script_call }}install-dependencies${{ env.script_extension }}
-
-      - name: Make Stow
-        run: ${{ env.script_call }}make-stow${{ env.script_extension }}
-
-      - name: Run Tests
-        run: ${{ env.script_call }}run-tests${{ env.script_extension }}
-
-
   docker_build:
     name: Docker Perl Tests
 
