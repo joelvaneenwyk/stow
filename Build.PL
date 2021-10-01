@@ -17,6 +17,9 @@
 use strict;
 use warnings;
 
+# Need this for 'dirname' when validating 'bin/stow'
+use File::Basename;
+
 use Module::Build;
 
 # These are required by the test suite.
@@ -93,11 +96,11 @@ sub create_build_script {
 sub check_stow_binary {
     print "Checking 'bin/stow' for 'use lib' directive.\n";
 
-    my $dirname = dirname(__FILE__);
-    my $binStow = "$dirname/bin/stow";
+    my $buildDir = dirname(__FILE__);
+    my $binStow = "$buildDir/bin/stow";
 
     unless (-e "$binStow") {
-        $binStow = "$dirname/../bin/stow";
+        $binStow = "$buildDir/../bin/stow";
     }
 
     unless (-e "$binStow") {

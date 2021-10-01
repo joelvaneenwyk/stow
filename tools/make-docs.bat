@@ -28,9 +28,13 @@ endlocal & exit /b
     set STOW_VERSION_TEXI=%STOW_ROOT%\doc\version.texi
 
     set STOW_PERL=perl
-    set TMPDIR=%STOW_ROOT%\.tmp
+    set STOW_BUILD_TOOLS_ROOT=%STOW_ROOT%\.tmp
+    if not exist "%STOW_BUILD_TOOLS_ROOT%" mkdir "%STOW_BUILD_TOOLS_ROOT%"
 
-    set WIN_UNIX_DIR=%STOW_ROOT%\.tmp\msys64
+    set TMPDIR=%STOW_ROOT%\.tmp\temp
+    if not exist "%TMPDIR%" mkdir "%TMPDIR%"
+
+    set WIN_UNIX_DIR=%STOW_BUILD_TOOLS_ROOT%\msys64
     set WIN_UNIX_DIR_UX=%WIN_UNIX_DIR:\=/%
 
     :: Print Perl version number
@@ -54,7 +58,7 @@ endlocal & exit /b
     set PATH_ORIGINAL=%PATH%
     set TEX=%TMPDIR%\texlive\bin\win32\tex.exe
 
-    set HOME=%STOW_ROOT%\.tmp\home
+    set HOME=%STOW_BUILD_TOOLS_ROOT%\home
     if not exist "%HOME%" mkdir "%HOME%"
 
     set MSYS2_PATH_TYPE=inherit

@@ -11,6 +11,8 @@ exit /b
 
     for /f %%a in ('perl %STOW_ROOT%\tools\get-version') do set "STOW_VERSION=%%a"
 
+    del "\\?\%STOW_ROOT%\nul" > nul 2>&1
+    del "%STOW_ROOT%\texput.log" > nul 2>&1
     del "%STOW_ROOT%\Build" > nul 2>&1
     del "%STOW_ROOT%\Build.bat" > nul 2>&1
     del "%STOW_ROOT%\config.*" > nul 2>&1
