@@ -18,16 +18,28 @@ function install_texlive() {
     fi
 }
 
+function run_build_command() {
+    echo ""
+    echo "----------------------"
+    echo "$*"
+    echo "----------------------"
+    "$@"
+}
+
 function make_docs() {
     STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && cd ../ && pwd -P)"
 
     # shellcheck source=tools/stow-lib.sh
     source "$STOW_ROOT/tools/stow-lib.sh"
 
+    update_stow_environment
+
+    # Install 'TeX Live' so that we have 'tex' and the related
+    # tools needed to generate documentation.
+    install_texlive
+
     # shellcheck source=tools/make-clean.sh
     "$STOW_ROOT/tools/make-clean.sh"
-
-    install_texlive
 
     siteprefix=
     eval "$(perl -V:siteprefix)"
@@ -37,8 +49,6 @@ function make_docs() {
         siteprefix=$(cygpath "$siteprefix")
         echo "Site prefix    (unix): $siteprefix"
     fi
-
-    VERSION=2.3.2
 
     if [ -f "$STOW_ROOT/automake/mdate-sh" ]; then
         # We intentionally want splitting so that each space separated part of the
@@ -50,53 +60,56 @@ function make_docs() {
     (
         printf "@set UPDATED %s %s %s\n" "${1:-0}" "${2:-0}" "${3:-0}"
         echo "@set UPDATED-MONTH ${2:-0} ${3:-0}"
-        echo "@set EDITION $VERSION"
-        echo "@set VERSION $VERSION"
+        echo "@set EDITION $STOW_VERSION"
+        echo "@set VERSION $STOW_VERSION"
     ) >"$STOW_ROOT/doc/version.texi"
 
-    #PATH=.:$PATH
-    #TEXINPUTS=doc/stow.texi
-    #TEXINPUTS=."$STOW_ROOT/."$STOW_ROOT/..:$STOW_ROOT/doc:$STOW_ROOT/doc/t2d/version_test:.:/usr/local/share/texmf:$TEXINPUTS
-    #MAKEINFO='sh automake/missing makeinfo -I doc'
-    #MAKEINFO="$STOW_ROOT/automake/missing" makeinfo -I "$STOW_ROOT/doc/" -o "$STOW_ROOT/doc/" "$STOW_ROOT/doc/stow.texi"
+    # Generate 'doc/stow.info' file needed for generating documentation. The makefile version
+    # of this adds the "$STOW_ROOT/automake/missing" prefix to provide additional information
+    # if it is unavailable but we skip that here since we do not assume you have already
+    # executed 'autoreconf' so the 'missing' tool does not yet exist.
+    makeinfo -I "$STOW_ROOT/doc/" -o "$STOW_ROOT/doc/" "$STOW_ROOT/doc/stow.texi"
 
-    #TEXI2DVI="$STOW_ROOT/tools/texinfo/util/texi2dvi"
-    TEXI2DVI="texi2dvi"
+    (
+        cd "$STOW_ROOT/doc" || true
+        TEXINPUTS="../;." run_build_command pdftex "./stow.texi"
+    )
+    echo "✔ Used 'doc/stow.texi' to generate 'doc/stow.pdf'"
 
-    # Generate stow.info
-    makeinfo -I ./doc/ -o ./doc/ ./doc/stow.texi
+    # Add in paths for where to find 'texinfo.tex' which were found using 'find /usr/ -name texinfo.tex'
+    export PATH=".:$STOW_ROOT:$STOW_ROOT/doc:/usr/share/texmf/tex/texinfo:/usr/share/automake-1.16:$PATH"
 
-    echo ""
-    echo "----------------------"
-    echo "pdftex $STOW_ROOT/doc/stow.texi"
-    echo "----------------------"
-    pdftex "$STOW_ROOT/doc/stow.texi"
-    echo "Built PDF manually."
+    export TEXI2DVI="texi2dvi"
+    export TEXINPUTS="../;.;/usr/share/automake-1.16;$STOW_ROOT;$STOW_ROOT/doc;$STOW_ROOT/manual.t2d/version_test;${TEXINPUTS:-}"
 
-    # find /usr/ -name texinfo.tex
-    # /usr/share/texmf/tex/texinfo/texinfo.tex
-    # /usr/share/automake-1.16/texinfo.tex
+    # Valid values of MODE are:
+    #
+    #   `local'      compile in the current directory, leaving all the auxiliary
+    #                files around.  This is the traditional TeX use.
+    #   `tidy'       compile in a local *.t2d directory, where the auxiliary files
+    #                are left.  Output files are copied back to the original file.
+    #   `clean'      same as `tidy', but remove the auxiliary directory afterwards.
+    #                Every compilation therefore requires the full cycle.
+    export TEXI2DVI_BUILD_MODE=tidy
 
-    # -E : Expand
-    # --debug : Print every command
-    # Generate manual.pdf
-    echo ""
-    echo "----------------------"
-    echo "$TEXI2DVI --expand --batch --pdf -I $STOW_ROOT/doc/ --language=texinfo -o $STOW_ROOT/doc/manual.pdf $STOW_ROOT/doc/stow.texi"
-    echo "----------------------"
-    "$TEXI2DVI" --expand --batch --pdf -I "$STOW_ROOT/doc/" --language=texinfo -o "$STOW_ROOT/doc/manual.pdf" "$STOW_ROOT/doc/stow.texi"
+    export TEXI2DVI_USE_RECORDER=yes
 
-    #texi2dvi --pdf --batch -I doc/ -o doc/manual.pdf doc/stow.texi
-    #texi2dvi --verbose --pdf -I doc/ --language=texinfo -o doc/manual.pdf doc/stow.texi
-
-    rm "$STOW_ROOT"/stow.* >/dev/null 2>&1
-
-    #cd "$STOW_ROOT" || true
-    #TEXINPUTS=doc/stow.texi doc/version.texi
-    #MAKEINFO='sh automake/missing makeinfo -I doc'
-    #texi2dvi --pdf --batch -o doc/manual.pdf doc/stow.texi
-    #MAKEINFO='/bin/sh "$STOW_ROOT/automake/missing" makeinfo -I .  -I doc -I "$STOW_ROOT/doc"' \
-    #    TEXI2DVI_USE_RECORDER=yes texi2dvi -I . -I doc/ --pdf --batch -o doc/manual.pdf "$STOW_ROOT/doc/stow.texi"
+    # Generate 'doc/manual.pdf' using texi2dvi tool. Add '--debug' to print
+    # every command exactly like 'set +x' would do.
+    #
+    # IMPORTANT: We add '--expand' here otherwise we get the error that
+    # we "can't find file `txiversion.tex'" which is due to include approach
+    # differences on unix versus msys2/windows.
+    (
+        cd "$STOW_ROOT/doc" || true
+        run_build_command "$TEXI2DVI" \
+            --pdf --language=texinfo \
+            --expand --batch \
+            --verbose \
+            -I "." -I "$STOW_ROOT" -I "$STOW_ROOT/doc" -I "$STOW_ROOT/doc/manual.t2d/pdf/src" \
+            -o "$STOW_ROOT/doc/manual.pdf" \
+            "./stow.texi"
+    )
 }
 
 make_docs

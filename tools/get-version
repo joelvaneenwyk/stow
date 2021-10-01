@@ -6,9 +6,14 @@ use warnings;
 use File::Basename;
 
 my $dirname = dirname(__FILE__);
+my $configure = "$dirname/configure.ac";
 
-open(my $CONF, "<", "$dirname/../configure.ac")
-  or die "Couldn't open configure.ac: $!\n";
+unless (-e "$configure") {
+  $configure = "$dirname/../configure.ac";
+}
+
+open(my $CONF, "<", "$configure")
+  or die "Failed to get Stow version.\nSearch path: '$configure'\nUnable to find 'configure.ac' file: '$!'";
 
 while (my $line = <$CONF>) {
   if ($line =~ /^AC_INIT\(\[stow\], \[(.+?)\]/) {

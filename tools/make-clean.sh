@@ -14,6 +14,12 @@ function remove_intermediate_files() {
     rm -f "$STOW_ROOT/doc/stamp-vti" >/dev/null 2>&1
     rm -f "$STOW_ROOT/doc/stow.info" >/dev/null 2>&1
     rm -f "$STOW_ROOT/doc/stow.8" >/dev/null 2>&1
+    rm -f "$STOW_ROOT/doc/stow.log" >/dev/null 2>&1
+    rm -f "$STOW_ROOT/doc/stow.info" >/dev/null 2>&1
+    rm -f "$STOW_ROOT/doc/stow.cp" >/dev/null 2>&1
+    rm -f "$STOW_ROOT/doc/stow.aux" >/dev/null 2>&1
+    rm -f "$STOW_ROOT/doc/stow.pdf" >/dev/null 2>&1
+    rm -f "$STOW_ROOT/doc/stow.toc" >/dev/null 2>&1
     rm -f "$STOW_ROOT/doc/version.texi" >/dev/null 2>&1
     rm -rf "$STOW_ROOT/doc/doc!manual.t2d" >/dev/null 2>&1
     rm -rf "$STOW_ROOT/doc/manual-split" >/dev/null 2>&1

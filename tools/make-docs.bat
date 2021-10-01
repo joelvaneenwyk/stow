@@ -1,23 +1,47 @@
 @echo off
 
 call :MakeDocs "%~dp0..\"
+
 exit /b
+
+::
+:: Local functions
+::
+
+:Run %*=Command with arguments
+    if "%GITHUB_ACTIONS%"=="" (
+        echo ##[cmd] %*
+    ) else (
+        echo [command]%*
+    )
+    call %*
+endlocal & exit /b
 
 :MakeDocs
     setlocal EnableExtensions EnableDelayedExpansion
 
     set _root=%~dp1
+    set _cd=%CD%
+
     set STOW_ROOT=%_root:~0,-1%
     set STOW_ROOT_UX=%STOW_ROOT:\=/%
-
-    :: Make sure we start from a clean slate to prevent variability in tests
-    call "%STOW_ROOT%\tools\make-clean.bat"
+    set STOW_VERSION_TEXI=%STOW_ROOT%\doc\version.texi
 
     set STOW_PERL=perl
     set TMPDIR=%STOW_ROOT%\.tmp
 
     set WIN_UNIX_DIR=%STOW_ROOT%\.tmp\msys64
     set WIN_UNIX_DIR_UX=%WIN_UNIX_DIR:\=/%
+
+    :: Print Perl version number
+    %STOW_PERL% -e "print 'Perl v' . substr($^V, 1) . ""\n"""
+    if errorlevel 1 (
+        echo Perl executable invalid or missing: '%STOW_PERL%'
+        exit /b 1
+    )
+
+    :: Get Stow version number
+    for /f %%a in ('%STOW_PERL% %STOW_ROOT%\tools\get-version') do set "STOW_VERSION=%%a"
 
     ::set PERL5LIB=%WIN_UNIX_DIR_UX%/share/automake-1.11:%WIN_UNIX_DIR_UX%/share/autoconf
     ::set PERL5LIB=%PERL5LIB:\=/%
@@ -48,7 +72,8 @@ exit /b
     ::set PATH=%WIN_UNIX_DIR%\bin;%WIN_UNIX_DIR%\mingw32\bin;%PATH%
     ::set PATH=%WIN_UNIX_DIR%\bin;%gitdir%\cmd;%WIN_UNIX_DIR%\usr\bin;%WIN_UNIX_DIR%\usr\bin\core_perl;%WIN_UNIX_DIR%\mingw32\bin
     ::set PATH=%PATH:\=/%
-    set PATH=%WIN_UNIX_DIR%\usr\bin;%WIN_UNIX_DIR%\bin
+    set PATH_ORIGINAL=%PATH%
+    set TEX=%TMPDIR%\texlive\bin\win32\tex.exe
 
     set HOME=%STOW_ROOT%\.tmp\home
     if not exist "%HOME%" mkdir "%HOME%"
@@ -57,42 +82,55 @@ exit /b
     set MSYS=winsymlinks:nativestrict
     set MSYSTEM=MSYS
 
-    set _cd=%CD%
+    echo Stow v!STOW_VERSION!
 
     if exist "%WIN_UNIX_DIR%\post-install.bat" (
         cd /d "%WIN_UNIX_DIR%"
-        call "%WIN_UNIX_DIR%\post-install.bat"
-        REM "%WIN_UNIX_DIR%\git-bash.exe" --no-needs-console --hide --no-cd --command="%WIN_UNIX_DIR%\post-install.bat"
+        call :Run call "%WIN_UNIX_DIR%\post-install.bat"
+        REM call :Run "%WIN_UNIX_DIR%\git-bash.exe" --no-needs-console --hide --no-cd --command="%WIN_UNIX_DIR%\post-install.bat"
         echo Executed post install script.
     )
 
+    :: Make sure we start from a clean slate to prevent variability in tests
+    call :Run call "%STOW_ROOT%\tools\make-clean.bat"
 
-    cd /d "%STOW_ROOT%"
+    call :MakeDocsCustom "%~dp0..\"
 
     set BASH="%WIN_UNIX_DIR%\usr\bin\bash.exe" --noprofile --norc -c
 
-    %BASH% "source ./tools/stow-lib.sh && install_system_base_dependencies"
-    %BASH% "autoreconf --install --verbose"
-    %BASH% "./configure --prefix='' --with-pmdir='%PERL5LIB%'"
-    %BASH% "make bin/stow bin/chkstow lib/Stow.pm lib/Stow/Util.pm"
-    %BASH% "make doc/manual-single.html"
+    cd /d "%STOW_ROOT%"
+    set PATH=%WIN_UNIX_DIR%\usr\bin;%WIN_UNIX_DIR%\bin;%TMPDIR%\texlive\bin\win32
+    call :Run %BASH% "source ./tools/stow-lib.sh && install_system_base_dependencies"
+    call :Run %BASH% "autoreconf --install --verbose"
+    call :Run %BASH% "./configure --prefix='' --with-pmdir='%PERL5LIB%'"
+    call :Run %BASH% "make doc/manual.pdf"
+    call :Run %BASH% "make bin/stow bin/chkstow lib/Stow.pm lib/Stow/Util.pm"
+    call :Run %BASH% "make doc/manual-single.html"
 
-    cd /d "%_cd%"
+    "%WIN_UNIX_DIR%\usr\bin\bash.exe" --noprofile --norc
+
+    :$MakeDocsEnd
+        :: Restore original directory
+        cd /d "%_cd%"
 exit /b
 
 :MakeDocsCustom
     setlocal EnableExtensions EnableDelayedExpansion
 
-    set _root=%~dp1
-    set STOW_ROOT=%_root:~0,-1%
+    echo @set UPDATED 0 0 0 >"%STOW_VERSION_TEXI%"
+    echo @set UPDATED-MONTH ${2:-0} ${3:-0} >>"%STOW_VERSION_TEXI%"
+    echo @set EDITION !STOW_VERSION! >>"%STOW_VERSION_TEXI%"
+    echo @set VERSION !STOW_VERSION! >>"%STOW_VERSION_TEXI%"
 
-    echo @set UPDATED 0 0 0 >"%STOW_ROOT%\doc\version.texi"
-    echo @set UPDATED-MONTH ${2:-0} ${3:-0} >"%STOW_ROOT%\doc\version.texi"
-    echo @set EDITION $VERSION >"%STOW_ROOT%\doc\version.texi"
-    echo @set VERSION $VERSION >"%STOW_ROOT%\doc\version.texi"
+    set PERL_INCLUDE=-I %WIN_UNIX_DIR_UX%/usr/share/automake-1.16
+    set PERL_INCLUDE=!PERL_INCLUDE! -I %WIN_UNIX_DIR_UX%/usr/share/autoconf
+    set PERL_INCLUDE=!PERL_INCLUDE! -I %WIN_UNIX_DIR_UX%/usr/share/texinfo
+    set PERL_INCLUDE=!PERL_INCLUDE! -I %WIN_UNIX_DIR_UX%/usr/share/texinfo/lib/libintl-perl/lib
+    set PERL_INCLUDE=!PERL_INCLUDE! -I %WIN_UNIX_DIR_UX%/usr/share/texinfo/lib/Text-Unidecode/lib
+    set PERL_INCLUDE=!PERL_INCLUDE! -I %WIN_UNIX_DIR_UX%/usr/share/texinfo/lib/Unicode-EastAsianWidth/lib
 
-    set _perl_inc=-I tools\texinfo\tp\ -I tools\texinfo\tp\Texinfo\ -I tools\texinfo\tp\maintain\lib\Unicode-EastAsianWidth\lib\ -I tools\texinfo\tp\maintain\lib\libintl-perl\lib -I tools\texinfo\tp\maintain\lib\Text-Unidecode\lib\
-    set _cmd=perl %_perl_inc% "%STOW_ROOT%\tools\texinfo\tp\texi2any.pl" -I doc\ -o doc\ doc\stow.texi
-    echo ##[cmd] %_cmd%
-    %_cmd%
+    :: Generate 'stow.info'
+    cd "%STOW_ROOT%"
+    call :Run perl %PERL_INCLUDE% "%WIN_UNIX_DIR%\usr\bin\texi2any" -I doc\ -o doc\ doc\stow.texi
+    echo Generated 'doc\stow.info'
 exit /b 0

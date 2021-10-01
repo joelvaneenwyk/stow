@@ -64,6 +64,11 @@ function install_perl_modules() {
 }
 
 function update_stow_environment() {
+    # Early out if environment is already up-to-date
+    if [ -d "${STOW_ROOT:-}" ] && [ -n "${STOW_PERL:-}" ]; then
+        return 0
+    fi
+
     # Clear out TMP as TEMP may come from Windows and we do not want tools confused
     # if they find both.
     unset TMP

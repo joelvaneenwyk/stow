@@ -30,7 +30,12 @@ exit /b
     del "%STOW_ROOT%\doc\.dirstamp" > nul 2>&1
     del "%STOW_ROOT%\doc\stamp-vti" > nul 2>&1
     del "%STOW_ROOT%\doc\stow.8" > nul 2>&1
+    del "%STOW_ROOT%\doc\stow.aux" > nul 2>&1
+    del "%STOW_ROOT%\doc\stow.cp" > nul 2>&1
     del "%STOW_ROOT%\doc\stow.info" > nul 2>&1
+    del "%STOW_ROOT%\doc\stow.log" > nul 2>&1
+    del "%STOW_ROOT%\doc\stow.pdf" > nul 2>&1
+    del "%STOW_ROOT%\doc\stow.toc" > nul 2>&1
     del "%STOW_ROOT%\doc\version.texi" > nul 2>&1
     del "%STOW_ROOT%\doc\manual-single.html" > nul 2>&1
     del "%STOW_ROOT%\doc\manual.pdf" > nul 2>&1
