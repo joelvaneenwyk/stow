@@ -68,13 +68,15 @@ endlocal & exit /b
 
     echo Stow v!STOW_VERSION!
 
-    if exist "%WIN_UNIX_DIR%\post-install.bat" (
+    if not exist "%WIN_UNIX_DIR%\post-install.bat" goto:$SkipPostInstall
         cd /d "%WIN_UNIX_DIR%"
-        call :Run call "%WIN_UNIX_DIR%\post-install.bat"
-        REM call :Run "%WIN_UNIX_DIR%\git-bash.exe" --no-needs-console --hide --no-cd --command="%WIN_UNIX_DIR%\post-install.bat"
+        call :Run "%WIN_UNIX_DIR%\post-install.bat"
         echo Executed post install script.
-    )
 
+    :$SkipPostInstall
+
+    :: Generate documentation using 'bash' and associated unix tools which
+    :: are required due to reliance on autoconf.
     call :MakeDocs
 
     set USE_LIB_PMDIR=
@@ -119,6 +121,8 @@ endlocal & exit /b
     call pod2man --name stow --section 8 "%STOW_ROOT%\bin\stow" > "%STOW_ROOT%\doc\stow.8"
 
     cd /d "%STOW_ROOT%"
+
+    :: Exeute 'Build.PL' to generate build scripts: 'Build' and 'Build.bat'
     call :Run %STOW_PERL% -I "%STOW_ROOT%\lib" -I "%STOW_ROOT%\bin" "%STOW_ROOT%\Build.PL"
 
     :: Remove all intermediate files before running Stow for the first time
@@ -126,9 +130,18 @@ endlocal & exit /b
     rmdir /q /s "%STOW_ROOT%\bin\_Inline\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\tools\_Inline\" > nul 2>&1
 
+    :: Make sure that 'stow' was successfully compiled by printing out the version.
     call :Run %STOW_PERL% -I "%STOW_ROOT%\lib" "%STOW_ROOT%\bin\stow" --version
 
     :$MakeEnd
+        :: Remove leftover files so that 'Build distcheck' succeeds
+        del "%STOW_ROOT%\doc\stow.log" > nul 2>&1
+        del "%STOW_ROOT%\doc\texput.log" > nul 2>&1
+        rmdir /q /s "%STOW_ROOT%\doc\manual.t2d\" > nul 2>&1
+        rmdir /q /s "%STOW_ROOT%\_Inline\" > nul 2>&1
+        rmdir /q /s "%STOW_ROOT%\bin\_Inline\" > nul 2>&1
+        rmdir /q /s "%STOW_ROOT%\tools\_Inline\" > nul 2>&1
+
         :: Restore original directory
         cd /d "%_cd%"
 endlocal & exit /b

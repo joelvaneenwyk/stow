@@ -54,6 +54,12 @@ jobs:
           - platform: ubuntu-latest
             perl: '5.34'
 
+          - platform: ubuntu-latest
+            perl: '5.18'
+
+          - platform: ubuntu-latest
+            perl: '5.16'
+
     name: ${{ matrix.platform }} Perl v${{ matrix.perl }}
     runs-on: ${{ matrix.platform }}
     if: always()
