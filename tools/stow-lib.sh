@@ -139,7 +139,7 @@ function install_system_base_dependencies() {
             sudo wget curl unzip build-base make bash
     elif [ -x "$(command -v pacman)" ]; then
         packages+=(
-            git msys2-keyring base-devel gcc make autoconf automake1.16 automake-wrapper
+            git msys2-keyring base-devel make autoconf automake1.16 automake-wrapper
         )
 
         if [ -n "${MINGW_PACKAGE_PREFIX:-}" ]; then
