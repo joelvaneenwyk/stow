@@ -10,29 +10,32 @@
 # If no arguments are given test all available Perl versions non-interactively.
 #
 
+function run_docker() {
+    if [ -t 1 ] && [ ! -f /.dockerenv ]; then
+        # stdout is a tty so we can run an interactive instance
+        docker run --rm -it "$@"
+    else
+        docker run --rm "$@"
+    fi
+}
+
 STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && cd ../ && pwd -P)"
 STOW_VERSION=$(perl "$STOW_ROOT/tools/get-version")
 STOW_DOCKER_ROOT="/stow"
-STOW_DOCKER_TESTS="$STOW_DOCKER_ROOT/docker/run-stow-tests.sh"
+STOW_DOCKER_TESTS="$STOW_DOCKER_ROOT/tools/run-tests.sh"
 
 _test_argument="${1:-}"
-_interactive=""
-
-if [ -t 1 ]; then
-    # stdout is a tty
-    _interactive="-it"
-fi
 
 if [ -z "$_test_argument" ]; then
     # Normal non-interactive run
-    docker run --rm "$_interactive" \
+    run_docker \
         -v "$STOW_ROOT:$STOW_DOCKER_ROOT" \
         -w "$STOW_DOCKER_ROOT" \
         "stowtest:$STOW_VERSION" \
         "$STOW_DOCKER_TESTS"
 elif [ "$_test_argument" == list ]; then
     # List available Perl versions
-    docker run --rm "$_interactive" \
+    run_docker \
         -v "$STOW_ROOT:$STOW_DOCKER_ROOT" \
         -w "$STOW_DOCKER_ROOT" \
         -e LIST_PERL_VERSIONS=1 \
@@ -40,7 +43,7 @@ elif [ "$_test_argument" == list ]; then
         "$STOW_DOCKER_TESTS"
 else
     # Interactive run for testing / debugging a particular version
-    docker run --rm "$_interactive" \
+    run_docker \
         -v "$STOW_ROOT:$STOW_DOCKER_ROOT" \
         -w "$STOW_DOCKER_ROOT" \
         -e "PERL_VERSION=$_test_argument" \
