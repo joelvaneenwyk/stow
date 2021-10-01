@@ -108,6 +108,50 @@ function update_stow_environment() {
     export STOW_VERSION
 }
 
+function install_system_base_dependencies() {
+    if [ -x "$(command -v apt-get)" ]; then
+        use_sudo apt-get update
+        use_sudo apt-get -y install \
+            sudo bzip2 gawk curl patch \
+            build-essential make autotools-dev automake autoconf \
+            texlive texinfo
+    elif [ -x "$(command -v brew)" ]; then
+        brew install autoconf automake libtool texinfo
+
+        # Needed for tex binaries
+        brew install --cask basictex
+
+        # Allows tex to be used right after installation
+        eval "$(/usr/libexec/path_helper)"
+
+        # Need to make sure that latest texinfo and makeinfo are found first as the version
+        # that comes with macOS is too old and you will get errors while building docs with
+        # errors like 'makeinfo: invalid option -- c'
+        export PATH="/usr/local/opt/texinfo/bin:$PATH"
+        if [ -n "${GITHUB_PATH:-}" ]; then
+            # Prepend to path so that next GitHub Action will have this updated path as well
+            echo "/usr/local/opt/texinfo/bin" >>"$GITHUB_PATH"
+            echo "/Library/TeX/texbin/" >>"$GITHUB_PATH"
+        fi
+    elif [ -x "$(command -v apk)" ]; then
+        use_sudo apk update
+        use_sudo apk add \
+            sudo wget curl unzip build-base make bash
+    elif [ -x "$(command -v pacman)" ]; then
+        packages+=(
+            git msys2-keyring base-devel gcc make autoconf automake1.16 automake-wrapper
+        )
+
+        if [ -n "${MINGW_PACKAGE_PREFIX:-}" ]; then
+            packages+=(
+                "$MINGW_PACKAGE_PREFIX-make" "$MINGW_PACKAGE_PREFIX-binutils"
+            )
+        fi
+
+        pacman -S --quiet --noconfirm --needed "${packages[@]}"
+    fi
+}
+
 function install_system_dependencies() {
     packages=("$@")
 

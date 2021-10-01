@@ -16,7 +16,7 @@ exit /b
     set STOW_PERL=perl
     set TMPDIR=%STOW_ROOT%\.tmp
 
-    set WIN_UNIX_DIR=%STOW_ROOT%\.tmp\git
+    set WIN_UNIX_DIR=%STOW_ROOT%\.tmp\msys64
     set WIN_UNIX_DIR_UX=%WIN_UNIX_DIR:\=/%
 
     ::set PERL5LIB=%WIN_UNIX_DIR_UX%/share/automake-1.11:%WIN_UNIX_DIR_UX%/share/autoconf
@@ -50,7 +50,9 @@ exit /b
     ::set PATH=%PATH:\=/%
     set PATH=%WIN_UNIX_DIR%\usr\bin;%WIN_UNIX_DIR%\bin
 
-    set HOME=%STOW_ROOT%
+    set HOME=%STOW_ROOT%\.tmp\home
+    if not exist "%HOME%" mkdir "%HOME%"
+
     set MSYS2_PATH_TYPE=inherit
     set MSYS=winsymlinks:nativestrict
     set MSYSTEM=MSYS
@@ -64,12 +66,14 @@ exit /b
         echo Executed post install script.
     )
 
-    set APIVERSION=1.11
+    ::set APIVERSION=1.11
 
     cd /d "%STOW_ROOT%"
+
     ::%BASH% --login -c "source /etc/profile && which autoreconf"
     ::%BASH% --login -c "autoreconf"
-    %BASH% --login
+    %WIN_UNIX_DIR%\usr\bin\bash.exe --noprofile --norc -c "source ./tools/stow-lib.sh && install_system_base_dependencies"
+    %WIN_UNIX_DIR%\usr\bin\bash.exe --noprofile --norc -c "autoreconf --install --verbose"
 
     ::%AUTORECONF% --install --verbose
     ::%BASH% --noprofile --norc autoreconf --install --verbose

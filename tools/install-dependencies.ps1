@@ -53,22 +53,22 @@ Function Expand-File {
     }
 
     if (Test-Path -Path "$7za920\7za.exe" -PathType Leaf) {
-        $7z1900zip = "$script:ArchivesDir\7z1900-extra.7z"
-        $7z1900 = "$script:TempDir\7z1900"
-        if (-not(Test-Path -Path "$7z1900zip" -PathType Leaf)) {
-            Get-File -Url "https://www.7-zip.org/a/7z1900-extra.7z" -Filename "$7z1900zip"
+        $7z2103zip = "$script:ArchivesDir\7z2103-extra.7z"
+        $7z2103 = "$script:TempDir\7z2103"
+        if (-not(Test-Path -Path "$7z2103zip" -PathType Leaf)) {
+            Get-File -Url "https://www.7-zip.org/a/7z2103-extra.7z" -Filename "$7z2103zip"
         }
-        if (Test-Path -Path "$7z1900zip" -PathType Leaf) {
-            if (-not(Test-Path -Path "$7z1900\7za.exe" -PathType Leaf)) {
-                & "$7za920\7za.exe" x "$7z1900zip" -aoa -o"$7z1900" -r -y | Out-Default
+        if (Test-Path -Path "$7z2103zip" -PathType Leaf) {
+            if (-not(Test-Path -Path "$7z2103\7za.exe" -PathType Leaf)) {
+                & "$7za920\7za.exe" x "$7z2103zip" -aoa -o"$7z2103" -r -y | Out-Default
             }
         }
     }
 
     try {
         Write-Host "Extracting archive: '$Path'"
-        if (Test-Path -Path "$7z1900\x64\7za.exe" -PathType Leaf) {
-            & "$7z1900\x64\7za.exe" x "$Path" -aoa -o"$DestinationPath" -r -y | Out-Default
+        if (Test-Path -Path "$7z2103\x64\7za.exe" -PathType Leaf) {
+            & "$7z2103\x64\7za.exe" x "$Path" -aoa -o"$DestinationPath" -r -y | Out-Default
         }
         elseif (Test-Path -Path "$7za920\7za.exe" -PathType Leaf) {
             & "$7za920\7za.exe" x "$Path" -aoa -o"$DestinationPath" -r -y | Out-Default
@@ -120,6 +120,9 @@ Function Get-File {
 
     if ($null -eq ($Url -as [System.URI]).AbsoluteURI) {
         throw "⚠ Invalid Url: $Url"
+    }
+    elseif (Test-Path -Path "$FilePath" -PathType Leaf) {
+        Write-Host "File already available: '$FilePath'"
     }
     else {
         $handler = $null
@@ -221,21 +224,72 @@ Function Get-TexLive {
     }
 }
 
-Function Install-Toolset {
-    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+Function Start-Bash() {
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute(
+        'PSUseShouldProcessForStateChangingFunctions', '', Scope = 'Function')]
+    param()
 
-    $script:StowRoot = Resolve-Path -Path "$PSScriptRoot\.."
+    Write-Host "bash -c '$Args'"
+    & "$script:MsysTargetDir\usr\bin\bash.exe" @('--noprofile', '--norc', '-lc') + @Args
+}
 
-    $script:TempDir = "$script:StowRoot\.tmp"
-    if ( -not(Test-Path -Path "$script:TempDir") ) {
-        New-Item -ItemType directory -Path "$script:TempDir" | Out-Null
+Function Install-MSYS2 {
+    $script:MsysTargetDir = "$script:TempDir\msys64"
+    $script:MsysArchive = "$script:ArchivesDir\msys2.exe"
+
+    if ( -not(Test-Path -Path "$script:MsysTargetDir\mingw64.exe" -PathType Leaf) ) {
+        $msysInstaller = "https://github.com/msys2/msys2-installer/releases/download/2021-07-25/msys2-base-x86_64-20210725.sfx.exe"
+
+        if ( -not(Test-Path -Path "$script:MsysArchive" -PathType Leaf) ) {
+            Write-Host "::group::Download MSYS2"
+            Get-File -Url "$msysInstaller" -Filename "$script:MsysArchive"
+            Write-Host "::endgroup::"
+        }
+
+        if ( -not(Test-Path -Path "$script:MsysTargetDir\usr\bin\bash.exe" -PathType Leaf) ) {
+            Write-Host "::group::Install MSYS2"
+            Expand-File -Path "$script:MsysArchive" -Destination "$script:TempDir"
+            Write-Host "::endgroup::"
+        }
     }
 
-    $script:ArchivesDir = "$script:StowRoot\.tmp\archives"
-    if ( -not(Test-Path -Path "$script:ArchivesDir") ) {
-        New-Item -ItemType directory -Path "$script:ArchivesDir" | Out-Null
-    }
+    if (Test-Path -Path "$script:MsysTargetDir\usr\bin\bash.exe" -PathType Leaf) {
+        $postInstallScript = "$script:MsysTargetDir\etc\post-install\09-stow.post"
 
+        # Create a file that gets automatically called after installation which will silence the
+        # clear that happens during a normal install. This may be useful for users by default but
+        # this makes us lose the rest of the console log which is not great for our use case here.
+        Set-Content -Path "$postInstallScript" -Value @"
+MAYBE_FIRST_START=false
+[ -f '/usr/bin/update-ca-trust' ] && sh /usr/bin/update-ca-trust
+echo '[stow] Post-install complete.'
+"@
+
+        # We run this here to ensure that the first run of msys2 is done before the 'setup.sh' call
+        # as the initial upgrade of msys2 results in it shutting down the console.
+        Write-Host "::group::Initialize MSYS2 Package Manager"
+        Start-Bash "echo 'Validate that shell can print data.'"
+
+        $msys2_shell = "$script:MsysTargetDir\msys2_shell.cmd"
+        $msys2_shell += " -mingw64 -defterm -no-start -where $script:StowRoot -shell bash"
+        $msys2_shell += " -c ./tools/install-dependencies.sh"
+        & "cmd.exe" /d /s /c "$msys2_shell"
+        Remove-Item -Force "$postInstallScript" | Out-Null
+        Write-Host "::endgroup::"
+
+        Write-Host "::group::Upgrade MSYS2 Packages"
+        # Upgrade all packages
+        Start-Bash 'pacman --noconfirm -Syuu'
+
+        # Clean entire package cache
+        Start-Bash 'pacman --noconfirm -Scc'
+        Write-Host "::endgroup::"
+
+        Write-Host '[stow] Finished MSYS2 install.'
+    }
+}
+
+Function Install-UnixPorts {
     $git = "$script:TempDir\git"
 
     Write-Host "::group::Install Portable Git"
@@ -244,7 +298,19 @@ Function Install-Toolset {
     Expand-File -Path $portableGitArchive -DestinationPath "$git"
     Write-Host "::endgroup::"
 
-    $ezwinports = @(
+    Write-Host "::group::Install 'm4'"
+    foreach ($m4 in @(
+        "http://downloads.sourceforge.net/gnuwin32/m4-1.4.14-1-bin.zip",
+        "http://downloads.sourceforge.net/gnuwin32/m4-1.4.14-1-dep.zip"
+    )) {
+        $filename = ([System.Uri]$m4).Segments[-1]
+        $outPath = "$script:ArchivesDir\$filename"
+        Get-File -Url $m4 -Filename "$outPath"
+        Expand-File -Path "$outPath" -DestinationPath "$git\usr"
+    }
+    Write-Host "::endgroup::"
+
+    foreach ($ezwinport in @(
         "https://sourceforge.net/projects/ezwinports/files/binutils-2.37-w32-bin.zip/download",
         "https://sourceforge.net/projects/ezwinports/files/texinfo-6.8-w32-bin.zip/download",
         "https://sourceforge.net/projects/ezwinports/files/make-4.3-with-guile-w32-bin.zip/download",
@@ -252,9 +318,7 @@ Function Install-Toolset {
         "https://sourceforge.net/projects/ezwinports/files/automake-1.11.6-msys-bin.zip/download",
         "https://sourceforge.net/projects/ezwinports/files/which-2.20-2-w32-bin.zip/download",
         "https://sourceforge.net/projects/ezwinports/files/guile-2.0.11-2-w32-bin.zip/download"
-    )
-
-    foreach ($ezwinport in $ezwinports) {
+    )) {
         $filename = ([System.Uri]($ezwinport -replace "/download", "")).Segments[-1]
         $outPath = "$script:ArchivesDir\$filename"
         Write-Host "::group::Install '$filename'"
@@ -269,6 +333,25 @@ Function Install-Toolset {
     Copy-Item -Path "$script:TempDir\ezwinports\include" -Destination "$git\usr" -Force -Recurse
     Copy-Item -Path "$script:TempDir\ezwinports\lib" -Destination "$git\usr" -Force -Recurse
     Copy-Item -Path "$script:TempDir\ezwinports\share" -Destination "$git\usr" -Force -Recurse
+}
+Function Install-Toolset {
+    [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+
+    $script:StowRoot = Resolve-Path -Path "$PSScriptRoot\.."
+
+    $env:HOME = $script:StowRoot
+
+    $script:TempDir = "$script:StowRoot\.tmp"
+    if ( -not(Test-Path -Path "$script:TempDir") ) {
+        New-Item -ItemType directory -Path "$script:TempDir" | Out-Null
+    }
+
+    $script:ArchivesDir = "$script:StowRoot\.tmp\archives"
+    if ( -not(Test-Path -Path "$script:ArchivesDir") ) {
+        New-Item -ItemType directory -Path "$script:ArchivesDir" | Out-Null
+    }
+
+    Install-MSYS2
 
     Get-TexLive
 }
