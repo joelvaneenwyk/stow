@@ -140,11 +140,18 @@ endlocal & exit /b
     set output_file=%~1
 
     :: This is more explicit and reliable than the config file trick
-    call :Run %STOW_PERL% -p ^
-        -e "s/\@STOW_PERL\@/$ENV{STOW_PERL}/g;" ^
-        -e "s/\@VERSION\@/$ENV{STOW_VERSION}/g;" ^
-        -e "s/\@USE_LIB_PMDIR\@/$ENV{USE_LIB_PMDIR}/g;" ^
-        "%input_file%" >"%output_file%"
+    set perl_command=%STOW_PERL% -p
+    set perl_command=!perl_command! -e "s/\@PERL\@/$ENV{STOW_PERL}/g;"
+    set perl_command=!perl_command! -e "s/\@VERSION\@/$ENV{STOW_VERSION}/g;"
+    set perl_command=!perl_command! -e "s/\@USE_LIB_PMDIR\@/$ENV{USE_LIB_PMDIR}/g;"
+    set perl_command=!perl_command! "%input_file%"
+
+    if "%GITHUB_ACTIONS%"=="" (
+        echo ##[cmd] !perl_command!
+    ) else (
+        echo [command]!perl_command!
+    )
+    call !perl_command! >"%output_file%"
     echo Generated output: '%output_file%'
 endlocal & exit /b
 
