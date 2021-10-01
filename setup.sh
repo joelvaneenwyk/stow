@@ -11,9 +11,6 @@ source "$STOW_ROOT/tools/stow-lib.sh"
 # shellcheck source=tools/install-dependencies.sh
 "$STOW_ROOT/tools/install-dependencies.sh"
 
-# This will create 'configure' script
-autoreconf -iv
-
 # Set the 'siteprefix' variable based on configuration settings of Perl
 siteprefix=
 eval "$(perl -V:siteprefix)"
@@ -28,6 +25,9 @@ echo "Site prefix: $siteprefix"
 (
     cd "$STOW_ROOT" || true
 
+    # This will create 'configure' script
+    autoreconf -iv
+
     # Run configure to generate 'Makefile' and then run make to create the
     # stow library and binary files e.g., 'stow', 'chkstow', etc.
     ./configure --srcdir="$STOW_ROOT" --prefix="${siteprefix:-}" && make
@@ -37,7 +37,4 @@ echo "Site prefix: $siteprefix"
 
     # shellcheck source=tools/make-stow.sh
     "$STOW_ROOT/tools/make-stow.sh"
-
-    # shellcheck source=tools/run-tests.sh
-    "$STOW_ROOT/tools/run-tests.sh"
 )

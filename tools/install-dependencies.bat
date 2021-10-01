@@ -20,6 +20,10 @@ exit /b
     if "%STOW_ROOT%"=="" set STOW_ROOT=%_root:~0,-1%
     if "%STOW_PERL%"=="" set STOW_PERL=perl
 
+    (
+        echo yes && echo. && echo no && echo exit
+    ) | "%STOW_PERL%" -MCPAN -e "shell"
+
     call :RunTaskGroup !STOW_PERL! "%~dp0initialize-cpan-config.pl"
 
     :: Already installed as part of Strawberry Perl but install/update regardless.

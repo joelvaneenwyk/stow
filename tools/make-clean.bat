@@ -10,6 +10,11 @@ exit /b
     set STOW_ROOT=%_root:~0,-1%
 
     for /f %%a in ('perl %STOW_ROOT%\tools\get-version') do set "STOW_VERSION=%%a"
+    for /f %%a in ('perl -MCPAN -e "use Config; print $Config{privlib};"') do set "PERL_LIB=%%a"
+
+    set PERL_CPAN_CONFIG=%PERL_LIB%\CPAN\Config.pm
+    del "!PERL_CPAN_CONFIG!" > nul 2>&1
+    echo Removed CPAN config: '!PERL_CPAN_CONFIG!'
 
     del "\\?\%STOW_ROOT%\nul" > nul 2>&1
     del "%STOW_ROOT%\texput.log" > nul 2>&1

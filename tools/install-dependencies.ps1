@@ -288,52 +288,6 @@ echo '[stow] Post-install complete.'
         Write-Host '[stow] Finished MSYS2 install.'
     }
 }
-
-Function Install-UnixPorts {
-    $git = "$script:TempDir\git"
-
-    Write-Host "::group::Install Portable Git"
-    $portableGitArchive = "$script:ArchivesDir\PortableGit-2.33.0.2-64-bit.7z.exe"
-    Get-File -Url "https://github.com/git-for-windows/git/releases/download/v2.33.0.windows.2/PortableGit-2.33.0.2-64-bit.7z.exe" -Filename $portableGitArchive
-    Expand-File -Path $portableGitArchive -DestinationPath "$git"
-    Write-Host "::endgroup::"
-
-    Write-Host "::group::Install 'm4'"
-    foreach ($m4 in @(
-        "http://downloads.sourceforge.net/gnuwin32/m4-1.4.14-1-bin.zip",
-        "http://downloads.sourceforge.net/gnuwin32/m4-1.4.14-1-dep.zip"
-    )) {
-        $filename = ([System.Uri]$m4).Segments[-1]
-        $outPath = "$script:ArchivesDir\$filename"
-        Get-File -Url $m4 -Filename "$outPath"
-        Expand-File -Path "$outPath" -DestinationPath "$git\usr"
-    }
-    Write-Host "::endgroup::"
-
-    foreach ($ezwinport in @(
-        "https://sourceforge.net/projects/ezwinports/files/binutils-2.37-w32-bin.zip/download",
-        "https://sourceforge.net/projects/ezwinports/files/texinfo-6.8-w32-bin.zip/download",
-        "https://sourceforge.net/projects/ezwinports/files/make-4.3-with-guile-w32-bin.zip/download",
-        "https://sourceforge.net/projects/ezwinports/files/autoconf-2.65-msys-bin.zip/download",
-        "https://sourceforge.net/projects/ezwinports/files/automake-1.11.6-msys-bin.zip/download",
-        "https://sourceforge.net/projects/ezwinports/files/which-2.20-2-w32-bin.zip/download",
-        "https://sourceforge.net/projects/ezwinports/files/guile-2.0.11-2-w32-bin.zip/download"
-    )) {
-        $filename = ([System.Uri]($ezwinport -replace "/download", "")).Segments[-1]
-        $outPath = "$script:ArchivesDir\$filename"
-        Write-Host "::group::Install '$filename'"
-        Get-File -Url $ezwinport -Filename "$outPath"
-        Expand-File -Path "$outPath" -DestinationPath "$script:TempDir\ezwinports"
-        Write-Host "::endgroup::"
-    }
-
-    Write-Host "::group::Copy 'ezwinports' to 'git'"
-    Copy-Item -Path "$script:TempDir\ezwinports\mingw32" -Destination "$git" -Force -Recurse
-    Copy-Item -Path "$script:TempDir\ezwinports\bin" -Destination "$git\usr" -Force -Recurse
-    Copy-Item -Path "$script:TempDir\ezwinports\include" -Destination "$git\usr" -Force -Recurse
-    Copy-Item -Path "$script:TempDir\ezwinports\lib" -Destination "$git\usr" -Force -Recurse
-    Copy-Item -Path "$script:TempDir\ezwinports\share" -Destination "$git\usr" -Force -Recurse
-}
 Function Install-Toolset {
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 

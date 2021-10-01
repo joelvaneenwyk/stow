@@ -22,6 +22,4 @@ exit /b
 
     call "%STOW_ROOT%\tools\make-stow.bat"
     if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
-
-    call "%STOW_ROOT%\tools\run-tests.bat"
 endlocal & exit /b

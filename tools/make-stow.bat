@@ -119,16 +119,14 @@ endlocal & exit /b
     call pod2man --name stow --section 8 "%STOW_ROOT%\bin\stow" > "%STOW_ROOT%\doc\stow.8"
 
     cd /d "%STOW_ROOT%"
-    echo ##[cmd] %STOW_PERL% -I "%STOW_ROOT%\lib" -I "%STOW_ROOT%\bin" "%STOW_ROOT%\Build.PL"
-    %STOW_PERL% -I "%STOW_ROOT%\lib" -I "%STOW_ROOT%\bin" "%STOW_ROOT%\Build.PL"
+    call :Run %STOW_PERL% -I "%STOW_ROOT%\lib" -I "%STOW_ROOT%\bin" "%STOW_ROOT%\Build.PL"
 
     :: Remove all intermediate files before running Stow for the first time
     rmdir /q /s "%STOW_ROOT%\_Inline\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\bin\_Inline\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\tools\_Inline\" > nul 2>&1
 
-    echo ##[cmd] %STOW_PERL% -I "%STOW_ROOT%\lib" "%STOW_ROOT%\bin\stow" --version
-    %STOW_PERL% -I "%STOW_ROOT%\lib" "%STOW_ROOT%\bin\stow" --version
+    call :Run %STOW_PERL% -I "%STOW_ROOT%\lib" "%STOW_ROOT%\bin\stow" --version
 
     :$MakeEnd
         :: Restore original directory
@@ -142,9 +140,11 @@ endlocal & exit /b
     set output_file=%~1
 
     :: This is more explicit and reliable than the config file trick
-    set _cmd=%STOW_PERL% -p -e "s/\@STOW_PERL\@/$ENV{STOW_PERL}/g;" -e "s/\@VERSION\@/$ENV{STOW_VERSION}/g;" -e "s/\@USE_LIB_PMDIR\@/$ENV{USE_LIB_PMDIR}/g;" "%input_file%"
-    echo ##[cmd] %_cmd%
-    %_cmd% >"%output_file%"
+    call :Run %STOW_PERL% -p ^
+        -e "s/\@STOW_PERL\@/$ENV{STOW_PERL}/g;" ^
+        -e "s/\@VERSION\@/$ENV{STOW_VERSION}/g;" ^
+        -e "s/\@USE_LIB_PMDIR\@/$ENV{USE_LIB_PMDIR}/g;" ^
+        "%input_file%" >"%output_file%"
     echo Generated output: '%output_file%'
 endlocal & exit /b
 
@@ -162,7 +162,7 @@ endlocal & exit /b
 
     cd /d "%STOW_ROOT%"
     set PATH=%WIN_UNIX_DIR%\usr\bin;%WIN_UNIX_DIR%\bin;%STOW_BUILD_TOOLS_ROOT%\texlive\bin\win32;%WIN_UNIX_DIR%\usr\bin\core_perl;%WIN_UNIX_DIR%\mingw32\bin
-    call :Run %BASH% "source ./tools/stow-lib.sh && install_system_base_dependencies"
+    call :Run %BASH% "source ./tools/stow-lib.sh && install_packages"
     call :Run %BASH% "source ./tools/stow-lib.sh && make_docs"
     call :Run %BASH% "autoreconf --install --verbose"
     call :Run %BASH% "./configure --prefix='' --with-pmdir='%PERL5LIB%'"

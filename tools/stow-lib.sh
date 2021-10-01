@@ -119,61 +119,28 @@ function update_stow_environment() {
 
     STOW_VERSION="$("$STOW_PERL" "$STOW_ROOT/tools/get-version")"
     export STOW_VERSION
+
+    # shellcheck disable=SC2016
+    PERL_LIB="$("$STOW_PERL" -MCPAN -e 'use Config; print $Config{privlib};')"
+    export PERL_LIB
+
+    # This is the default location where we can expect to find the config. If it
+    # exists then we have already been setup.
+    PERL_CPAN_CONFIG="$PERL_LIB\CPAN\Config.pm"
+    export PERL_CPAN_CONFIG
 }
 
-function install_system_base_dependencies() {
+# Install everything needed to run 'autoreconf' along with 'make' so
+# that we can generate documentation. It is not enough to build and
+# run Stow in Perl with full testing dependencies made available.
+function install_packages() {
+    packages=("$@")
+
     if [ -x "$(command -v apt-get)" ]; then
         use_sudo apt-get update --allow-releaseinfo-change
         use_sudo apt-get -y install \
             sudo bzip2 gawk curl patch \
             build-essential make autotools-dev automake autoconf \
-            texlive texinfo
-    elif [ -x "$(command -v brew)" ]; then
-        brew install autoconf automake libtool texinfo
-
-        # Needed for tex binaries
-        brew install --cask basictex
-
-        # Allows tex to be used right after installation
-        eval "$(/usr/libexec/path_helper)"
-
-        # Need to make sure that latest texinfo and makeinfo are found first as the version
-        # that comes with macOS is too old and you will get errors while building docs with
-        # errors like 'makeinfo: invalid option -- c'
-        export PATH="/usr/local/opt/texinfo/bin:$PATH"
-        if [ -n "${GITHUB_PATH:-}" ]; then
-            # Prepend to path so that next GitHub Action will have this updated path as well
-            echo "/usr/local/opt/texinfo/bin" >>"$GITHUB_PATH"
-            echo "/Library/TeX/texbin/" >>"$GITHUB_PATH"
-        fi
-    elif [ -x "$(command -v apk)" ]; then
-        use_sudo apk update
-        use_sudo apk add \
-            sudo wget curl unzip build-base make bash
-    elif [ -x "$(command -v pacman)" ]; then
-        packages+=(
-            git msys2-keyring base-devel make autoconf automake1.16 automake-wrapper
-        )
-
-        if [ -n "${MINGW_PACKAGE_PREFIX:-}" ]; then
-            packages+=(
-                "$MINGW_PACKAGE_PREFIX-make" "$MINGW_PACKAGE_PREFIX-binutils"
-            )
-        fi
-
-        pacman -S --quiet --noconfirm --needed "${packages[@]}"
-    fi
-}
-
-function install_system_dependencies() {
-    packages=("$@")
-
-    if [ -x "$(command -v apt-get)" ]; then
-        use_sudo apt-get update
-        use_sudo apt-get -y install \
-            sudo bzip2 gawk curl libssl-dev patch \
-            build-essential make autotools-dev automake autoconf \
-            cpanminus \
             texlive texinfo "${packages[@]}"
     elif [ -x "$(command -v brew)" ]; then
         brew install autoconf automake libtool texinfo "${packages[@]}"
@@ -196,6 +163,40 @@ function install_system_dependencies() {
     elif [ -x "$(command -v apk)" ]; then
         use_sudo apk update
         use_sudo apk add \
+            sudo wget curl unzip build-base make bash "${packages[@]}"
+    elif [ -x "$(command -v pacman)" ]; then
+        packages+=(
+            git msys2-keyring base-devel
+            make autoconf automake1.16 automake-wrapper
+            texinfo texinfo-tex
+        )
+
+        if [ -n "${MINGW_PACKAGE_PREFIX:-}" ]; then
+            packages+=(
+                "$MINGW_PACKAGE_PREFIX-make" "$MINGW_PACKAGE_PREFIX-binutils"
+                "$MINGW_PACKAGE_PREFIX-texlive-bin" "$MINGW_PACKAGE_PREFIX-texlive-core"
+                "$MINGW_PACKAGE_PREFIX-texlive-extra-utils"
+                "$MINGW_PACKAGE_PREFIX-poppler"
+            )
+        fi
+
+        pacman -S --quiet --noconfirm --needed "${packages[@]}"
+    fi
+}
+
+function install_system_dependencies() {
+    packages=("$@")
+
+    if [ -x "$(command -v apt-get)" ]; then
+        install_packages \
+            sudo bzip2 gawk curl libssl-dev patch \
+            build-essential make autotools-dev automake autoconf \
+            cpanminus \
+            texlive texinfo "${packages[@]}"
+    elif [ -x "$(command -v brew)" ]; then
+        install_packages autoconf automake libtool texinfo "${packages[@]}"
+    elif [ -x "$(command -v apk)" ]; then
+        install_packages \
             sudo wget curl unzip xclip \
             build-base gcc g++ make musl-dev openssl-dev zlib-dev \
             perl-dev perl-utils perl-app-cpanminus \
@@ -215,11 +216,11 @@ function install_system_dependencies() {
             )
         fi
 
-        pacman -S --quiet --noconfirm --needed "${packages[@]}"
+        install_packages "${packages[@]}"
     fi
 }
 
-function install_perl_dependencies() {
+function initialize_perl() {
     (
         echo "yes"
         echo ""
@@ -260,6 +261,10 @@ function install_perl_dependencies() {
             install_perl_modules App::cpanminus || true
         fi
     fi
+}
+
+function install_perl_dependencies() {
+    initialize_perl
 
     # We intentionally install as little as possible here to support as many system combinations as
     # possible including MSYS, cygwin, Ubuntu, Alpine, etc. The more libraries we add here the more
@@ -280,41 +285,14 @@ function install_perl_dependencies() {
 }
 
 function install_dependencies() {
-    update_stow_environment
-
     install_system_dependencies "$@"
     install_perl_dependencies
 }
 
-function install_texlive() {
-    if [ -x "$(command -v apt-get)" ]; then
-        install_system_dependencies texlive texinfo
-    elif [ -x "$(command -v pacman)" ]; then
-        packages+=(texinfo texinfo-tex)
-
-        if [ -n "${MINGW_PACKAGE_PREFIX:-}" ]; then
-            packages+=(
-                "$MINGW_PACKAGE_PREFIX-texlive-bin" "$MINGW_PACKAGE_PREFIX-texlive-core"
-                "$MINGW_PACKAGE_PREFIX-texlive-extra-utils"
-                "$MINGW_PACKAGE_PREFIX-poppler"
-            )
-        fi
-
-        install_system_dependencies "${packages[@]}"
-    fi
-}
-
 function make_docs() {
-    STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && cd ../ && pwd -P)"
+    initialize_perl
 
-    # shellcheck source=tools/stow-lib.sh
-    source "$STOW_ROOT/tools/stow-lib.sh"
-
-    update_stow_environment
-
-    # Install 'TeX Live' so that we have 'tex' and the related
-    # tools needed to generate documentation.
-    install_texlive
+    install_perl_modules "Test::Output"
 
     siteprefix=
     eval "$(perl -V:siteprefix)"
