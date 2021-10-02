@@ -200,6 +200,7 @@ doc/stow.8: bin/stow.in Makefile.am
 # versions, we can kill both birds with one stone.
 
 .PHONY: manual-single-html-all
+
 manual-single-html-all: \
 	$(HTML)
 
@@ -221,7 +222,8 @@ $(PDF): $(HTML)
 
 doc/manual-split: $(doc_deps)
 	rm -rf $@.new
-	if $(MAKEINFOHTML) $(AM_MAKEINFOHTMLFLAGS) $(MAKEINFOFLAGS) -I $(srcdir) -I doc -I $(srcdir)/doc \
+	if $(MAKEINFOHTML) $(AM_MAKEINFOHTMLFLAGS) $(MAKEINFOFLAGS) \
+	    -I $(srcdir) -I doc -I $(srcdir)/doc \
 	    -o $@.new `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi; \
 	then \
 	    rm -rf $@; \
@@ -257,24 +259,24 @@ $(HTML): doc/manual-split
 dist-hook: doc/manual-split
 
 dist-hook: $(dist_man_MANS)
-## If we are creating a distribution from a git checkout, ensure
-## the ChangeLog file is in sync the git repository.
-	if test -d $(srcdir)/.git; then \
+	## If we are creating a distribution from a git checkout, ensure
+	## the ChangeLog file is in sync the git repository.
+	if test -d "$(srcdir)/.git"; then \
 	    rm -f ChangeLog \
 	        && $(MAKE) $(AM_MAKEFLAGS) ChangeLog \
 	        && cp -f ChangeLog $(distdir)/ChangeLog; \
 	fi
 
 ChangeLog: doc/ChangeLog.OLD
-	if [ -e $(srcdir)/.git ]; then \
+	if [ -d "$(srcdir)/.git" ]; then \
 	    ( \
 	        git log \
 	            --format="format:%ad  %aN <%aE>%n%n    * %w(70,0,4)%s%+b%n" \
 	            --name-status \
 	            v2.0.2..HEAD | sed 's/^\([A-Z]\)\t/      \1 /'; \
-	        cat $< \
-	    ) > $@; \
-	    echo "Rebuilt $@ from git commit history."; \
+	        cat "$<" \
+	    ) > "$(srcdir)/$@"; \
+	    echo "Rebuilt '$@' from git commit history."; \
 	else \
 	    echo "Not in a git repository; can't update ChangeLog."; \
 	fi
