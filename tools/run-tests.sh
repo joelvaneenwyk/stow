@@ -58,9 +58,10 @@ function initialize_brewperl() {
 }
 
 function error_handler() {
+    _error=$?
     cat <<EOF
 =================================================
-❌ ERROR: Tests failed. Return code: '$?'
+❌ ERROR: Tests failed. Return code: '$_error'
 =================================================
 
 NOTE: To run a specific test, type something like:
@@ -73,9 +74,11 @@ EOF
 
     # Launch a bash instance so we can debug failures if we
     # are running in Docker container.
-    if [ -f /.dockerenv ]; then
+    if [ -f /.dockerenv ] && [ -z "${GITHUB_ACTIONS:-}" ]; then
         bash
     fi
+
+    exit "$_error"
 }
 
 function test_perl_version() {
@@ -90,6 +93,9 @@ function test_perl_version() {
 
     # shellcheck disable=SC2005
     echo "$(perl --version)"
+
+    # Remove all intermediate files before we start to ensure a clean test
+    run_command_group "$STOW_ROOT/tools/make-clean.sh"
 
     (
         cd "$STOW_ROOT" || true
@@ -110,6 +116,17 @@ function test_perl_version() {
         run_command_group perl Build.PL
         run_command_group ./Build build
         run_command_group cover -test
+
+        result_filename=$(
+            echo "test_results_${RUNNER_OS:-}_${MSYSTEM:-default}.xml" | awk '{print tolower($0)}'
+        )
+
+        prove -I t/ -I bin/ -I lib/ \
+            --formatter TAP::Formatter::JUnit \
+            --timer --verbose --normalize --parse \
+            t/ | tee "$result_filename"
+
+        # Run 'distcheck' at the end to ensure intermediate test results are excluded
         run_command_group ./Build distcheck
     )
 }
@@ -133,9 +150,6 @@ function run_stow_tests() {
             echo "Failed to install dependencies."
             return 4
         fi
-
-        # Remove all intermediate files before we start to ensure a clean test
-        run_command_group "$STOW_ROOT/tools/make-clean.sh"
     fi
 
     if [[ "$LIST_PERL_VERSIONS" = "1" ]]; then
@@ -159,10 +173,6 @@ function run_stow_tests() {
         # We intentionally do not 'make distclean' since we probably want to
         # debug this Perl version interactively.
     fi
-
-    # We clean up only if we have succeeded because on failure we may want to
-    # examine the artifacts and logs.
-    run_command "$STOW_ROOT/tools/make-clean.sh"
 
     echo "✔ Tests succeeded."
 }
