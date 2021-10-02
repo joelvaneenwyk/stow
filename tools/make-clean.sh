@@ -19,6 +19,12 @@
 STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && cd ../ && pwd -P)"
 
 function remove_intermediate_files() {
+    if [ "${1:-}" == "--all" ]; then
+        rm -rf "$STOW_ROOT/.tmp" >/dev/null 2>&1
+        rm -rf "$STOW_ROOT/.tmp/home" >/dev/null 2>&1
+        rm -rf "$STOW_ROOT/.tmp/temp" >/dev/null 2>&1
+    fi
+
     rm -rf "$STOW_ROOT/autom4te.cache" >/dev/null 2>&1
     rm -f "$STOW_ROOT/automake/install-sh" >/dev/null 2>&1
     rm -f "$STOW_ROOT/automake/mdate-sh" >/dev/null 2>&1
@@ -42,6 +48,8 @@ function remove_intermediate_files() {
     rm -rf "$STOW_ROOT/cover_db" >/dev/null 2>&1
     rm -rf "$STOW_ROOT/stow-"* >/dev/null 2>&1
     rm -f "$STOW_ROOT/config."* >/dev/null 2>&1
+    rm -f "$STOW_ROOT/stow."* >/dev/null 2>&1
+    rm -f "$STOW_ROOT/"*.log >/dev/null 2>&1
     rm -f "$STOW_ROOT/Makefile" >/dev/null 2>&1
     rm -f "$STOW_ROOT/Makefile.in" >/dev/null 2>&1
     rm -f "$STOW_ROOT/MYMETA.json" >/dev/null 2>&1
@@ -61,4 +69,4 @@ function remove_intermediate_files() {
     echo "✔ Removed intermediate Stow files from root: '$STOW_ROOT'"
 }
 
-remove_intermediate_files
+remove_intermediate_files "$@"

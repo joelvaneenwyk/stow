@@ -16,7 +16,7 @@
 :: along with this program. If not, see https://www.gnu.org/licenses/.
 ::
 
-call :Clean "%~dp0..\"
+call :Clean "%~dp0..\" %*
 exit /b
 
 :Clean
@@ -28,9 +28,29 @@ exit /b
     for /f %%a in ('perl %STOW_ROOT%\tools\get-version') do set "STOW_VERSION=%%a"
     for /f %%a in ('perl -MCPAN -e "use Config; print $Config{privlib};"') do set "PERL_LIB=%%a"
 
+    :: Shut down 'gpg-agent' otherwise some files can't be deleted from 'msys64' folder
+    if exist "%STOW_ROOT%\msys64\usr\bin\gpg-agent.exe" (
+        wmic process where ExecutablePath='%STOW_ROOT%\msys64\usr\bin\gpg-agent.exe' delete
+    )
+
+    :: Shut down 'dirmngr' otherwise some files can't be deleted from 'msys64' folder
+    if exist "%STOW_ROOT%\msys64\usr\bin\dirmngr.exe" (
+        wmic process where ExecutablePath='%STOW_ROOT%\msys64\usr\bin\dirmngr.exe' delete
+    )
+
     set PERL_CPAN_CONFIG=%PERL_LIB%\CPAN\Config.pm
     del "!PERL_CPAN_CONFIG!" > nul 2>&1
     echo Removed CPAN config: '!PERL_CPAN_CONFIG!'
+
+    if "%~2"=="--all" (
+        rmdir /q /s "%STOW_ROOT%\.tmp\msys64\" > nul 2>&1
+        echo Removed local 'MSYS2' install.
+    )
+
+    :: This is where 'cpan' files live when run through MSYS2 so this will force Perl
+    :: modules to be reinstalled.
+    rmdir /q /s "%STOW_ROOT%\.tmp\home\" > nul 2>&1
+    rmdir /q /s "%STOW_ROOT%\.tmp\temp\" > nul 2>&1
 
     del "\\?\%STOW_ROOT%\nul" > nul 2>&1
     del "%STOW_ROOT%\texput.log" > nul 2>&1
@@ -38,6 +58,8 @@ exit /b
     del "%STOW_ROOT%\Build.bat" > nul 2>&1
     del "%STOW_ROOT%\config.*" > nul 2>&1
     del "%STOW_ROOT%\configure" > nul 2>&1
+    del "%STOW_ROOT%\configure~" > nul 2>&1
+    del "%STOW_ROOT%\configure.lineno" > nul 2>&1
     del "%STOW_ROOT%\Makefile" > nul 2>&1
     del "%STOW_ROOT%\Makefile.in" > nul 2>&1
     del "%STOW_ROOT%\MYMETA.json" > nul 2>&1

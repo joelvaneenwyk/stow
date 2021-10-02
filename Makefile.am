@@ -36,7 +36,7 @@ pmstow_DATA = lib/Stow/Util.pm
 
 TEXINFO_TEX = doc/texinfo.tex
 export TEXI2DVI_BUILD_MODE = clean
-AM_MAKEINFOFLAGS = -I $(srcdir)
+AM_MAKEINFOFLAGS = -I $(srcdir) -I $(srcdir)/doc
 
 # We require this -I parameter to ensure that the include of the
 # default ignore list in the manual works.  Unfortunately this is
@@ -47,6 +47,7 @@ AM_MAKEINFOFLAGS = -I $(srcdir)
 # even though it annoyingly produces a warning with the -Wall option
 # to AM_INIT_AUTOMAKE which has to be silenced via -Wno-override.
 TEXI2DVI = texi2dvi $(AM_MAKEINFOFLAGS)
+PDFTEX = pdftex
 
 doc_deps = $(info_TEXINFOS) doc/version.texi
 
@@ -118,6 +119,7 @@ edit = sed -e 's|[@]PERL[@]|$(PERL)|g'       \
 pmdir_in_INC = \
 	PERL5LIB= $(PERL) -V | \
 	    awk '/@INC/ {p=1; next} p==1 {print $$1}' | \
+	    sed 's/\\/\//g' | \
 	    grep -q "$(pmdir)"
 
 calc_use_lib_pmdir = \
@@ -216,9 +218,10 @@ $(HTML): $(doc_deps)
 	    `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi
 
 $(PDF): $(HTML)
-	TEXINPUTS="$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
+	TEXINPUTS="$(srcdir)$(PATH_SEPARATOR)$(srcdir)/doc$(PATH_SEPARATOR)$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
 	MAKEINFO='$(MAKEINFO) $(AM_MAKEINFOFLAGS) $(MAKEINFOFLAGS) -I doc -I $(srcdir)/doc' \
-	$(TEXI2PDF) -o $@ `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi
+	$(PDFTEX) -output-directory="$(srcdir)/doc" "$(srcdir)/doc/stow.texi"
+	mv "$(srcdir)/doc/stow.pdf" "$@"
 
 doc/manual-split: $(doc_deps)
 	rm -rf $@.new

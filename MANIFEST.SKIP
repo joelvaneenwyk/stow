@@ -89,7 +89,7 @@
 # Avoid test files and intermediate data
 tmp-testing-trees
 test_results.*$
-.travis.yml
+shell.bat
 ^docker/
 ^.devcontainer/
 ^.github/

@@ -22,6 +22,8 @@ use File::Basename;
 
 use Module::Build;
 
+use constant IS_WIN32 => $^O eq 'MSWin32';
+
 # These are required by the test suite.
 use lib "t";
 use lib "bin";
@@ -78,13 +80,18 @@ sub create_build_script {
             'Module::Build' => 0,
         },
 
-        build_requires => {
+        build_requires => IS_WIN32 ? {
             'Test::More'        => 0,
             'Test::Output'      => 0,
             'Test::Exception'   => 0,
-            'Parse::RecDescent' => 0,
-            'Inline::C'         => 0,
             'IO::Scalar'        => 0,
+            'Inline::C'         => 0,
+            'Win32::Mutex'      => 0
+        } : {
+            'Test::More'        => 0,
+            'Test::Output'      => 0,
+            'Test::Exception'   => 0,
+            'IO::Scalar'        => 0
         }
     );
 

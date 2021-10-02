@@ -1,4 +1,4 @@
-#!/bin/env bash
+#!/usr/bin/bash
 #
 # This file is part of GNU Stow.
 #
@@ -30,12 +30,23 @@ bash "$STOW_ROOT/tools/install-dependencies.sh"
 siteprefix=
 eval "$(perl -V:siteprefix)"
 
+if [ ! -d "${PMDIR:-}" ]; then
+    PMDIR="$(perl -V | awk '/@INC/ {p=1; next} (p==1) {print $1}' | sed 's/\\/\//g' | head -n 1)"
+fi
+
 # Convert to unix path if on Cygwin/MSYS
 if [ -x "$(command -v cygpath)" ]; then
     siteprefix=$(cygpath "$siteprefix")
+    PMDIR=$(cygpath "$PMDIR")
 fi
 
 echo "Site prefix: $siteprefix"
+echo "PMDIR: $PMDIR"
+
+# Remove the prefix if the PMDIR exists on its own
+if [ -d "$PMDIR" ]; then
+    siteprefix=""
+fi
 
 (
     cd "$STOW_ROOT" || true
@@ -45,7 +56,10 @@ echo "Site prefix: $siteprefix"
 
     # Run configure to generate 'Makefile' and then run make to create the
     # stow library and binary files e.g., 'stow', 'chkstow', etc.
-    ./configure --srcdir="$STOW_ROOT" --prefix="${siteprefix:-}" && make
+    echo "./configure --srcdir=$STOW_ROOT --prefix=${siteprefix:-}"
+    ./configure --srcdir="$STOW_ROOT" --with-pmdir="${PMDIR:-}" --prefix="${siteprefix:-}"
+
+    make
 
     # This will create 'Build' or 'Build.bat' depending on platform
     perl -I "$STOW_ROOT" -I "$STOW_ROOT/lib" "$STOW_ROOT/Build.PL"

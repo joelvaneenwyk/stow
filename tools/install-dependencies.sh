@@ -38,8 +38,7 @@ passwd: files db
 group: files db
 
 db_enum: cache builtin
-
-db_home: env windows
+db_home: env cygwin desc
 db_shell: cygwin desc
 db_gecos: cygwin desc
 EOL

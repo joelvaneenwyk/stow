@@ -51,10 +51,19 @@ function run_command_group() {
 }
 
 function run_build_command() {
-    echo ""
-    echo "----------------------"
-    echo "$*"
-    echo "----------------------"
+    local command_display
+
+    command_display="$*"
+    command_display=${command_display//$'\n'/} # Remove all newlines
+
+    if [ -n "${GITHUB_ACTIONS:-}" ]; then
+        echo "[command]$command_display"
+    else
+        echo "==----------------------"
+        echo "##[cmd] $command_display"
+        echo "==----------------------"
+    fi
+
     "$@"
 }
 
@@ -189,14 +198,20 @@ function install_packages() {
 
         if [ -n "${MINGW_PACKAGE_PREFIX:-}" ]; then
             packages+=(
-                "$MINGW_PACKAGE_PREFIX-make" "$MINGW_PACKAGE_PREFIX-binutils"
-                "$MINGW_PACKAGE_PREFIX-texlive-bin" "$MINGW_PACKAGE_PREFIX-texlive-core"
-                "$MINGW_PACKAGE_PREFIX-texlive-extra-utils"
-                "$MINGW_PACKAGE_PREFIX-poppler"
+                "$MINGW_PACKAGE_PREFIX-make"
+                "$MINGW_PACKAGE_PREFIX-binutils"
             )
         fi
 
-        pacman -S --quiet --noconfirm --needed "${packages[@]}"
+        if [ ! -x "$(command -v tex)" ]; then
+            packages+=(
+                "${MINGW_PACKAGE_PREFIX:-mingw-w64-x86_64}-texlive-bin"
+                "${MINGW_PACKAGE_PREFIX:-mingw-w64-x86_64}-texlive-core"
+                "${MINGW_PACKAGE_PREFIX:-mingw-w64-x86_64}-poppler"
+            )
+        fi
+
+        run_build_command pacman -S --quiet --noconfirm --needed "${packages[@]}"
     fi
 }
 
@@ -227,7 +242,9 @@ function install_system_dependencies() {
 
         if [ -n "${MINGW_PACKAGE_PREFIX:-}" ]; then
             packages+=(
-                "$MINGW_PACKAGE_PREFIX-make" "$MINGW_PACKAGE_PREFIX-gcc" "$MINGW_PACKAGE_PREFIX-binutils"
+                "$MINGW_PACKAGE_PREFIX-make"
+                "$MINGW_PACKAGE_PREFIX-gcc"
+                "$MINGW_PACKAGE_PREFIX-binutils"
                 "$MINGW_PACKAGE_PREFIX-openssl"
             )
         fi
@@ -274,7 +291,7 @@ function initialize_perl() {
 
         # Use 'cpan' to install as a last resort
         if ! "$STOW_PERL" -MApp::cpanminus -le 1 2>/dev/null; then
-            install_perl_modules App::cpanminus || true
+            install_perl_modules "App::cpanminus" || true
         fi
     fi
 }
@@ -282,21 +299,26 @@ function initialize_perl() {
 function install_perl_dependencies() {
     initialize_perl
 
-    modules=("$@")
+    modules=()
 
     # We intentionally install as little as possible here to support as many system combinations as
     # possible including MSYS, cygwin, Ubuntu, Alpine, etc. The more libraries we add here the more
     # seemingly obscure issues you could run into e.g., missing 'cc1' or 'poll.h' even when they are
     # in fact installed.
     modules+=(
-        Carp Test::Output Module::Build IO::Scalar Devel::Cover::Report::Coveralls
-        Test::More Test::Exception
+        Carp Module::Build IO::Scalar
+        Test::More Test::Exception Test::Output
+        Devel::Cover::Report::Coveralls
     )
 
     if [ -n "${MSYSTEM:-}" ]; then
         modules+=(ExtUtils::PL2Bat Inline::C Win32::Mutex)
     else
         modules+=(TAP::Formatter::JUnit)
+    fi
+
+    if [ -n "$*" ]; then
+        modules+=("$@")
     fi
 
     install_perl_modules "${modules[@]}"

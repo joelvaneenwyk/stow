@@ -230,6 +230,67 @@ Function Get-TexLive {
         If (Test-Path "$tempTexFolder" -PathType Any) {
             Remove-Item -Recurse -Force "$tempTexFolder" | Out-Null
         }
+
+        $env:TEXLIVE_ROOT = "$script:TempDir\texlive-install"
+        $env:TEXLIVE_INSTALL = "$env:TEXLIVE_ROOT\install-tl-windows.bat"
+
+        $env:TEXDIR = "$script:TempDir\texlive"
+        $env:TEXLIVE_BIN = "$env:TEXDIR\bin\win32"
+        $env:TEXMFCONFIG = "$env:TEXDIR\texmf-config"
+        $env:TEXMFHOME = "$env:TEXDIR\texmf-local"
+        $env:TEXMFLOCAL = "$env:TEXDIR\texmf-local"
+        $env:TEXMFSYSCONFIG = "$env:TEXDIR\texmf-config"
+        $env:TEXMFSYSVAR = "$env:TEXDIR\texmf-var"
+        $env:TEXMFVAR = "$env:TEXDIR\texmf-var"
+
+        $env:TEXLIVE_INSTALL_PREFIX = "$env:TEXDIR"
+        $env:TEXLIVE_INSTALL_TEXDIR = "$env:TEXDIR"
+        $env:TEXLIVE_INSTALL_TEXMFCONFIG = "$env:TEXDIR\texmf-config"
+        $env:TEXLIVE_INSTALL_TEXMFHOME = "$env:TEXDIR\texmf-local"
+        $env:TEXLIVE_INSTALL_TEXMFLOCAL = "$env:TEXDIR\texmf-local"
+        $env:TEXLIVE_INSTALL_TEXMFSYSCONFIG = "$env:TEXDIR\texmf-config"
+        $env:TEXLIVE_INSTALL_TEXMFSYSVAR = "$env:TEXDIR\texmf-var"
+        $env:TEXLIVE_INSTALL_TEXMFVAR = "$env:TEXDIR\texmf-var"
+
+        $texLiveProfile = "$script:TempDir\install-texlive.profile"
+
+        Set-Content -Path "$texLiveProfile" -Value @"
+# It will NOT be updated and reflects only the
+# installation profile at installation time.
+
+selected_scheme scheme-custom
+binary_win32 1
+collection-basic 1
+collection-wintools 1
+collection-binextra 0
+collection-formatsextra 0
+instopt_adjustpath 0
+instopt_adjustrepo 1
+#instopt_desktop_integration 0
+#instopt_file_assocs 0
+instopt_letter 0
+instopt_portable 1
+instopt_write18_restricted 1
+tlpdbopt_autobackup 1
+tlpdbopt_backupdir tlpkg/backups
+tlpdbopt_create_formats 1
+tlpdbopt_desktop_integration 0
+tlpdbopt_file_assocs 0
+tlpdbopt_generate_updmap 0
+tlpdbopt_install_docfiles 0
+tlpdbopt_install_srcfiles 0
+tlpdbopt_post_code 1
+tlpdbopt_sys_bin /usr/local/bin
+tlpdbopt_sys_info /usr/local/share/info
+tlpdbopt_sys_man /usr/local/share/man
+tlpdbopt_w32_multi_user 0
+"@
+
+        If (Test-Path "$env:TEXLIVE_BIN\tex.exe" -PathType Leap) {
+            Write-Host "Skipped install. Tex executable already exists: '$env:TEXLIVE_BIN\tex.exe'"
+        } else {
+            & cmd.exe /d /c "$env:TEXLIVE_INSTALL" -no-gui -portable -profile "$texLiveProfile"
+        }
     }
     catch [Exception] {
         Write-Host "Failed to download and extract TeX Live.", $_.Exception.Message
