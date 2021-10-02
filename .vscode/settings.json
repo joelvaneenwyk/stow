@@ -21,6 +21,7 @@
         "_Inline/**": true,
         "blib/**": true
     },
+
     "files.associations": {
         "*.in": "perl",
         "stow": "perl",
@@ -118,6 +119,7 @@
         "compat",
         "Corin-EU",
         "cpan",
+        "cpanfile",
         "cpanm",
         "cpanminus",
         "Cuong",
@@ -133,6 +135,7 @@
         "distmeta",
         "distname",
         "distros",
+        "dockerignore",
         "dorny",
         "dotfiles",
         "dpkg",
@@ -175,6 +178,7 @@
         "makeinfo",
         "Manh",
         "Matzigkeit",
+        "mdate",
         "meyering@na-net.ornl.gov",
         "Mikulc",
         "mingw",
@@ -192,6 +196,7 @@
         "perllocal",
         "pmdir",
         "POSIX",
+        "proverc",
         "reorganisation",
         "restow",
         "Rezic",
@@ -209,6 +214,7 @@
         "stowrc",
         "subdirs",
         "submodules",
+        "testutil",
         "texi",
         "texinfo",
         "texlive",
