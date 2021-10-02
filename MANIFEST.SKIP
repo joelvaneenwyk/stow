@@ -1,5 +1,5 @@
-
 #!start included /usr/share/perl5/ExtUtils/MANIFEST.SKIP
+
 # Avoid version control files.
 \bRCS\b
 \bCVS\b
@@ -80,8 +80,6 @@
 ^autom4te\.cache/.+$
 ^config\.(log|status)$
 ^doc/\.dirstamp$
-^doc/manual-single-old-texi2html\.html
-^doc/manual-single-texi2html-wrapper\.html
 ^doc/manual-split/
 ^doc/stamp-vti$
 ^doc/HOWTO-RELEASE$

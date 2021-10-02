@@ -4,7 +4,7 @@
       "unknown"
    ],
    "dynamic_config" : 1,
-   "generated_by" : "Module::Build version 0.4224",
+   "generated_by" : "Module::Build version 0.4231",
    "license" : [
       "gpl_1"
    ],
@@ -17,6 +17,9 @@
       "build" : {
          "requires" : {
             "IO::Scalar" : "0",
+            "Inline::C" : "0",
+            "Parse::RecDescent" : "0",
+            "Test::Exception" : "0",
             "Test::More" : "0",
             "Test::Output" : "0"
          }
@@ -56,5 +59,5 @@
       }
    },
    "version" : "v2.3.2",
-   "x_serialization_backend" : "JSON::PP version 2.97001"
+   "x_serialization_backend" : "JSON::PP version 4.06"
 }

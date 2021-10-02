@@ -18,8 +18,10 @@
 bin_SCRIPTS = bin/stow bin/chkstow
 info_TEXINFOS = doc/stow.texi
 dist_man_MANS = doc/stow.8
+
 PDF = doc/manual.pdf
 HTML = doc/manual-single.html
+
 dist_doc_DATA = \
 	README.md INSTALL.md \
 	$(PDF) $(HTML) doc/version.texi \
@@ -197,31 +199,9 @@ doc/stow.8: bin/stow.in Makefile.am
 # install.  Instead, by overriding the built-in rules with modified
 # versions, we can kill both birds with one stone.
 
-# Generating the single-page HTML version used to be done with the old
-# texi2html, which is no longer maintained.  This rule is not used,
-# but is kept to allow comparing of results during the transition, and
-# potentially longer for posterity.
-doc/manual-single-old-texi2html.html: $(doc_deps)
-	texi2html --P=$(srcdir) --output=$@ -expandinfo -menu -monolithic -verbose $<
-
-# One alternative to the old texi2html approach is to use the texi2html
-# wrapper around texi2any which is provided as a partial drop-in replacement:
-#
-# https://www.gnu.org/software/texinfo/manual/texinfo/html_node/texi2html.html#texi2html
-#
-# Differences to the old texi2html:
-#
-#   - Doesn't wrap @file{foo} paths with quotes, which looks better.
-#   - Missing certain sections
-doc/manual-single-texi2html-wrapper.html: $(doc_deps)
-	texi2any -P $(srcdir) --output=$@ --verbose \
-		-c TEXI2HTML=1 -c SHOW_MENU=1 -c MONOLITHIC=1 $<
-
 .PHONY: manual-single-html-all
 manual-single-html-all: \
-	$(HTML) \
-	doc/manual-single-texi2html-wrapper.html \
-	doc/manual-single-old-texi2html.html
+	$(HTML)
 
 # Modern approach using $(MAKEINFOHTML) --no-split
 # Differences to the older two approaches:
@@ -231,8 +211,8 @@ $(HTML): $(doc_deps)
 	[ -d doc ] || mkdir doc # required in vpath mode
 	-rm -f $@
 	$(MAKEINFOHTML) $(AM_MAKEINFOHTMLFLAGS) $(MAKEINFOFLAGS) -I doc -I $(srcdir)/doc \
-		-c USE_TITLEPAGE_FOR_TITLE=1 --no-split -o $@ \
-		`test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi
+	    -c USE_TITLEPAGE_FOR_TITLE=1 --no-split -o $@ \
+	    `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi
 
 $(PDF): $(HTML)
 	TEXINPUTS="$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
@@ -242,13 +222,13 @@ $(PDF): $(HTML)
 doc/manual-split: $(doc_deps)
 	rm -rf $@.new
 	if $(MAKEINFOHTML) $(AM_MAKEINFOHTMLFLAGS) $(MAKEINFOFLAGS) -I $(srcdir) -I doc -I $(srcdir)/doc \
-	 -o $@.new `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi; \
+	    -o $@.new `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi; \
 	then \
-	  rm -rf $@; \
-	  mv $@.new $@; \
+	    rm -rf $@; \
+	    mv $@.new $@; \
 	else \
-	  rm -Rf $@.new $@; \
-	  exit 1; \
+	    rm -Rf $@.new $@; \
+	    exit 1; \
 	fi
 
 # The split version of the manual is copied to $(docdir)/manual-split
@@ -280,19 +260,19 @@ dist-hook: $(dist_man_MANS)
 ## If we are creating a distribution from a git checkout, ensure
 ## the ChangeLog file is in sync the git repository.
 	if test -d $(srcdir)/.git; then \
-	  rm -f ChangeLog \
-	    && $(MAKE) $(AM_MAKEFLAGS) ChangeLog \
-	    && cp -f ChangeLog $(distdir)/ChangeLog; \
+	    rm -f ChangeLog \
+	        && $(MAKE) $(AM_MAKEFLAGS) ChangeLog \
+	        && cp -f ChangeLog $(distdir)/ChangeLog; \
 	fi
 
 ChangeLog: doc/ChangeLog.OLD
 	if [ -e $(srcdir)/.git ]; then \
 	    ( \
 	        git log \
-		    --format="format:%ad  %aN <%aE>%n%n    * %w(70,0,4)%s%+b%n" \
-		    --name-status \
-		    v2.0.2..HEAD \
-                | sed 's/^\([A-Z]\)\t/      \1 /'; \
+	            --format="format:%ad  %aN <%aE>%n%n    * %w(70,0,4)%s%+b%n" \
+	            --name-status \
+	            v2.0.2..HEAD \
+                    | sed 's/^\([A-Z]\)\t/      \1 /'; \
 	        cat $< \
 	    ) > $@; \
 	    echo "Rebuilt $@ from git commit history."; \

@@ -1,4 +1,20 @@
 @echo off
+::
+:: This file is part of GNU Stow.
+::
+:: GNU Stow is free software: you can redistribute it and/or modify it
+:: under the terms of the GNU General Public License as published by
+:: the Free Software Foundation, either version 3 of the License, or
+:: (at your option) any later version.
+::
+:: GNU Stow is distributed in the hope that it will be useful, but
+:: WITHOUT ANY WARRANTY; without even the implied warranty of
+:: MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+:: General Public License for more details.
+::
+:: You should have received a copy of the GNU General Public License
+:: along with this program. If not, see https://www.gnu.org/licenses/.
+::
 
 call :MakeStow "%~dp0..\"
 
@@ -62,6 +78,8 @@ endlocal & exit /b
     set HOME=%STOW_BUILD_TOOLS_ROOT%\home
     if not exist "%HOME%" mkdir "%HOME%"
 
+    set BASH="%WIN_UNIX_DIR%\usr\bin\bash.exe" --noprofile --norc -c
+
     set MSYS2_PATH_TYPE=inherit
     set MSYS=winsymlinks:nativestrict
     set MSYSTEM=MSYS
@@ -77,7 +95,7 @@ endlocal & exit /b
 
     :: Generate documentation using 'bash' and associated unix tools which
     :: are required due to reliance on autoconf.
-    call :MakeDocs
+    ::call :MakeDocs
 
     set USE_LIB_PMDIR=
     set PMDIR=%STOW_ROOT%\lib
@@ -152,9 +170,12 @@ endlocal & exit /b
     set input_file=%~1.in
     set output_file=%~1
 
+    for /f %%a in (`%BASH% "command -v perl"`) do set "PERL_SHEBANG=%%a"
+    if "!PERL_SHEBANG!"=="" set PERL_SHEBANG=/bin/perl
+
     :: This is more explicit and reliable than the config file trick
     set perl_command=%STOW_PERL% -p
-    set perl_command=!perl_command! -e "s/\@PERL\@/$ENV{STOW_PERL}/g;"
+    set perl_command=!perl_command! -e "s/\@PERL\@/$ENV{PERL_SHEBANG}/g;"
     set perl_command=!perl_command! -e "s/\@VERSION\@/$ENV{STOW_VERSION}/g;"
     set perl_command=!perl_command! -e "s/\@USE_LIB_PMDIR\@/$ENV{USE_LIB_PMDIR}/g;"
     set perl_command=!perl_command! "%input_file%"
@@ -177,8 +198,6 @@ endlocal & exit /b
     )
 
     call :CreateStowInfo "%~dp0..\"
-
-    set BASH="%WIN_UNIX_DIR%\usr\bin\bash.exe" --noprofile --norc -c
 
     cd /d "%STOW_ROOT%"
     set PATH=%WIN_UNIX_DIR%\usr\bin;%WIN_UNIX_DIR%\bin;%STOW_BUILD_TOOLS_ROOT%\texlive\bin\win32;%WIN_UNIX_DIR%\usr\bin\core_perl;%WIN_UNIX_DIR%\mingw32\bin

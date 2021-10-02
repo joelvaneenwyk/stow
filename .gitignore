@@ -14,6 +14,7 @@ config.log
 config.status
 configure
 configure~
+configure.lineno
 
 doc/stow.info
 doc/version.texi
