@@ -296,7 +296,7 @@ function install_perl_dependencies() {
     if [ -n "${MSYSTEM:-}" ]; then
         modules+=(ExtUtils::PL2Bat Inline::C Win32::Mutex)
     else
-        TAP::Formatter::JUnit
+        modules+=(TAP::Formatter::JUnit)
     fi
 
     install_perl_modules "${modules[@]}"
