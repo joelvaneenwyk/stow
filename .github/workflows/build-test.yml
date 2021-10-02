@@ -74,11 +74,9 @@ jobs:
       # https://cygwin.com/cygwin-ug-net/using-cygwinenv.html
       MSYS: "winsymlinks:native"
 
-      HOME: "${{ github.workspace }}"
-
       # Define variants by platform
-      script_extension: ${{ startsWith(matrix.platform, 'windows') && '.bat' || '.sh' }}
-      script_tool: ${{ startsWith(matrix.platform, 'windows') && 'tools\\' || './tools/' }}
+      script_extension: ${{ (runner.os == "Windows" && !matrix.msys) && '.bat' || '.sh' }}
+      script_tool: ${{ (runner.os == "Windows" && !matrix.msys) && 'tools\\' || './tools/' }}
       script_sudo: ${{ startsWith(matrix.platform, 'ubuntu') && 'sudo' || '' }}
 
       # Need to specify 'strawberry' on Windows. Can pass 'strawberry' to other platforms as it just falls
@@ -87,7 +85,7 @@ jobs:
 
     defaults:
       run:
-        shell: ${{ (startsWith(matrix.platform, 'windows') && !matrix.msys) && 'cmd' || 'bash' }}
+        shell: ${{ matrix.msys && 'msys2 {0}' || (runner.os == "Windows" && 'cmd' || 'bash') }}
         working-directory: ${{ github.workspace }}
 
     steps:
@@ -137,7 +135,9 @@ jobs:
           eval `perl -V:siteprefix`
 
           # Note: this will complain Test::Output isn't yet installed:
-          ./configure --prefix=$siteprefix && make
+          ./configure --prefix=$siteprefix
+
+          make
 
           # But that's OK because we install it here:
           - make cpanm

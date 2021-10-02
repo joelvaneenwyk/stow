@@ -271,8 +271,7 @@ ChangeLog: doc/ChangeLog.OLD
 	        git log \
 	            --format="format:%ad  %aN <%aE>%n%n    * %w(70,0,4)%s%+b%n" \
 	            --name-status \
-	            v2.0.2..HEAD \
-                    | sed 's/^\([A-Z]\)\t/      \1 /'; \
+	            v2.0.2..HEAD | sed 's/^\([A-Z]\)\t/      \1 /'; \
 	        cat $< \
 	    ) > $@; \
 	    echo "Rebuilt $@ from git commit history."; \
