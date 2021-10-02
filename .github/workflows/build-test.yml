@@ -89,14 +89,7 @@ jobs:
     defaults:
       run:
         shell: >
-          ${{
-            matrix.msys
-              && 'msys2 {0}'
-              || ( startsWith(matrix.platform, 'windows')
-                    && 'cmd'
-                    || 'bash'
-              )
-          }}
+          ${{ matrix.msys && 'msys2 {0}' || ( startsWith(matrix.platform, 'windows') && 'cmd' || 'bash' ) }}
         working-directory: ${{ github.workspace }}
 
     steps:
