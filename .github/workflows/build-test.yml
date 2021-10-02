@@ -75,21 +75,17 @@ jobs:
       MSYS: "winsymlinks:native"
 
       # Define variants by platform
-      script_extension: >
-        ${{ (startsWith(matrix.platform, 'windows') && !matrix.msys) && '.bat' || '.sh' }}
+      script_extension: ${{ (startsWith(matrix.platform, 'windows') && !matrix.msys) && '.bat' || '.sh' }}
 
-      script_tool: >
-        ${{ (startsWith(matrix.platform, 'windows') && !matrix.msys) && 'tools\\' || './tools/' }}
+      script_tool: ${{ (startsWith(matrix.platform, 'windows') && !matrix.msys) && 'tools\\' || './tools/' }}
 
       # Need to specify 'strawberry' on Windows. Can pass 'strawberry' to other platforms as it just falls
       # back to default but it does generate a warning.
-      perl_distribution: >
-        ${{ startsWith(matrix.platform, 'windows') && 'strawberry' || 'default' }}
+      perl_distribution: ${{ startsWith(matrix.platform, 'windows') && 'strawberry' || 'default' }}
 
     defaults:
       run:
-        shell: >
-          ${{ matrix.msys && 'msys2 {0}' || ( startsWith(matrix.platform, 'windows') && 'cmd' || 'bash' ) }}
+        shell: ${{ matrix.msys && 'msys2 {0}' || ( startsWith(matrix.platform, 'windows') && 'cmd' || 'bash' ) }}
         working-directory: ${{ github.workspace }}
 
     steps:
