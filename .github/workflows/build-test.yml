@@ -75,17 +75,20 @@ jobs:
       MSYS: "winsymlinks:native"
 
       # Define variants by platform
-      script_extension: ${{ (startsWith(matrix.platform, 'windows') && !matrix.msys) && '.bat' || '.sh' }}
-      script_tool: ${{ (startsWith(matrix.platform, 'windows') && !matrix.msys) && 'tools\\' || './tools/' }}
-      script_sudo: ${{ startsWith(matrix.platform, 'ubuntu') && 'sudo' || '' }}
+      script_extension: |
+        ${{ (startsWith(matrix.platform, 'windows') && !matrix.msys) && '.bat' || '.sh' }}
+
+      script_tool: |
+        ${{ (startsWith(matrix.platform, 'windows') && !matrix.msys) && 'tools\\' || './tools/' }}
 
       # Need to specify 'strawberry' on Windows. Can pass 'strawberry' to other platforms as it just falls
       # back to default but it does generate a warning.
-      perl_distribution: ${{ startsWith(matrix.platform, 'windows') && 'strawberry' || 'default' }}
+      perl_distribution: |
+        ${{ startsWith(matrix.platform, 'windows') && 'strawberry' || 'default' }}
 
     defaults:
       run:
-        shell: ${{ matrix.msys && 'msys2 {0}' || (runner.os == "Windows" && 'cmd' || 'bash') }}
+        shell: ${{ matrix.msys && 'msys2 {0}' || (startsWith(matrix.platform, 'windows') && 'cmd' || 'bash') }}
         working-directory: ${{ github.workspace }}
 
     steps:
@@ -118,7 +121,7 @@ jobs:
           distribution: ${{ env.perl_distribution }}
 
       - name: Install Dependencies
-        run: ${{ env.script_sudo }} ${{ env.script_tool }}install-dependencies${{ env.script_extension }}
+        run: ${{ env.script_tool }}install-dependencies${{ env.script_extension }}
 
       - name: Make Stow
         run: ${{ env.script_tool }}make-stow${{ env.script_extension }}
