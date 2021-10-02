@@ -140,7 +140,7 @@ jobs:
           make
 
           # But that's OK because we install it here:
-          make cpanm
+          sudo make cpanm
 
       - name: Unix Distribution
         if: ${{ ! startsWith(matrix.platform, 'windows') }}

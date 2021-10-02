@@ -261,14 +261,14 @@ dist-hook: doc/manual-split
 dist-hook: $(dist_man_MANS)
 	## If we are creating a distribution from a git checkout, ensure
 	## the ChangeLog file is in sync the git repository.
-	if test -d "$(srcdir)/.git"; then \
+	if test -e "$(srcdir)/.git"; then \
 	    rm -f ChangeLog \
 	        && $(MAKE) $(AM_MAKEFLAGS) ChangeLog \
 	        && cp -f ChangeLog $(distdir)/ChangeLog; \
 	fi
 
 ChangeLog: doc/ChangeLog.OLD
-	if [ -d "$(srcdir)/.git" ]; then \
+	if [ -e "$(srcdir)/.git" ]; then \
 	    ( \
 	        git log \
 	            --format="format:%ad  %aN <%aE>%n%n    * %w(70,0,4)%s%+b%n" \
