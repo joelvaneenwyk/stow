@@ -1,7 +1,7 @@
 README for GNU Stow
 ===================
 
-[![Build Status](https://travis-ci.org/joelvaneenwyk/stow.svg)](https://travis-ci.org/aspiers/stow)
+[![Build Status](https://github.com/joelvaneenwyk/stow/actions/workflows/build-test.yml/badge.svg)](https://github.com/joelvaneenwyk/stow/actions/workflows/build-test.yml)
 [![Coverage Status](https://coveralls.io/repos/joelvaneenwyk/stow/badge.svg?branch=main&service=github)](https://coveralls.io/github/joelvaneenwyk/stow?branch=main)
 
 This README describes GNU Stow.  This is not the definitive

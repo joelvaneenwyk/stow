@@ -15,7 +15,7 @@ on:
 
 jobs:
   lint:
-    name: "Lint"
+    name: "ShellCheck"
     runs-on: ubuntu-latest
     if: always()
 
@@ -69,7 +69,7 @@ jobs:
 
       # Define variants by platform
       script_extension: ${{ startsWith(matrix.platform, 'windows') && '.bat' || '.sh' }}
-      script_call: ${{ startsWith(matrix.platform, 'windows') && 'tools\\' || './tools/' }}
+      script_tool: ${{ startsWith(matrix.platform, 'windows') && 'tools\\' || './tools/' }}
       script_sudo: ${{ startsWith(matrix.platform, 'ubuntu') && 'sudo' || '' }}
 
       # Need to specify 'strawberry' on Windows. Can pass 'strawberry' to other platforms as it just falls
@@ -96,13 +96,34 @@ jobs:
           distribution: ${{ env.perl_distribution }}
 
       - name: Install Dependencies
-        run: ${{ env.script_sudo }} ${{ env.script_call }}install-dependencies${{ env.script_extension }}
+        run: ${{ env.script_sudo }} ${{ env.script_tool }}install-dependencies${{ env.script_extension }}
 
       - name: Make Stow
-        run: ${{ env.script_call }}make-stow${{ env.script_extension }}
+        run: ${{ env.script_tool }}make-stow${{ env.script_extension }}
 
       - name: Run Tests
-        run: ${{ env.script_call }}run-tests${{ env.script_extension }}
+        run: ${{ env.script_tool }}run-tests${{ env.script_extension }}
+
+      - name: Linux Install
+        if: ${{ startsWith(matrix.platform, 'ubuntu') }}
+        run: |
+          ./tools/make-clean.sh
+
+          autoreconf --install
+          eval `perl -V:siteprefix`
+
+          # Note: this will complain Test::Output isn't yet installed:
+          ./configure --prefix=$siteprefix && make
+
+          # But that's OK because we install it here:
+          - make cpanm
+
+      - name: Linux Distribution
+        if: ${{ startsWith(matrix.platform, 'ubuntu') }}
+        run: |
+          make distcheck
+          perl Build.PL && ./Build build && cover -test -report coveralls
+          ./Build distcheck
 
 
   build_test_linux:
