@@ -282,17 +282,21 @@ function initialize_perl() {
 function install_perl_dependencies() {
     initialize_perl
 
+    modules=("$@")
+
     # We intentionally install as little as possible here to support as many system combinations as
     # possible including MSYS, cygwin, Ubuntu, Alpine, etc. The more libraries we add here the more
     # seemingly obscure issues you could run into e.g., missing 'cc1' or 'poll.h' even when they are
     # in fact installed.
-    modules=(
+    modules+=(
         Carp Test::Output Module::Build IO::Scalar Devel::Cover::Report::Coveralls
         Test::More Test::Exception
     )
 
     if [ -n "${MSYSTEM:-}" ]; then
         modules+=(ExtUtils::PL2Bat Inline::C Win32::Mutex)
+    else
+        TAP::Formatter::JUnit
     fi
 
     install_perl_modules "${modules[@]}"
@@ -302,7 +306,7 @@ function install_perl_dependencies() {
 
 function install_dependencies() {
     install_system_dependencies "$@"
-    install_perl_dependencies
+    install_perl_dependencies ""
 }
 
 function make_docs() {

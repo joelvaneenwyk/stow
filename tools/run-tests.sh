@@ -89,7 +89,7 @@ function test_perl_version() {
 
     # Install Perl dependencies on this particular version of Perl in case
     # that has not been done yet.
-    run_command_group install_perl_dependencies
+    run_command_group install_perl_dependencies "TAP::Formatter::JUnit"
 
     # shellcheck disable=SC2005
     echo "$(perl --version)"
