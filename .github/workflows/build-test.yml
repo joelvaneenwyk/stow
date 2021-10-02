@@ -38,6 +38,10 @@ jobs:
 
 
   perl_test_matrix:
+    name: "[${{ matrix.msys && 'windows-msys-latest' || matrix.platform }}] Perl v${{ matrix.perl }}"
+    runs-on: ${{ matrix.platform }}
+    if: always()
+
     strategy:
       fail-fast: false
       matrix:
@@ -60,12 +64,17 @@ jobs:
           - platform: ubuntu-latest
             perl: '5.16'
 
-    name: ${{ matrix.platform }} Perl v${{ matrix.perl }}
-    runs-on: ${{ matrix.platform }}
-    if: always()
+          - platform: windows-latest
+            perl: '5.32'
+            msys: true
 
     env:
       DEBIAN_FRONTEND: noninteractive
+
+      # https://cygwin.com/cygwin-ug-net/using-cygwinenv.html
+      MSYS: "winsymlinks:native"
+
+      HOME: "${{ github.workspace }}"
 
       # Define variants by platform
       script_extension: ${{ startsWith(matrix.platform, 'windows') && '.bat' || '.sh' }}
@@ -78,7 +87,7 @@ jobs:
 
     defaults:
       run:
-        shell: ${{ startsWith(matrix.platform, 'windows') && 'cmd' || 'bash' }}
+        shell: ${{ (startsWith(matrix.platform, 'windows') && !matrix.msys) && 'cmd' || 'bash' }}
         working-directory: ${{ github.workspace }}
 
     steps:
@@ -86,6 +95,21 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
+
+          # Get all history so we can generate ChangeLog
+          fetch-depth: 0
+
+      - uses: msys2/setup-msys2@v2
+        if: ${{ matrix.msys }}
+        with:
+          # Minimal here so that we use the MSYS perl and not the version
+          # already installed (if there is one)
+          path-type: minimal
+
+          # Need to use MSYS here otherwise we get errors during build of
+          # the 'TAP::Formatter::JUnit' package with missing "sys/wait.h"
+          msystem: MSYS
+          update: false
 
       - name: Setup Perl ${{ matrix.perl }}
         uses: shogo82148/actions-setup-perl@v1
@@ -104,8 +128,8 @@ jobs:
       - name: Run Tests
         run: ${{ env.script_tool }}run-tests${{ env.script_extension }}
 
-      - name: Linux Install
-        if: ${{ startsWith(matrix.platform, 'ubuntu') }}
+      - name: Unix Install
+        if: ${{ ! startsWith(matrix.platform, 'windows') }}
         run: |
           ./tools/make-clean.sh
 
@@ -118,8 +142,8 @@ jobs:
           # But that's OK because we install it here:
           - make cpanm
 
-      - name: Linux Distribution
-        if: ${{ startsWith(matrix.platform, 'ubuntu') }}
+      - name: Unix Distribution
+        if: ${{ ! startsWith(matrix.platform, 'windows') }}
         run: |
           make distcheck
           perl Build.PL && ./Build build && cover -test -report coveralls
