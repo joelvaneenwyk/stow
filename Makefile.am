@@ -222,6 +222,9 @@ $(PDF): $(HTML)
 	MAKEINFO='$(MAKEINFO) $(AM_MAKEINFOFLAGS) $(MAKEINFOFLAGS) -I doc -I $(srcdir)/doc' \
 	$(PDFTEX) -output-directory="$(srcdir)/doc" "$(srcdir)/doc/stow.texi"
 	mv "$(srcdir)/doc/stow.pdf" "$@"
+	rm -rf \
+	    "$(srcdir)/doc/stow.aux" "$(srcdir)/doc/stow.cp" \
+	    "$(srcdir)/doc/stow.log" "$(srcdir)/doc/stow.toc"
 
 doc/manual-split: $(doc_deps)
 	rm -rf $@.new

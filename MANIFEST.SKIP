@@ -83,6 +83,10 @@
 ^doc/manual-split/
 ^doc/stamp-vti$
 ^doc/HOWTO-RELEASE$
+^doc/stow.aux$
+^doc/stow.log$
+^doc/stow.cp$
+^doc/stow.toc$
 
 \btools/texinfo/\b
 
