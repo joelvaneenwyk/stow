@@ -85,6 +85,14 @@ endlocal & exit /b
         set "STOW_PERL_UNIX=%%a"
     )
 
+    for %%F in ("!STOW_PERL!") do set PERL_BIN_DIR=%%~dpF
+    for %%F in ("!PERL_BIN_DIR!\..\..\c\bin\gmake.exe") do set PERL_BIN_C_DIR=%%~dpF
+    if not exist "!PERL_BIN_C_DIR!" set PERL_BIN_C_DIR=
+
+    for /f "tokens=*" %%a in ('""%WIN_UNIX_DIR%\usr\bin\cygpath.exe" "!STOW_PERL!""') do (
+        set "STOW_PERL_UNIX=%%a"
+    )
+
     if not "!STOW_PERL_UNIX!"=="" goto:$ValidatePerlShebang
     for /f "tokens=*" %%a in ('"%BASH% "command -v perl""') do (
         set "STOW_PERL_UNIX=%%a"
@@ -94,6 +102,7 @@ endlocal & exit /b
 
     echo Perl: '!STOW_PERL!'
     echo Perl (MSYS2): '!STOW_PERL_UNIX!'
+    echo Perl C: '!PERL_BIN_C_DIR!'
 
     for /f %%a in ('!STOW_PERL! -MCPAN -e "use Config; print $Config{privlib};"') do (
         set "PERL_LIB=%%a"
@@ -118,6 +127,7 @@ endlocal & exit /b
         set "STOW_VERSION=%STOW_VERSION%"
         set "STOW_PERL=%STOW_PERL%"
         set "STOW_PERL_UNIX=%STOW_PERL_UNIX%"
+        set "PERL_BIN_C_DIR=%PERL_BIN_C_DIR%"
         set "PERL_INCLUDE_UNIX=%PERL_INCLUDE_UNIX%"
         set "PERL_LIB=%PERL_LIB%"
         set "PERL_CPAN_CONFIG=%PERL_CPAN_CONFIG%"

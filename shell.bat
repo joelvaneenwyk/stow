@@ -40,6 +40,8 @@ endlocal & exit /b
     set STOW_ROOT=%_root:~0,-1%
     call "%STOW_ROOT%\tools\stow-environment.bat"
 
+    set "MSYS2_PATH_TYPE=inherit"
+    set "PATH=%PERL_BIN_C_DIR%;%PATH%"
     set "PERL=%STOW_PERL_UNIX%"
     set "STOW_PERL=%STOW_PERL_UNIX%"
     call :Run %WIN_UNIX_DIR%\msys2_shell.cmd -no-start -mingw64 -defterm -shell bash -here

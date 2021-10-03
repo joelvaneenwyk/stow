@@ -315,12 +315,11 @@ function install_perl_dependencies() {
         Carp Module::Build IO::Scalar
         Test::More Test::Exception Test::Output
         Devel::Cover::Report::Coveralls
+        TAP::Formatter::JUnit
     )
 
     if [ -n "${MSYSTEM:-}" ]; then
         modules+=(ExtUtils::PL2Bat Inline::C Win32::Mutex)
-    else
-        modules+=(TAP::Formatter::JUnit)
     fi
 
     if [ -n "$*" ]; then

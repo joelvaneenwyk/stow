@@ -147,9 +147,10 @@ endlocal & exit /b
     cd /d "%STOW_ROOT%"
 
     set "MSYSTEM=MSYS"
+    set "MSYS2_PATH_TYPE=inherit"
     set "PERL=%STOW_PERL_UNIX%"
     set "STOW_PERL=%STOW_PERL_UNIX%"
-    set "PATH=%WIN_UNIX_DIR%\usr\bin;%WIN_UNIX_DIR%\bin;%STOW_BUILD_TOOLS_ROOT%\texlive\bin\win32;%WIN_UNIX_DIR%\usr\bin\core_perl;%WIN_UNIX_DIR%\mingw32\bin"
+    set "PATH=%PERL_BIN_C_DIR%;%WIN_UNIX_DIR%\usr\bin;%WIN_UNIX_DIR%\bin;%STOW_BUILD_TOOLS_ROOT%\texlive\bin\win32;%WIN_UNIX_DIR%\usr\bin\core_perl;%WIN_UNIX_DIR%\mingw32\bin"
 
     call :Run %BASH% "source ./tools/stow-environment.sh && install_packages"
     call :Run %BASH% "source ./tools/stow-environment.sh && make_docs"
