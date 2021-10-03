@@ -485,7 +485,7 @@ function update_stow_environment() {
             _perl_c_bin=$(cd "$_perl_bin" && cd ../../../c/bin && pwd)
         fi
 
-        if [ -d "$_perl_c_bin" ]; then
+        if [ -d "${_perl_c_bin:-}" ]; then
             PATH="$_perl_c_bin:$PATH"
             export PATH
         fi
