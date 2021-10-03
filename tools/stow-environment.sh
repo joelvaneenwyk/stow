@@ -213,7 +213,6 @@ function install_packages() {
             packages+=(
                 "${MINGW_PACKAGE_PREFIX:-mingw-w64-x86_64}-texlive-bin"
                 "${MINGW_PACKAGE_PREFIX:-mingw-w64-x86_64}-texlive-core"
-                "${MINGW_PACKAGE_PREFIX:-mingw-w64-x86_64}-poppler"
             )
         fi
 

@@ -19,14 +19,25 @@
 call :RunStowTests "%~dp0..\"
 exit /b
 
+::
+:: Local functions
+::
+
+:Run %*=Command with arguments
+    if "%GITHUB_ACTIONS%"=="" (
+        echo ##[cmd] %*
+    ) else (
+        echo [command]%*
+    )
+    call %*
+endlocal & exit /b
+
 :RunStowTests
     setlocal EnableExtensions EnableDelayedExpansion
 
     set _root=%~dp1
     set STOW_ROOT=%_root:~0,-1%
-    set "STOW_ROOT=%STOW_ROOT:\=/%"
+    call "%STOW_ROOT%\tools\stow-environment.bat"
 
-    set _cmd=prove -I "%STOW_ROOT%/t/" -I "%STOW_ROOT%/bin/" -I "%STOW_ROOT%/lib/" --timer --formatter "TAP::Formatter::JUnit" "%STOW_ROOT%/t/"
-    echo ##[cmd] %_cmd%
-    call %_cmd%
+    call :Run prove -I "%STOW_ROOT_UNIX%/t/" -I "%STOW_ROOT_UNIX%/bin/" -I "%STOW_ROOT_UNIX%/lib/" --timer --formatter "TAP::Formatter::JUnit" "%STOW_ROOT_UNIX%/t/"
 endlocal & exit /b

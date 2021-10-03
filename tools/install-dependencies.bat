@@ -28,31 +28,27 @@ exit /b
 :InstallPerlDependencies
     setlocal EnableExtensions EnableDelayedExpansion
 
-    set _starting_directory=%CD%
     set _root=%~dp1
-
     if "%STOW_ROOT%"=="" set STOW_ROOT=%_root:~0,-1%
-
-    for /f "tokens=*" %%a in ('where perl') do set "STOW_PERL=%%a"
-    if "!STOW_PERL!"=="" set STOW_PERL=perl
+    call "%STOW_ROOT%\tools\stow-environment.bat"
 
     (
         echo yes && echo. && echo no && echo exit
     ) | "!STOW_PERL!" -MCPAN -e "shell"
 
-    call :RunTaskGroup !STOW_PERL! "%~dp0initialize-cpan-config.pl"
+    call :RunTaskGroup "!STOW_PERL!" "%~dp0initialize-cpan-config.pl"
 
     :: Already installed as part of Strawberry Perl but install/update regardless.
-    !STOW_PERL! -MApp::cpanminus::fatscript -le 1 > nul 2>&1
+    "!STOW_PERL!" -MApp::cpanminus::fatscript -le 1 > nul 2>&1
     if not "!ERRORLEVEL!"=="0" (
-        call :RunTaskGroup !STOW_PERL! -MCPAN -e "install App::cpanminus"
+        call :RunTaskGroup "!STOW_PERL!" -MCPAN -e "install App::cpanminus"
     )
 
     :: Install dependencies. Note that 'Inline::C' requires 'make' and 'gcc' to be installed. It
     :: is recommended to install MSYS2 packages for copmiling (e.g. mingw-w64-x86_64-make) but
     :: many/most Perl distributions already come with the required tools for compiling.
     cd /d "!STOW_ROOT!"
-    !STOW_PERL! -MApp::cpanminus::fatscript -le 1 > nul 2>&1
+    "!STOW_PERL!" -MApp::cpanminus::fatscript -le 1 > nul 2>&1
     if "!ERRORLEVEL!"=="0" goto:$UseCpanm
     call :InstallPerlModules ^
         Carp  Module::Build IO::Scalar ^
@@ -62,13 +58,13 @@ exit /b
     goto:$InstallDone
 
     :$UseCpanm
-    call :RunTaskGroup !STOW_PERL! ^
+    call :RunTaskGroup "!STOW_PERL!" ^
         -MApp::cpanminus::fatscript -le ^
         "my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;" -- ^
         --installdeps --notest .
 
     :$InstallDone
-    cd /d "%_starting_directory%"
+    cd /d "%STARTING_DIRECTORY%"
 exit /b
 
 :RunTaskGroup
@@ -90,6 +86,6 @@ exit /b
         set _module=%~1
         shift
         if "%_module%"=="" exit /b
-        call :RunTaskGroup !STOW_PERL! -MCPAN -e "CPAN::Shell->notest('install', '%_module%')"
+        call :RunTaskGroup "!STOW_PERL!" -MCPAN -e "CPAN::Shell->notest('install', '%_module%')"
     goto:$Install
 exit /b
