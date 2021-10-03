@@ -35,7 +35,7 @@ function initialize_brewperl() {
     PERLBREW_ROOT="${PERLBREW_ROOT:-/usr/local/perlbrew}"
 
     if [ -x "$(command -v perlbrew)" ]; then
-        STOW_PERL=perl
+        export STOW_PERL=perl
 
         if [ ! -f "$PERLBREW_ROOT/etc/bashrc" ]; then
             PERLBREW_ROOT="$HOME/perl5/perlbrew"
@@ -87,10 +87,10 @@ function test_perl_version() {
 
     # Install Perl dependencies on this particular version of Perl in case
     # that has not been done yet.
-    run_command_group install_perl_dependencies "TAP::Formatter::JUnit"
+    install_perl_dependencies
 
     # shellcheck disable=SC2005
-    echo "$("$PERL" --version)"
+    echo "$("$STOW_PERL" --version)"
 
     # Remove all intermediate files before we start to ensure a clean test
     run_command_group "$STOW_ROOT/tools/make-clean.sh"
@@ -101,17 +101,18 @@ function test_perl_version() {
         # Install stow
         run_command_group autoreconf --install
 
-        eval "$("$PERL" -V:siteprefix)"
+        eval "$("$STOW_PERL" -V:siteprefix)"
+        STOW_SITE_PREFIX=$(normalize_path "${siteprefix:-}")
 
         # shellcheck disable=SC2154
-        run_command_group ./configure --prefix="$siteprefix"
+        run_command_group ./configure --prefix="$STOW_SITE_PREFIX"
 
         run_command_group make
 
         # Run tests
         run_command_group make distcheck
 
-        run_command_group "$PERL" Build.PL
+        run_command_group "$STOW_PERL" Build.PL
         run_command_group ./Build build
         run_command_group cover -test
 
@@ -134,7 +135,12 @@ function run_stow_tests() {
 
     LIST_PERL_VERSIONS=0
     PERL_VERSION=""
-    PERL="${PERL:-perl}"
+
+    STOW_PERL="${STOW_PERL:-${PERL:-perl}}"
+    if [ -x "$(command -v perlbrew)" ]; then
+        STOW_PERL=perl
+    fi
+    export STOW_PERL
 
     if [ "$_test_argument" == "list" ]; then
         # List available Perl versions

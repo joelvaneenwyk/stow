@@ -44,9 +44,6 @@ function make_stow() {
     if [ -x "$(command -v autoreconf)" ]; then
         cd "$STOW_ROOT" || true
 
-        eval "$("$STOW_PERL" -V:siteprefix)"
-        siteprefix=$(normalize_path "$siteprefix")
-
         # shellcheck disable=SC2016
         PERL5LIB=$("$STOW_PERL" -le 'print $INC[0]')
         PERL5LIB=$(normalize_path "$PERL5LIB")
@@ -54,10 +51,10 @@ function make_stow() {
 
         echo "Perl: '$STOW_PERL'"
         echo "Perl Lib: '$PERL5LIB'"
-        echo "Site Prefix: '${siteprefix:-}'"
+        echo "Site Prefix: '${STOW_SITE_PREFIX:-}'"
 
         run_command autoreconf --install --verbose
-        run_command ./configure --prefix="${siteprefix:-}" --with-pmdir="$PERL5LIB"
+        run_command ./configure --prefix="${STOW_SITE_PREFIX:-}" --with-pmdir="$PERL5LIB"
         run_command make bin/stow bin/chkstow lib/Stow.pm lib/Stow/Util.pm
     else
         PMDIR="$STOW_ROOT/lib"

@@ -49,6 +49,25 @@ function run_command {
     "$@"
 }
 
+function run_named_command_group() {
+    group_name="${1:-}"
+    shift
+
+    if [ -n "${GITHUB_ACTIONS:-}" ]; then
+        echo "::group::$group_name"
+    else
+        echo "==----------------------"
+        echo "## $group_name"
+        echo "==----------------------"
+    fi
+
+    run_command "$@"
+
+    if [ -n "${GITHUB_ACTIONS:-}" ]; then
+        echo "::endgroup::"
+    fi
+}
+
 function run_command_group() {
     local command_display
 
@@ -58,7 +77,9 @@ function run_command_group() {
     if [ -n "${GITHUB_ACTIONS:-}" ]; then
         echo "::group::$command_display"
     else
+        echo "==----------------------"
         echo "##[cmd] $command_display"
+        echo "==----------------------"
     fi
 
     "$@"
@@ -66,23 +87,6 @@ function run_command_group() {
     if [ -n "${GITHUB_ACTIONS:-}" ]; then
         echo "::endgroup::"
     fi
-}
-
-function run_build_command() {
-    local command_display
-
-    command_display="$*"
-    command_display=${command_display//$'\n'/} # Remove all newlines
-
-    if [ -n "${GITHUB_ACTIONS:-}" ]; then
-        echo "[command]$command_display"
-    else
-        echo "==----------------------"
-        echo "##[cmd] $command_display"
-        echo "==----------------------"
-    fi
-
-    "$@"
 }
 
 function use_sudo {
@@ -96,18 +100,15 @@ function use_sudo {
 function install_perl_modules() {
     if "$STOW_PERL" -MApp::cpanminus::fatscript -le 1 2>/dev/null; then
         # shellcheck disable=SC2016
-        run_command use_sudo "$STOW_PERL" -MApp::cpanminus::fatscript -le \
+        run_named_command_group "Install Perl Modules" use_sudo "$STOW_PERL" -MApp::cpanminus::fatscript -le \
             'my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;' -- \
             --notest "$@"
     else
         for package in "$@"; do
-            echo "::group::cpan install $package"
-            if ! run_command use_sudo "$STOW_PERL" -MCPAN -e "CPAN::Shell->notest('install', '$package')"; then
-                echo "::endgroup::"
+            if ! run_named_command_group "Install '$package'" use_sudo "$STOW_PERL" -MCPAN -e "CPAN::Shell->notest('install', '$package')"; then
                 echo "❌ Failed to install '$package' module."
                 return $?
             fi
-            echo "::endgroup::"
         done
     fi
 
@@ -173,7 +174,7 @@ function install_packages() {
             )
         fi
 
-        run_build_command pacman -S --quiet --noconfirm --needed "${packages[@]}"
+        run_command_group pacman -S --quiet --noconfirm --needed "${packages[@]}"
     fi
 }
 
@@ -216,6 +217,10 @@ function install_system_dependencies() {
 }
 
 function initialize_perl() {
+    # We call this again to make sure we have the right version of Perl before
+    # updating and installing modules.
+    update_stow_environment
+
     (
         echo "yes"
         echo ""
@@ -258,6 +263,9 @@ function initialize_perl() {
             install_perl_modules "App::cpanminus" || true
         fi
     fi
+
+    # Install this to silence warning when doing initial configure
+    install_perl_modules "Test::Output"
 }
 
 function install_perl_dependencies() {
@@ -280,10 +288,6 @@ function install_perl_dependencies() {
         modules+=(ExtUtils::PL2Bat Inline::C Win32::Mutex)
     fi
 
-    if [ -n "$*" ]; then
-        modules+=("$@")
-    fi
-
     install_perl_modules "${modules[@]}"
 
     echo "Installed required Perl dependencies."
@@ -291,22 +295,11 @@ function install_perl_dependencies() {
 
 function install_dependencies() {
     install_system_dependencies "$@"
-    install_perl_dependencies ""
+    install_perl_dependencies
 }
 
 function make_docs() {
     initialize_perl
-
-    install_perl_modules "Test::Output"
-
-    siteprefix=
-    eval "$("$PERL" -V:siteprefix)"
-
-    if [ -x "$(command -v cygpath)" ]; then
-        siteprefix=$(cygpath "$siteprefix")
-    fi
-
-    echo "Site prefix: $siteprefix"
 
     if [ -e "$STOW_ROOT/.git" ]; then
         (
@@ -343,7 +336,7 @@ function make_docs() {
 
     (
         cd "$STOW_ROOT/doc" || true
-        TEXINPUTS="../;." run_build_command pdftex "./stow.texi"
+        TEXINPUTS="../;." run_command_group pdftex "./stow.texi"
         mv "./stow.pdf" "./manual.pdf"
     )
     echo "✔ Used 'doc/stow.texi' to generate 'doc/manual.pdf'"
@@ -374,7 +367,7 @@ function make_docs() {
     # differences on unix versus msys2/windows.
     (
         cd "$STOW_ROOT/doc" || true
-        run_build_command "$TEXI2DVI" \
+        run_command_group "$TEXI2DVI" \
             --pdf --language=texinfo \
             --expand --batch \
             --verbose \
@@ -407,15 +400,25 @@ function update_stow_environment() {
     export STOW_ROOT
 
     # Find the local Windows install if it exists
-    if [ -x "$(command -v where)" ] && [ -n "${MSYSTEM_PREFIX:-}" ]; then
+    PERL_LOCAL="${PERL_LOCAL:-}"
+    _where=$(normalize_path "${WINDIR:-}\\system32\\where.exe")
+    if [ -f "$_where" ]; then
         while read -r line; do
             line=$(normalize_path "$line")
+
+            # Only print output first time around
+            if [ ! "${PERL_LOCAL_SEARCH:-}" == "1" ]; then
+                echo "[where.perl] $line"
+            fi
+
             if [[ ! "$line" == "$MSYSTEM_PREFIX"* ]] && [[ ! "$line" == /usr/* ]]; then
-                export PERL_LOCAL="$line"
+                PERL_LOCAL="$line"
                 break
             fi
-        done < <(where perl)
+        done < <("$_where" perl)
+        export PERL_LOCAL_SEARCH="1"
     fi
+    export PERL_LOCAL
 
     # Update version we use after we install in case the default version should be
     # different e.g., we just installed mingw64 version of perl and want to use that.
@@ -428,9 +431,6 @@ function update_stow_environment() {
         fi
     fi
     export STOW_PERL
-
-    PERL="$STOW_PERL"
-    export PERL
 
     STOW_VERSION="$("$STOW_PERL" "$STOW_ROOT/tools/get-version")"
     export STOW_VERSION
@@ -445,16 +445,53 @@ function update_stow_environment() {
     PERL_CPAN_CONFIG="$PERL_LIB/CPAN/Config.pm"
     export PERL_CPAN_CONFIG
 
-    echo "Stow Root: '$STOW_ROOT'"
-    echo "Stow Version: 'v$STOW_VERSION'"
-    echo "Perl: '$PERL'"
+    if [ ! -d "${PMDIR:-}" ]; then
+        PMDIR="$(
+            "$STOW_PERL" -V |
+                awk '/@INC/ {p=1; next} (p==1) {print $1}' |
+                sed 's/\\/\//g' |
+                head -n 1
+        )"
+    fi
+    PMDIR=$(normalize_path "$PMDIR")
+    export PMDIR
 
-    if [ -n "${PERL_LOCAL:-}" ]; then
-        echo "Perl Local: '$PERL_LOCAL'"
+    # Only find a prefix if PMDIR does not exist on its own
+    STOW_SITE_PREFIX="${STOW_SITE_PREFIX:-}"
+    if [ ! -d "$PMDIR" ]; then
+        siteprefix=""
+        eval "$("$STOW_PERL" -V:siteprefix)"
+        STOW_SITE_PREFIX=$(normalize_path "$siteprefix")
+    fi
+    export STOW_SITE_PREFIX
+
+    # shellcheck disable=SC2016
+    PERL5LIB=$("$STOW_PERL" -le 'print $INC[0]')
+    PERL5LIB=$(normalize_path "$PERL5LIB")
+    export PERL5LIB
+
+    if [ ! -x "$(command -v gmake)" ]; then
+        _perl_c_bin=$(cd "$(dirname "$PERL")" && cd ../../c/bin && pwd)
+        PATH="$_perl_c_bin:$PATH"
+        export PATH
     fi
 
-    echo "Perl Lib: '$PERL_LIB'"
-    echo "----------------------------------------"
+    if [ ! "${PERL:-}" == "$STOW_PERL" ]; then
+        PERL="$STOW_PERL"
+        export PERL
+
+        echo "Stow Root: '$STOW_ROOT'"
+        echo "Stow Version: 'v$STOW_VERSION'"
+        echo "Perl: '$PERL'"
+
+        if [ -n "${PERL_LOCAL:-}" ]; then
+            echo "Perl Local: '$PERL_LOCAL'"
+        fi
+
+        echo "Perl Lib: '$PERL_LIB'"
+        echo "Perl Module (PMDIR): '$PMDIR'"
+        echo "----------------------------------------"
+    fi
 }
 
 update_stow_environment

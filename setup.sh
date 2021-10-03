@@ -24,29 +24,6 @@ STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 # shellcheck source=tools/stow-environment.sh
 source "$STOW_ROOT/tools/stow-environment.sh"
 
-# Set the 'siteprefix' variable based on configuration settings of Perl
-siteprefix=
-eval "$("$PERL" -V:siteprefix)"
-
-if [ ! -d "${PMDIR:-}" ]; then
-    PMDIR="$("$PERL" -V | awk '/@INC/ {p=1; next} (p==1) {print $1}' | sed 's/\\/\//g' | head -n 1)"
-fi
-
-# Convert to unix path if on Cygwin/MSYS
-if [ -x "$(command -v cygpath)" ]; then
-    siteprefix=$(cygpath "$siteprefix")
-    PMDIR=$(cygpath "$PMDIR")
-fi
-
-echo "Perl: '$PERL'"
-echo "Site prefix: '$siteprefix'"
-echo "PMDIR: '$PMDIR'"
-
-# Remove the prefix if the PMDIR exists on its own
-if [ -d "$PMDIR" ]; then
-    siteprefix=""
-fi
-
 # shellcheck source=tools/make-clean.sh
 bash "$STOW_ROOT/tools/make-clean.sh"
 
@@ -61,7 +38,7 @@ bash "$STOW_ROOT/tools/install-dependencies.sh"
 
     # Run configure to generate 'Makefile' and then run make to create the
     # stow library and binary files e.g., 'stow', 'chkstow', etc.
-    run_command ./configure --srcdir="$STOW_ROOT" --with-pmdir="${PMDIR:-}" --prefix="${siteprefix:-}"
+    run_command ./configure --srcdir="$STOW_ROOT" --with-pmdir="${PMDIR:-}" --prefix="${STOW_SITE_PREFIX:-}"
 
     run_command make
 
