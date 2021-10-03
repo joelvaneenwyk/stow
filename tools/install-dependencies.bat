@@ -64,7 +64,7 @@ exit /b
         --installdeps --notest .
 
     :$InstallDone
-    cd /d "%STARTING_DIRECTORY%"
+    cd /d "%STARTING_DIR%"
 exit /b
 
 :RunTaskGroup

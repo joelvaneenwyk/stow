@@ -28,12 +28,12 @@ exit /b
 
     :: Shut down 'gpg-agent' otherwise some files can't be deleted from 'msys64' folder
     if exist "%WIN_UNIX_DIR%\usr\bin\gpg-agent.exe" (
-        wmic process where ExecutablePath='%WIN_UNIX_DIR%\usr\bin\gpg-agent.exe' delete
+        wmic process where ExecutablePath='%WIN_UNIX_DIR%\usr\bin\gpg-agent.exe' delete > nul 2>&1
     )
 
     :: Shut down 'dirmngr' otherwise some files can't be deleted from 'msys64' folder
     if exist "%WIN_UNIX_DIR%\usr\bin\dirmngr.exe" (
-        wmic process where ExecutablePath='%WIN_UNIX_DIR%\usr\bin\dirmngr.exe' delete
+        wmic process where ExecutablePath='%WIN_UNIX_DIR%\usr\bin\dirmngr.exe' delete > nul 2>&1
     )
 
     del "%PERL_CPAN_CONFIG%" > nul 2>&1

@@ -43,7 +43,9 @@ endlocal & exit /b
 
     :: Generate documentation using 'bash' and associated unix tools which
     :: are required due to reliance on autoconf.
+    echo ----------------------------------------
     call :MakeDocs
+    echo ----------------------------------------
 
     set USE_LIB_PMDIR=
     set PMDIR=%STOW_ROOT%\lib
@@ -138,7 +140,7 @@ endlocal & exit /b
     setlocal EnableExtensions EnableDelayedExpansion
 
     if not exist "%WIN_UNIX_DIR%\usr\bin\bash.exe" (
-        echo ERROR: Failed to find unix tools. Please install dependencies first.
+        echo ERROR: Skipped making documentation. Missing unix tools. Please install dependencies first.
         exit /b 5
     )
 
@@ -164,11 +166,36 @@ exit /b
 :CreateStowInfo
     setlocal EnableExtensions EnableDelayedExpansion
 
+    for /F "skip=1 delims=" %%F in ('
+        wmic PATH Win32_LocalTime GET Day^,Month^,Year /FORMAT:TABLE
+    ') do (
+        for /F "tokens=1-3" %%L in ("%%F") do (
+            set CurrentDay=0%%L
+            set CurrentMonth=0%%M
+            set CurrentYear=%%N
+        )
+    )
+    set CurrentDay=%CurrentDay:~-2%
+    set CurrentMonth=%CurrentMonth:~-2%
+
+    if "!CurrentMonth!"=="01" set CurrentMonthName=January
+    if "!CurrentMonth!"=="02" set CurrentMonthName=Febuary
+    if "!CurrentMonth!"=="03" set CurrentMonthName=March
+    if "!CurrentMonth!"=="04" set CurrentMonthName=April
+    if "!CurrentMonth!"=="05" set CurrentMonthName=May
+    if "!CurrentMonth!"=="06" set CurrentMonthName=June
+    if "!CurrentMonth!"=="07" set CurrentMonthName=July
+    if "!CurrentMonth!"=="08" set CurrentMonthName=August
+    if "!CurrentMonth!"=="09" set CurrentMonthName=September
+    if "!CurrentMonth!"=="10" set CurrentMonthName=October
+    if "!CurrentMonth!"=="11" set CurrentMonthName=November
+    if "!CurrentMonth!"=="12" set CurrentMonthName=December
+
     set STOW_VERSION_TEXI=%STOW_ROOT%\doc\version.texi
-    echo @set UPDATED 0 0 0 >"%STOW_VERSION_TEXI%"
-    echo @set UPDATED-MONTH ${2:-0} ${3:-0} >>"%STOW_VERSION_TEXI%"
-    echo @set EDITION !STOW_VERSION! >>"%STOW_VERSION_TEXI%"
-    echo @set VERSION !STOW_VERSION! >>"%STOW_VERSION_TEXI%"
+    echo @set UPDATED %CurrentDay% %CurrentMonthName% %CurrentYear% >"%STOW_VERSION_TEXI%"
+    echo @set UPDATED-MONTH %CurrentMonthName% %CurrentYear% >>"%STOW_VERSION_TEXI%"
+    echo @set EDITION %STOW_VERSION% >>"%STOW_VERSION_TEXI%"
+    echo @set VERSION %STOW_VERSION% >>"%STOW_VERSION_TEXI%"
 
     set PERL_INCLUDE=-I %WIN_UNIX_DIR_UNIX%/usr/share/automake-1.16
     set PERL_INCLUDE=!PERL_INCLUDE! -I %WIN_UNIX_DIR_UNIX%/usr/share/autoconf

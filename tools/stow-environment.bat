@@ -40,6 +40,7 @@ endlocal & exit /b
     set STARTING_DIR=%CD%
     set STOW_ROOT=%_root:~0,-1%
     set STOW_ROOT_UNIX=%STOW_ROOT:\=/%
+    set STOW_VERSION=0.0.0
 
     set STOW_BUILD_TOOLS_ROOT=%STOW_ROOT%\.tmp
     if not exist "%STOW_BUILD_TOOLS_ROOT%" mkdir "%STOW_BUILD_TOOLS_ROOT%"
@@ -48,14 +49,30 @@ endlocal & exit /b
     if not exist "%TMPDIR%" mkdir "%TMPDIR%"
 
     set WIN_UNIX_DIR=%STOW_BUILD_TOOLS_ROOT%\msys64
-    set WIN_UNIX_DIR_UNIX=%WIN_UNIX_DIR:\=/%
+    if exist "!WIN_UNIX_DIR!" goto:$FoundUnixTools
+    "C:\Windows\System32\WHERE.exe" /Q msys2_shell
+    if not !ERRORLEVEL!==0 goto:$FoundUnixTools
+        for /f "tokens=* usebackq" %%a in (`"C:\Windows\System32\WHERE.exe" msys2_shell`) do (
+            set WIN_UNIX_DIR=%%a
+            goto:$FixUnixToolPath
+        )
+        :$FixUnixToolPath
+        if not exist "!WIN_UNIX_DIR!" set WIN_UNIX_DIR=
+        if "!WIN_UNIX_DIR!"=="" goto:$FoundUnixTools
+        for %%F in ("!WIN_UNIX_DIR!") do set WIN_UNIX_DIR=%%~dpF
+        set WIN_UNIX_DIR=!WIN_UNIX_DIR:~0,-1!
+
+    :$FoundUnixTools
+    if not exist "!WIN_UNIX_DIR!" set WIN_UNIX_DIR=
+    set WIN_UNIX_DIR_UNIX=
+    if exist "!WIN_UNIX_DIR!" set WIN_UNIX_DIR_UNIX=!WIN_UNIX_DIR:\=/!
 
     set PERL_INCLUDE_UNIX=-I %WIN_UNIX_DIR_UNIX%/usr/share/automake-1.16 -I %WIN_UNIX_DIR_UNIX%/share/autoconf
 
-    set SHELL=%WIN_UNIX_DIR%\bin\sh.exe
+    set SHELL=!WIN_UNIX_DIR!\bin\sh.exe
 
-    set GUILE_LOAD_PATH=%WIN_UNIX_DIR%\usr\share\guile\2.0
-    set GUILE_LOAD_COMPILED_PATH=%WIN_UNIX_DIR%\usr\lib\guile\2.0\ccache
+    set GUILE_LOAD_PATH=!WIN_UNIX_DIR!\usr\share\guile\2.0
+    set GUILE_LOAD_COMPILED_PATH=!WIN_UNIX_DIR!\usr\lib\guile\2.0\ccache
 
     set PATH_ORIGINAL=%PATH%
 
@@ -64,32 +81,34 @@ endlocal & exit /b
     set HOME=%STOW_BUILD_TOOLS_ROOT%\home
     if not exist "%HOME%" mkdir "%HOME%"
 
-    set BASH_EXE=%WIN_UNIX_DIR%\usr\bin\bash.exe
+    set BASH_EXE=!WIN_UNIX_DIR!\usr\bin\bash.exe
     set BASH="%BASH_EXE%" --noprofile --norc -c
 
     :: Print Perl version number
-    for /f "tokens=*" %%a in ('where perl') do (
+    "C:\Windows\System32\WHERE.exe" /Q perl
+    if not !ERRORLEVEL!==0 goto:$PerlValidate
+    for /f "tokens=* usebackq" %%a in (`"C:\Windows\System32\WHERE.exe" perl`) do (
         set "STOW_PERL=%%a"
         goto:$PerlValidate
     )
     :$PerlValidate
-    if "!STOW_PERL!"=="" set STOW_PERL=perl
+    if not exist "!STOW_PERL!" set STOW_PERL=perl
     "!STOW_PERL!" -e "print 'Perl v' . substr($^V, 1) . ""\n"""
     if errorlevel 1 (
-        echo Perl executable invalid or missing: '!STOW_PERL!'
-        exit /b 1
-    )
-
-    if not exist "%BASH_EXE%" goto:$ValidatePerlShebang
-    for /f "tokens=*" %%a in ('""%WIN_UNIX_DIR%\usr\bin\cygpath.exe" "!STOW_PERL!""') do (
-        set "STOW_PERL_UNIX=%%a"
+        echo ERROR: Perl executable invalid or missing: '!STOW_PERL!'
+        goto:$InitializeEnvironment
     )
 
     for %%F in ("!STOW_PERL!") do set PERL_BIN_DIR=%%~dpF
     for %%F in ("!PERL_BIN_DIR!\..\..\c\bin\gmake.exe") do set PERL_BIN_C_DIR=%%~dpF
     if not exist "!PERL_BIN_C_DIR!" set PERL_BIN_C_DIR=
 
-    for /f "tokens=*" %%a in ('""%WIN_UNIX_DIR%\usr\bin\cygpath.exe" "!STOW_PERL!""') do (
+    if not exist "%BASH_EXE%" goto:$ValidatePerlShebang
+    for /f "tokens=*" %%a in ('""!WIN_UNIX_DIR!\usr\bin\cygpath.exe" "!STOW_PERL!""') do (
+        set "STOW_PERL_UNIX=%%a"
+    )
+
+    for /f "tokens=*" %%a in ('""!WIN_UNIX_DIR!\usr\bin\cygpath.exe" "!STOW_PERL!""') do (
         set "STOW_PERL_UNIX=%%a"
     )
 
@@ -100,23 +119,26 @@ endlocal & exit /b
     :$ValidatePerlShebang
     if "!STOW_PERL_UNIX!"=="" set STOW_PERL_UNIX=/bin/perl
 
-    echo Perl: '!STOW_PERL!'
-    echo Perl (MSYS2): '!STOW_PERL_UNIX!'
-    echo Perl C: '!PERL_BIN_C_DIR!'
-
     for /f %%a in ('!STOW_PERL! -MCPAN -e "use Config; print $Config{privlib};"') do (
         set "PERL_LIB=%%a"
     )
     set PERL_CPAN_CONFIG=%PERL_LIB%\CPAN\Config.pm
-    echo CPAN Config: '%PERL_CPAN_CONFIG%'
 
     :: Get Stow version number
     for /f "tokens=*" %%a in ('"!STOW_PERL! "%STOW_ROOT%\tools\get-version""') do set "STOW_VERSION=%%a"
-    echo Stow v!STOW_VERSION!
 
-    if not exist "%WIN_UNIX_DIR%\post-install.bat" goto:$SkipPostInstall
-        cd /d "%WIN_UNIX_DIR%"
-        call :Run "%WIN_UNIX_DIR%\post-install.bat"
+    :$InitializeEnvironment
+        echo Perl: '!STOW_PERL!'
+        echo Perl Bin: '!PERL_BIN_DIR!'
+        echo Perl C Bin: '!PERL_BIN_C_DIR!'
+        echo Perl (MSYS2): '!STOW_PERL_UNIX!'
+        echo Perl CPAN Config: '%PERL_CPAN_CONFIG%'
+        echo MSYS2: '!WIN_UNIX_DIR_UNIX!'
+        echo Stow v!STOW_VERSION!
+
+    if not exist "!WIN_UNIX_DIR!\post-install.bat" goto:$SkipPostInstall
+        cd /d "!WIN_UNIX_DIR!"
+        call :Run "!WIN_UNIX_DIR!\post-install.bat"
         echo Executed post install script.
 
     :$SkipPostInstall
@@ -142,4 +164,6 @@ endlocal & exit /b
         set "GUILE_LOAD_COMPILED_PATH=%GUILE_LOAD_COMPILED_PATH%"
         set "TEX=%TEX%"
     )
-exit /b
+
+    if not exist "%STOW_PERL%" exit /b 55
+exit /b 0

@@ -100,13 +100,7 @@ jobs:
       - uses: msys2/setup-msys2@v2
         if: ${{ matrix.msys }}
         with:
-          # Minimal here so that we use the MSYS perl and not the version
-          # already installed (if there is one)
-          path-type: minimal
-
-          # Need to use MSYS here otherwise we get errors during build of
-          # the 'TAP::Formatter::JUnit' package with missing "sys/wait.h"
-          msystem: MSYS
+          msystem: MINGW64
           update: false
 
       - name: Setup Perl ${{ matrix.perl }}
