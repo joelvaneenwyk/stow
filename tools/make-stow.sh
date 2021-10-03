@@ -31,8 +31,8 @@ function make_stow() {
 
     STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && cd ../ && pwd -P)"
 
-    # shellcheck source=./tools/stow-lib.sh
-    source "$STOW_ROOT/tools/stow-lib.sh"
+    # shellcheck source=./tools/stow-environment.sh
+    source "$STOW_ROOT/tools/stow-environment.sh"
 
     rm -rf "$STOW_ROOT/_Inline"
     rm -f "$STOW_ROOT/bin/chkstow"

@@ -17,7 +17,7 @@
 #
 
 STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && cd ../ && pwd -P)"
-source "$STOW_ROOT/tools/stow-lib.sh"
+source "$STOW_ROOT/tools/stow-environment.sh"
 
 function initialize_package_manager() {
     if [ -x "$(command -v pacman)" ]; then

@@ -16,6 +16,20 @@
 # along with this program. If not, see https://www.gnu.org/licenses/.
 #
 
+function normalize_path {
+    input_path="${1:-}"
+
+    if [ -n "$input_path" ]; then
+        if [ -x "$(command -v cygpath)" ]; then
+            input_path="$(cygpath "$input_path")"
+        fi
+    fi
+
+    echo "$input_path"
+
+    return 0
+}
+
 function run_command {
     local command_display
 
@@ -97,19 +111,13 @@ function install_perl_modules() {
 }
 
 function update_stow_environment() {
-    # Early out if environment is already up-to-date
-    if [ -d "${STOW_ROOT:-}" ] && [ -n "${STOW_PERL:-}" ]; then
-        return 0
-    fi
-
     # Clear out TMP as TEMP may come from Windows and we do not want tools confused
     # if they find both.
     unset TMP
     unset temp
     unset tmp
 
-    STOW_ROOT="${STOW_ROOT:-$(pwd)}"
-
+    STOW_ROOT="$(normalize_path "${STOW_ROOT:-$(pwd)}")"
     if [ ! -f "$STOW_ROOT/Build.PL" ]; then
         if [ -f "/stow/Build.PL" ]; then
             STOW_ROOT="/stow"
@@ -122,21 +130,18 @@ function update_stow_environment() {
             return 2
         fi
     fi
-
     export STOW_ROOT
 
     # Update version we use after we install in case the default version should be
-    # different e.g., we just installed mingw64 version of perl
-    STOW_PERL="$(command -v perl)"
+    # different e.g., we just installed mingw64 version of perl and want to use that.
+    STOW_PERL="$(normalize_path "${STOW_PERL:-${PERL:-}}")"
+    if [ ! -f "$STOW_PERL" ]; then
+        STOW_PERL="$(command -v perl)"
 
-    if [ -f "/mingw64/bin/perl" ]; then
-        STOW_PERL="/mingw64/bin/perl"
+        if [ ! -f "$STOW_PERL" ] && [ -f "/mingw64/bin/perl" ]; then
+            STOW_PERL="/mingw64/bin/perl"
+        fi
     fi
-
-    if [ ! -f "${STOW_PERL:-}" ]; then
-        STOW_PERL=$(command -v perl)
-    fi
-
     export STOW_PERL
 
     PERL="$STOW_PERL"
@@ -147,11 +152,12 @@ function update_stow_environment() {
 
     # shellcheck disable=SC2016
     PERL_LIB="$("$STOW_PERL" -MCPAN -e 'use Config; print $Config{privlib};')"
+    PERL_LIB="$(normalize_path "$PERL_LIB")"
     export PERL_LIB
 
     # This is the default location where we can expect to find the config. If it
     # exists then we have already been setup.
-    PERL_CPAN_CONFIG="$PERL_LIB\CPAN\Config.pm"
+    PERL_CPAN_CONFIG="$PERL_LIB/CPAN/Config.pm"
     export PERL_CPAN_CONFIG
 }
 
@@ -337,7 +343,7 @@ function make_docs() {
     install_perl_modules "Test::Output"
 
     siteprefix=
-    eval "$(perl -V:siteprefix)"
+    eval "$("$PERL" -V:siteprefix)"
 
     if [ -x "$(command -v cygpath)" ]; then
         siteprefix=$(cygpath "$siteprefix")

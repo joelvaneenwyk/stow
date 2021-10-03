@@ -38,66 +38,8 @@ endlocal & exit /b
 
     set _root=%~dp1
     set _cd=%CD%
-
     set STOW_ROOT=%_root:~0,-1%
-    set STOW_ROOT_UX=%STOW_ROOT:\=/%
-    set STOW_VERSION_TEXI=%STOW_ROOT%\doc\version.texi
-
-    set STOW_PERL=perl
-    set STOW_BUILD_TOOLS_ROOT=%STOW_ROOT%\.tmp
-    if not exist "%STOW_BUILD_TOOLS_ROOT%" mkdir "%STOW_BUILD_TOOLS_ROOT%"
-
-    set TMPDIR=%STOW_ROOT%\.tmp\temp
-    if not exist "%TMPDIR%" mkdir "%TMPDIR%"
-
-    set WIN_UNIX_DIR=%STOW_BUILD_TOOLS_ROOT%\msys64
-    set WIN_UNIX_DIR_UX=%WIN_UNIX_DIR:\=/%
-
-    set PERL_INCLUDE_UX=-I %WIN_UNIX_DIR_UX%/usr/share/automake-1.16 -I %WIN_UNIX_DIR_UX%/share/autoconf
-    set PERL=perl %PERL_INCLUDE_UX%
-
-    set SHELL=%WIN_UNIX_DIR%\bin\sh.exe
-
-    set GUILE_LOAD_PATH=%WIN_UNIX_DIR%\usr\share\guile\2.0
-    set GUILE_LOAD_COMPILED_PATH=%WIN_UNIX_DIR%\usr\lib\guile\2.0\ccache
-
-    set PATH_ORIGINAL=%PATH%
-
-    set TEX=%STOW_BUILD_TOOLS_ROOT%\texlive\bin\win32\tex.exe
-
-    set HOME=%STOW_BUILD_TOOLS_ROOT%\home
-    if not exist "%HOME%" mkdir "%HOME%"
-
-    set BASH_EXE=%WIN_UNIX_DIR%\usr\bin\bash.exe
-    set BASH="%BASH_EXE%" -c
-
-    set MSYS2_PATH_TYPE=inherit
-    set MSYS=winsymlinks:nativestrict
-    set MSYSTEM=MSYS
-
-    :: Print Perl version number
-    %STOW_PERL% -e "print 'Perl v' . substr($^V, 1) . ""\n"""
-    if errorlevel 1 (
-        echo Perl executable invalid or missing: '%STOW_PERL%'
-        exit /b 1
-    )
-
-    if not exist "%BASH_EXE%" goto:$ValidatePerlShebang
-    for /f "tokens=*" %%a in ('"%BASH% "command -v perl""') do set "STOW_PERL_PATH=%%a"
-    :$ValidatePerlShebang
-    if "!STOW_PERL_PATH!"=="" set STOW_PERL_PATH=/bin/perl
-    echo Perl: !STOW_PERL_PATH!
-
-    :: Get Stow version number
-    for /f %%a in ('%STOW_PERL% %STOW_ROOT%\tools\get-version') do set "STOW_VERSION=%%a"
-    echo Stow v!STOW_VERSION!
-
-    if not exist "%WIN_UNIX_DIR%\post-install.bat" goto:$SkipPostInstall
-        cd /d "%WIN_UNIX_DIR%"
-        call :Run "%WIN_UNIX_DIR%\post-install.bat"
-        echo Executed post install script.
-
-    :$SkipPostInstall
+    call "%STOW_ROOT%\tools\stow-environment.bat"
 
     :: Generate documentation using 'bash' and associated unix tools which
     :: are required due to reliance on autoconf.
@@ -178,7 +120,7 @@ endlocal & exit /b
 
     :: This is more explicit and reliable than the config file trick
     set perl_command=%STOW_PERL% -p
-    set perl_command=!perl_command! -e "s/\@PERL\@/$ENV{STOW_PERL_PATH}/g;"
+    set perl_command=!perl_command! -e "s/\@PERL\@/$ENV{STOW_PERL_UNIX}/g;"
     set perl_command=!perl_command! -e "s/\@VERSION\@/$ENV{STOW_VERSION}/g;"
     set perl_command=!perl_command! -e "s/\@USE_LIB_PMDIR\@/$ENV{USE_LIB_PMDIR}/g;"
     set perl_command=!perl_command! "%input_file%"
@@ -203,10 +145,14 @@ endlocal & exit /b
     call :CreateStowInfo "%~dp0..\"
 
     cd /d "%STOW_ROOT%"
-    set MSYSTEM=MSYS
-    set PATH=%WIN_UNIX_DIR%\usr\bin;%WIN_UNIX_DIR%\bin;%STOW_BUILD_TOOLS_ROOT%\texlive\bin\win32;%WIN_UNIX_DIR%\usr\bin\core_perl;%WIN_UNIX_DIR%\mingw32\bin
-    call :Run %BASH% "source ./tools/stow-lib.sh && install_packages"
-    call :Run %BASH% "source ./tools/stow-lib.sh && make_docs"
+
+    set "MSYSTEM=MSYS"
+    set "PERL=%STOW_PERL_UNIX%"
+    set "STOW_PERL=%STOW_PERL_UNIX%"
+    set "PATH=%WIN_UNIX_DIR%\usr\bin;%WIN_UNIX_DIR%\bin;%STOW_BUILD_TOOLS_ROOT%\texlive\bin\win32;%WIN_UNIX_DIR%\usr\bin\core_perl;%WIN_UNIX_DIR%\mingw32\bin"
+
+    call :Run %BASH% "source ./tools/stow-environment.sh && install_packages"
+    call :Run %BASH% "source ./tools/stow-environment.sh && make_docs"
     call :Run %BASH% "autoreconf --install --verbose"
     call :Run %BASH% "./configure --prefix='' --with-pmdir='%PERL5LIB%'"
     call :Run %BASH% "make doc/manual.pdf"
@@ -217,20 +163,21 @@ exit /b
 :CreateStowInfo
     setlocal EnableExtensions EnableDelayedExpansion
 
+    set STOW_VERSION_TEXI=%STOW_ROOT%\doc\version.texi
     echo @set UPDATED 0 0 0 >"%STOW_VERSION_TEXI%"
     echo @set UPDATED-MONTH ${2:-0} ${3:-0} >>"%STOW_VERSION_TEXI%"
     echo @set EDITION !STOW_VERSION! >>"%STOW_VERSION_TEXI%"
     echo @set VERSION !STOW_VERSION! >>"%STOW_VERSION_TEXI%"
 
-    set PERL_INCLUDE=-I %WIN_UNIX_DIR_UX%/usr/share/automake-1.16
-    set PERL_INCLUDE=!PERL_INCLUDE! -I %WIN_UNIX_DIR_UX%/usr/share/autoconf
-    set PERL_INCLUDE=!PERL_INCLUDE! -I %WIN_UNIX_DIR_UX%/usr/share/texinfo
-    set PERL_INCLUDE=!PERL_INCLUDE! -I %WIN_UNIX_DIR_UX%/usr/share/texinfo/lib/libintl-perl/lib
-    set PERL_INCLUDE=!PERL_INCLUDE! -I %WIN_UNIX_DIR_UX%/usr/share/texinfo/lib/Text-Unidecode/lib
-    set PERL_INCLUDE=!PERL_INCLUDE! -I %WIN_UNIX_DIR_UX%/usr/share/texinfo/lib/Unicode-EastAsianWidth/lib
+    set PERL_INCLUDE=-I %WIN_UNIX_DIR_UNIX%/usr/share/automake-1.16
+    set PERL_INCLUDE=!PERL_INCLUDE! -I %WIN_UNIX_DIR_UNIX%/usr/share/autoconf
+    set PERL_INCLUDE=!PERL_INCLUDE! -I %WIN_UNIX_DIR_UNIX%/usr/share/texinfo
+    set PERL_INCLUDE=!PERL_INCLUDE! -I %WIN_UNIX_DIR_UNIX%/usr/share/texinfo/lib/libintl-perl/lib
+    set PERL_INCLUDE=!PERL_INCLUDE! -I %WIN_UNIX_DIR_UNIX%/usr/share/texinfo/lib/Text-Unidecode/lib
+    set PERL_INCLUDE=!PERL_INCLUDE! -I %WIN_UNIX_DIR_UNIX%/usr/share/texinfo/lib/Unicode-EastAsianWidth/lib
 
-    :: Generate 'stow.info'
+    :: Use 'stow.texi' to generate 'stow.info'
     cd "%STOW_ROOT%"
-    call :Run perl %PERL_INCLUDE% "%WIN_UNIX_DIR%\usr\bin\texi2any" -I doc\ -o doc\ doc\stow.texi
+    call :Run "%WIN_UNIX_DIR%\usr\bin\perl" %PERL_INCLUDE% "%WIN_UNIX_DIR%\usr\bin\texi2any" -I doc\ -o doc\ doc\stow.texi
     echo Generated 'doc\stow.info'
 exit /b 0

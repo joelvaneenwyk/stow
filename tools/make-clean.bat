@@ -24,33 +24,30 @@ exit /b
 
     set _root=%~dp1
     set STOW_ROOT=%_root:~0,-1%
-
-    for /f %%a in ('perl %STOW_ROOT%\tools\get-version') do set "STOW_VERSION=%%a"
-    for /f %%a in ('perl -MCPAN -e "use Config; print $Config{privlib};"') do set "PERL_LIB=%%a"
+    call "%STOW_ROOT%\tools\stow-environment.bat"
 
     :: Shut down 'gpg-agent' otherwise some files can't be deleted from 'msys64' folder
-    if exist "%STOW_ROOT%\msys64\usr\bin\gpg-agent.exe" (
-        wmic process where ExecutablePath='%STOW_ROOT%\msys64\usr\bin\gpg-agent.exe' delete
+    if exist "%WIN_UNIX_DIR%\usr\bin\gpg-agent.exe" (
+        wmic process where ExecutablePath='%WIN_UNIX_DIR%\usr\bin\gpg-agent.exe' delete
     )
 
     :: Shut down 'dirmngr' otherwise some files can't be deleted from 'msys64' folder
-    if exist "%STOW_ROOT%\msys64\usr\bin\dirmngr.exe" (
-        wmic process where ExecutablePath='%STOW_ROOT%\msys64\usr\bin\dirmngr.exe' delete
+    if exist "%WIN_UNIX_DIR%\usr\bin\dirmngr.exe" (
+        wmic process where ExecutablePath='%WIN_UNIX_DIR%\usr\bin\dirmngr.exe' delete
     )
 
-    set PERL_CPAN_CONFIG=%PERL_LIB%\CPAN\Config.pm
-    del "!PERL_CPAN_CONFIG!" > nul 2>&1
-    echo Removed CPAN config: '!PERL_CPAN_CONFIG!'
+    del "%PERL_CPAN_CONFIG%" > nul 2>&1
+    echo Removed CPAN config: '%PERL_CPAN_CONFIG%'
 
     if "%~2"=="--all" (
-        rmdir /q /s "%STOW_ROOT%\.tmp\msys64\" > nul 2>&1
+        rmdir /q /s "%WIN_UNIX_DIR%" > nul 2>&1
         echo Removed local 'MSYS2' install.
     )
 
     :: This is where 'cpan' files live when run through MSYS2 so this will force Perl
     :: modules to be reinstalled.
-    rmdir /q /s "%STOW_ROOT%\.tmp\home\" > nul 2>&1
-    rmdir /q /s "%STOW_ROOT%\.tmp\temp\" > nul 2>&1
+    rmdir /q /s "%STOW_BUILD_TOOLS_ROOT%\home\" > nul 2>&1
+    rmdir /q /s "%STOW_BUILD_TOOLS_ROOT%\temp\" > nul 2>&1
 
     del "\\?\%STOW_ROOT%\nul" > nul 2>&1
     del "%STOW_ROOT%\texput.log" > nul 2>&1

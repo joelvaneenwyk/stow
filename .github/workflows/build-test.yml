@@ -308,7 +308,7 @@ jobs:
         shell: msys2 {0}
         run: |
           cd $(cygpath '${{ github.workspace }}')
-          source ./tools/stow-lib.sh
+          source ./tools/stow-environment.sh
           cpanm --installdeps --notest .
           prove -I t/ -I bin/ -I lib/ --formatter TAP::Formatter::JUnit --timer --verbose --normalize --parse t/ | tee test_results_msys2.xml
 

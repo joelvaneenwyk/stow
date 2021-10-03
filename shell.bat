@@ -37,75 +37,10 @@ endlocal & exit /b
     setlocal EnableExtensions EnableDelayedExpansion
 
     set _root=%~dp1
-    set _cd=%CD%
-
     set STOW_ROOT=%_root:~0,-1%
-    set STOW_ROOT_UX=%STOW_ROOT:\=/%
-    set STOW_VERSION_TEXI=%STOW_ROOT%\doc\version.texi
+    call "%STOW_ROOT%\tools\stow-environment.bat"
 
-    set STOW_PERL=perl
-    set STOW_BUILD_TOOLS_ROOT=%STOW_ROOT%\.tmp
-    if not exist "%STOW_BUILD_TOOLS_ROOT%" mkdir "%STOW_BUILD_TOOLS_ROOT%"
-
-    set TMPDIR=%STOW_ROOT%\.tmp\temp
-    if not exist "%TMPDIR%" mkdir "%TMPDIR%"
-
-    set WIN_UNIX_DIR=%STOW_BUILD_TOOLS_ROOT%\msys64
-    set WIN_UNIX_DIR_UX=%WIN_UNIX_DIR:\=/%
-
-    set PERL_INCLUDE_UX=-I %WIN_UNIX_DIR_UX%/usr/share/automake-1.16 -I %WIN_UNIX_DIR_UX%/share/autoconf
-    set PERL=perl %PERL_INCLUDE_UX%
-
-    set SHELL=%WIN_UNIX_DIR%\bin\sh.exe
-
-    set GUILE_LOAD_PATH=%WIN_UNIX_DIR%\usr\share\guile\2.0
-    set GUILE_LOAD_COMPILED_PATH=%WIN_UNIX_DIR%\usr\lib\guile\2.0\ccache
-
-    set PATH_ORIGINAL=%PATH%
-
-    set TEX=%STOW_BUILD_TOOLS_ROOT%\texlive\bin\win32\tex.exe
-
-    set HOME=%STOW_BUILD_TOOLS_ROOT%\home
-    if not exist "%HOME%" mkdir "%HOME%"
-
-    set BASH_EXE=%WIN_UNIX_DIR%\usr\bin\bash.exe
-    set BASH="%BASH_EXE%" --noprofile --norc -c
-
-    :: Print Perl version number
-    %STOW_PERL% -e "print 'Perl v' . substr($^V, 1) . ""\n"""
-    if errorlevel 1 (
-        echo Perl executable invalid or missing: '%STOW_PERL%'
-        exit /b 1
-    )
-
-    if not exist "%BASH_EXE%" goto:$ValidatePerlShebang
-    for /f "tokens=*" %%a in ('"%BASH% "command -v perl""') do set "STOW_PERL_PATH=%%a"
-    :$ValidatePerlShebang
-    if "!STOW_PERL_PATH!"=="" set STOW_PERL_PATH=/bin/perl
-    echo Perl: !STOW_PERL_PATH!
-
-    :: Get Stow version number
-    for /f "tokens=*" %%a in ('"%STOW_PERL% "%STOW_ROOT%\tools\get-version""') do set "STOW_VERSION=%%a"
-    echo Stow v!STOW_VERSION!
-
-    if not exist "%WIN_UNIX_DIR%\post-install.bat" goto:$SkipPostInstall
-        cd /d "%WIN_UNIX_DIR%"
-        call :Run "%WIN_UNIX_DIR%\post-install.bat"
-        echo Executed post install script.
-
-    :$SkipPostInstall
-
-    set PATH_ORIGINAL=
-
-    ::set PATH=%WIN_UNIX_DIR%\usr\bin;%WIN_UNIX_DIR%\bin;%STOW_BUILD_TOOLS_ROOT%\texlive\bin\win32;%WIN_UNIX_DIR%\usr\bin\core_perl;%WIN_UNIX_DIR%\mingw32\bin
-    ::set PATH=
-
-    ::set MSYSTEM=MINGW64
-    ::set MSYS2_NOSTART=yes
-    ::set MSYS2_PATH_TYPE=inherit
-    ::set MSYS=winsymlinks:nativestrict
-    ::%BASH_EXE% --noprofile --norc
-
-    ::call %WIN_UNIX_DIR%\msys2_shell.cmd -no-start -mingw64 -defterm -shell bash -here --noprofile --rcfile "/etc/profile"
-    call %WIN_UNIX_DIR%\msys2_shell.cmd -no-start -mingw64 -defterm -shell bash -here
+    set "PERL=%STOW_PERL_UNIX%"
+    set "STOW_PERL=%STOW_PERL_UNIX%"
+    call :Run %WIN_UNIX_DIR%\msys2_shell.cmd -no-start -mingw64 -defterm -shell bash -here
 exit /b

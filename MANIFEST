@@ -68,7 +68,8 @@ tools/make-stow.bat
 tools/make-stow.sh
 tools/run-tests.bat
 tools/run-tests.sh
-tools/stow-lib.sh
+tools/stow-environment.sh
+tools/stow-environment.bat
 THANKS
 TODO
 META.yml
