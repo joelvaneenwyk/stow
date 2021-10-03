@@ -43,9 +43,7 @@ endlocal & exit /b
 
     :: Generate documentation using 'bash' and associated unix tools which
     :: are required due to reliance on autoconf.
-    echo ----------------------------------------
     call :MakeDocs
-    echo ----------------------------------------
 
     set USE_LIB_PMDIR=
     set PMDIR=%STOW_ROOT%\lib
@@ -141,6 +139,7 @@ endlocal & exit /b
 
     if not exist "%WIN_UNIX_DIR%\usr\bin\bash.exe" (
         echo ERROR: Skipped making documentation. Missing unix tools. Please install dependencies first.
+        echo ----------------------------------------
         exit /b 5
     )
 
@@ -161,6 +160,7 @@ endlocal & exit /b
     call :Run %BASH% "make doc/manual.pdf"
     call :Run %BASH% "make bin/stow bin/chkstow lib/Stow.pm lib/Stow/Util.pm"
     call :Run %BASH% "make doc/manual-single.html"
+    echo ----------------------------------------
 exit /b
 
 :CreateStowInfo

@@ -44,30 +44,36 @@ function make_stow() {
     if [ -x "$(command -v autoreconf)" ]; then
         cd "$STOW_ROOT" || true
 
-        autoreconf --install --verbose
         eval "$("$STOW_PERL" -V:siteprefix)"
-
-        if [ -x "$(command -v cygpath)" ]; then
-            siteprefix=$(cygpath "$siteprefix")
-        fi
+        siteprefix=$(normalize_path "$siteprefix")
 
         # shellcheck disable=SC2016
         PERL5LIB=$("$STOW_PERL" -le 'print $INC[0]')
+        PERL5LIB=$(normalize_path "$PERL5LIB")
         export PERL5LIB
 
-        echo "Site prefix: ${siteprefix:-NULL}"
-        echo "Perl lib: $PERL5LIB"
+        echo "Perl: '$STOW_PERL'"
+        echo "Perl Lib: '$PERL5LIB'"
+        echo "Site Prefix: '${siteprefix:-}'"
 
-        ./configure --prefix="${siteprefix:-}" --with-pmdir="$PERL5LIB"
-        make bin/stow bin/chkstow lib/Stow.pm lib/Stow/Util.pm
+        run_command autoreconf --install --verbose
+        run_command ./configure --prefix="${siteprefix:-}" --with-pmdir="$PERL5LIB"
+        run_command make bin/stow bin/chkstow lib/Stow.pm lib/Stow/Util.pm
     else
         PMDIR="$STOW_ROOT/lib"
 
-        if ! PERL5LIB=$($STOW_PERL -V | awk '/@INC/ {p=1; next} (p==1) {print $1}' | grep "$PMDIR" | head -n 1); then
+        if ! PERL5LIB=$(
+            "$STOW_PERL" -V |
+                awk '/@INC/ {p=1; next} (p==1) {print $1}' |
+                sed 's/\\/\//g' |
+                grep "$PMDIR" |
+                head -n 1
+        ); then
             echo "INFO: Target '$PMDIR' is not in standard include so will be inlined."
         fi
 
         if [ -n "$PERL5LIB" ]; then
+            PERL5LIB=$(normalize_path "$PERL5LIB")
             USE_LIB_PMDIR=""
             echo "Module directory is listed in standard @INC, so everything"
             echo "should work fine with no extra effort."
@@ -83,15 +89,15 @@ function make_stow() {
         edit "$STOW_ROOT/lib/Stow.pm"
         edit "$STOW_ROOT/lib/Stow/Util.pm"
     fi
-
     echo "✔ Generated Stow binaries and libraries."
 
-    echo "##[cmd] $STOW_PERL -I $STOW_ROOT/lib -I $STOW_ROOT/bin $STOW_ROOT/bin/stow --version"
-    "$STOW_PERL" -I "$STOW_ROOT/lib" -I "$STOW_ROOT/bin" "$STOW_ROOT/bin/stow" --version
+    run_command "$STOW_PERL" -I "$STOW_ROOT/lib" -I "$STOW_ROOT/bin" "$STOW_ROOT/bin/stow" --version
 
     # Revert build changes and remove intermediate files
     git -C "$STOW_ROOT" restore aclocal.m4 >/dev/null 2>&1 || true
-    rm -f "$STOW_ROOT/nul" "$STOW_ROOT/configure~" "$STOW_ROOT/Build.bat" "$STOW_ROOT/Build" >/dev/null 2>&1 || true
+    rm -f \
+        "$STOW_ROOT/nul" "$STOW_ROOT/configure~" \
+        "$STOW_ROOT/Build.bat" "$STOW_ROOT/Build" >/dev/null 2>&1 || true
     echo "✔ Removed intermediate output files."
 }
 

@@ -58,3 +58,4 @@ Stow-v[0-9].[0-9].[0-9]/
 test_results*.xml
 nul
 .bash_history
+.gnupg/

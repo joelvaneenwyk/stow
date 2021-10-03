@@ -25,6 +25,10 @@ function normalize_path {
         fi
     fi
 
+    if [ ! -e "$input_path" ]; then
+        input_path=""
+    fi
+
     echo "$input_path"
 
     return 0
@@ -110,57 +114,6 @@ function install_perl_modules() {
     return $?
 }
 
-function update_stow_environment() {
-    # Clear out TMP as TEMP may come from Windows and we do not want tools confused
-    # if they find both.
-    unset TMP
-    unset temp
-    unset tmp
-
-    STOW_ROOT="$(normalize_path "${STOW_ROOT:-$(pwd)}")"
-    if [ ! -f "$STOW_ROOT/Build.PL" ]; then
-        if [ -f "/stow/Build.PL" ]; then
-            STOW_ROOT="/stow"
-        else
-            STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && cd ../ && pwd -P)"
-        fi
-
-        if [ ! -f "$STOW_ROOT/Build.PL" ]; then
-            echo "ERROR: Stow source root not found: '$STOW_ROOT'"
-            return 2
-        fi
-    fi
-    export STOW_ROOT
-
-    # Update version we use after we install in case the default version should be
-    # different e.g., we just installed mingw64 version of perl and want to use that.
-    STOW_PERL="$(normalize_path "${STOW_PERL:-${PERL:-}}")"
-    if [ ! -f "$STOW_PERL" ]; then
-        STOW_PERL="$(command -v perl)"
-
-        if [ ! -f "$STOW_PERL" ] && [ -f "/mingw64/bin/perl" ]; then
-            STOW_PERL="/mingw64/bin/perl"
-        fi
-    fi
-    export STOW_PERL
-
-    PERL="$STOW_PERL"
-    export PERL
-
-    STOW_VERSION="$("$STOW_PERL" "$STOW_ROOT/tools/get-version")"
-    export STOW_VERSION
-
-    # shellcheck disable=SC2016
-    PERL_LIB="$("$STOW_PERL" -MCPAN -e 'use Config; print $Config{privlib};')"
-    PERL_LIB="$(normalize_path "$PERL_LIB")"
-    export PERL_LIB
-
-    # This is the default location where we can expect to find the config. If it
-    # exists then we have already been setup.
-    PERL_CPAN_CONFIG="$PERL_LIB/CPAN/Config.pm"
-    export PERL_CPAN_CONFIG
-}
-
 # Install everything needed to run 'autoreconf' along with 'make' so
 # that we can generate documentation. It is not enough to build and
 # run Stow in Perl with full testing dependencies made available.
@@ -196,8 +149,12 @@ function install_packages() {
         use_sudo apk add \
             sudo wget curl unzip build-base make bash "${packages[@]}"
     elif [ -x "$(command -v pacman)" ]; then
+        if [ ! -x "$(command -v git)" ]; then
+            packages+=(git)
+        fi
+
         packages+=(
-            git msys2-keyring base-devel
+            msys2-keyring base-devel
             make autoconf automake1.16 automake-wrapper
             texinfo texinfo-tex
         )
@@ -239,7 +196,7 @@ function install_system_dependencies() {
             bash openssl "${packages[@]}"
     elif [ -x "$(command -v pacman)" ]; then
         packages+=(
-            git msys2-keyring msys2-runtime-devel msys2-w32api-headers msys2-w32api-runtime
+            msys2-keyring msys2-runtime-devel msys2-w32api-headers msys2-w32api-runtime
             base-devel gcc make autoconf automake1.16 automake-wrapper
             libtool libcrypt-devel openssl openssl-devel
             perl-devel
@@ -279,7 +236,9 @@ function initialize_perl() {
 
         # We intentionally use 'which' here as we are on Windows
         # shellcheck disable=SC2230
-        pl2bat "$(which pl2bat)" 2>/dev/null || true
+        if [ -x "$(command -v pl2bat)" ]; then
+            pl2bat "$(which pl2bat)" 2>/dev/null || true
+        fi
     fi
 
     if ! "$STOW_PERL" -MApp::cpanminus -le 1 2>/dev/null; then
@@ -423,6 +382,79 @@ function make_docs() {
             -o "$STOW_ROOT/doc/manual.pdf" \
             "./stow.texi"
     )
+}
+
+function update_stow_environment() {
+    # Clear out TMP as TEMP may come from Windows and we do not want tools confused
+    # if they find both.
+    unset TMP
+    unset temp
+    unset tmp
+
+    STOW_ROOT="$(normalize_path "${STOW_ROOT:-$(pwd)}")"
+    if [ ! -f "$STOW_ROOT/Build.PL" ]; then
+        if [ -f "/stow/Build.PL" ]; then
+            STOW_ROOT="/stow"
+        else
+            STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && cd ../ && pwd -P)"
+        fi
+
+        if [ ! -f "$STOW_ROOT/Build.PL" ]; then
+            echo "ERROR: Stow source root not found: '$STOW_ROOT'"
+            return 2
+        fi
+    fi
+    export STOW_ROOT
+
+    # Find the local Windows install if it exists
+    if [ -x "$(command -v where)" ] && [ -n "${MSYSTEM_PREFIX:-}" ]; then
+        while read -r line; do
+            line=$(normalize_path "$line")
+            if [[ ! "$line" == "$MSYSTEM_PREFIX"* ]] && [[ ! "$line" == /usr/* ]]; then
+                export PERL_LOCAL="$line"
+                break
+            fi
+        done < <(where perl)
+    fi
+
+    # Update version we use after we install in case the default version should be
+    # different e.g., we just installed mingw64 version of perl and want to use that.
+    STOW_PERL="$(normalize_path "${PERL_LOCAL:-${STOW_PERL:-${PERL:-}}}")"
+    if [ ! -f "$STOW_PERL" ]; then
+        STOW_PERL="$(command -v perl)"
+
+        if [ ! -f "$STOW_PERL" ] && [ -f "/mingw64/bin/perl" ]; then
+            STOW_PERL="/mingw64/bin/perl"
+        fi
+    fi
+    export STOW_PERL
+
+    PERL="$STOW_PERL"
+    export PERL
+
+    STOW_VERSION="$("$STOW_PERL" "$STOW_ROOT/tools/get-version")"
+    export STOW_VERSION
+
+    # shellcheck disable=SC2016
+    PERL_LIB="$("$STOW_PERL" -MCPAN -e 'use Config; print $Config{privlib};')"
+    PERL_LIB="$(normalize_path "$PERL_LIB")"
+    export PERL_LIB
+
+    # This is the default location where we can expect to find the config. If it
+    # exists then we have already been setup.
+    PERL_CPAN_CONFIG="$PERL_LIB/CPAN/Config.pm"
+    export PERL_CPAN_CONFIG
+
+    echo "Stow Root: '$STOW_ROOT'"
+    echo "Stow Version: 'v$STOW_VERSION'"
+    echo "Perl: '$PERL'"
+
+    if [ -n "${PERL_LOCAL:-}" ]; then
+        echo "Perl Local: '$PERL_LOCAL'"
+    fi
+
+    echo "Perl Lib: '$PERL_LIB'"
+    echo "----------------------------------------"
 }
 
 update_stow_environment

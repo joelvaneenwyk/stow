@@ -53,8 +53,6 @@ function initialize_brewperl() {
 
     # shellcheck source=tools/stow-environment.sh
     source "$STOW_ROOT/tools/stow-environment.sh"
-
-    update_stow_environment
 }
 
 function error_handler() {

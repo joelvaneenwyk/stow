@@ -67,8 +67,6 @@ endlocal & exit /b
     set WIN_UNIX_DIR_UNIX=
     if exist "!WIN_UNIX_DIR!" set WIN_UNIX_DIR_UNIX=!WIN_UNIX_DIR:\=/!
 
-    set PERL_INCLUDE_UNIX=-I %WIN_UNIX_DIR_UNIX%/usr/share/automake-1.16 -I %WIN_UNIX_DIR_UNIX%/share/autoconf
-
     set SHELL=!WIN_UNIX_DIR!\bin\sh.exe
 
     set GUILE_LOAD_PATH=!WIN_UNIX_DIR!\usr\share\guile\2.0
@@ -104,18 +102,14 @@ endlocal & exit /b
     if not exist "!PERL_BIN_C_DIR!" set PERL_BIN_C_DIR=
 
     if not exist "%BASH_EXE%" goto:$ValidatePerlShebang
-    for /f "tokens=*" %%a in ('""!WIN_UNIX_DIR!\usr\bin\cygpath.exe" "!STOW_PERL!""') do (
-        set "STOW_PERL_UNIX=%%a"
-    )
+        for /f "tokens=*" %%a in ('""!WIN_UNIX_DIR!\usr\bin\cygpath.exe" "!STOW_PERL!""') do (
+            set "STOW_PERL_UNIX=%%a"
+        )
 
-    for /f "tokens=*" %%a in ('""!WIN_UNIX_DIR!\usr\bin\cygpath.exe" "!STOW_PERL!""') do (
-        set "STOW_PERL_UNIX=%%a"
-    )
-
-    if not "!STOW_PERL_UNIX!"=="" goto:$ValidatePerlShebang
-    for /f "tokens=*" %%a in ('"%BASH% "command -v perl""') do (
-        set "STOW_PERL_UNIX=%%a"
-    )
+        if not "!STOW_PERL_UNIX!"=="" goto:$ValidatePerlShebang
+        for /f "tokens=*" %%a in ('"%BASH% "command -v perl""') do (
+            set "STOW_PERL_UNIX=%%a"
+        )
     :$ValidatePerlShebang
     if "!STOW_PERL_UNIX!"=="" set STOW_PERL_UNIX=/bin/perl
 
@@ -125,14 +119,21 @@ endlocal & exit /b
     set PERL_CPAN_CONFIG=%PERL_LIB%\CPAN\Config.pm
 
     :: Get Stow version number
-    for /f "tokens=*" %%a in ('"!STOW_PERL! "%STOW_ROOT%\tools\get-version""') do set "STOW_VERSION=%%a"
+    for /f "tokens=*" %%a in ('"!STOW_PERL! "%STOW_ROOT%\tools\get-version""') do (
+        set "STOW_VERSION=%%a"
+    )
+
+    ::call :GetCygpath "!STOW_ROOT!" "STOW_ROOT_MSYS"
+    set PERL_INCLUDE_UNIX=-I %WIN_UNIX_DIR_UNIX%/usr/share/automake-1.16 -I %WIN_UNIX_DIR_UNIX%/share/autoconf
+    set PERL5LIB=!STOW_ROOT_MSYS!/lib;/usr/share/automake-1.16;/share/autoconf
 
     :$InitializeEnvironment
         echo Perl: '!STOW_PERL!'
         echo Perl Bin: '!PERL_BIN_DIR!'
         echo Perl C Bin: '!PERL_BIN_C_DIR!'
-        echo Perl (MSYS2): '!STOW_PERL_UNIX!'
+        echo Perl (MSYS): '!STOW_PERL_UNIX!'
         echo Perl CPAN Config: '%PERL_CPAN_CONFIG%'
+        echo Stow Root (MSYS): '!STOW_ROOT_MSYS!'
         echo MSYS2: '!WIN_UNIX_DIR_UNIX!'
         echo Stow v!STOW_VERSION!
 
@@ -142,6 +143,7 @@ endlocal & exit /b
         echo Executed post install script.
 
     :$SkipPostInstall
+    echo ----------------------------------------
     endlocal & (
         set "STOW_ROOT=%STOW_ROOT%"
         set "STOW_ROOT_UNIX=%STOW_ROOT_UNIX%"
@@ -150,9 +152,10 @@ endlocal & exit /b
         set "STOW_PERL=%STOW_PERL%"
         set "STOW_PERL_UNIX=%STOW_PERL_UNIX%"
         set "PERL_BIN_C_DIR=%PERL_BIN_C_DIR%"
-        set "PERL_INCLUDE_UNIX=%PERL_INCLUDE_UNIX%"
         set "PERL_LIB=%PERL_LIB%"
         set "PERL_CPAN_CONFIG=%PERL_CPAN_CONFIG%"
+        set "PERL_INCLUDE_UNIX=%PERL_INCLUDE_UNIX%"
+        set "PERL5LIB=%PERL5LIB%"
         set "HOME=%HOME%"
         set "STARTING_DIR=%STARTING_DIR%"
         set "SHELL=%SHELL%"
@@ -167,3 +170,20 @@ endlocal & exit /b
 
     if not exist "%STOW_PERL%" exit /b 55
 exit /b 0
+
+:GetCygpath
+    setlocal EnableDelayedExpansion
+        set _inPath=%~1
+        set _outPath=
+        set _outVar=%~2
+        set _cygpath="%WIN_UNIX_DIR%\usr\bin\cygpath.exe"
+        if not exist "%_cygpath%" goto:$Done
+        echo ""%WIN_UNIX_DIR%\usr\bin\cygpath.exe" "%_inPath%""
+        for /f "tokens=* usebackq" %%a in (`""%WIN_UNIX_DIR%\usr\bin\cygpath.exe" "%_inPath%""`) do (
+            set "_outPath=%%a"
+        )
+    :$Done
+    endlocal & (
+        set "%~2=%_outPath%"
+    )
+exit /b

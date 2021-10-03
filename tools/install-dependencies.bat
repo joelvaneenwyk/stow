@@ -54,7 +54,8 @@ exit /b
         Carp  Module::Build IO::Scalar ^
         Devel::Cover::Report::Coveralls ^
         Test::Output Test::More Test::Exception ^
-        ExtUtils::PL2Bat Inline::C Win32::Mutex
+        ExtUtils::PL2Bat Inline::C Win32::Mutex ^
+        TAP::Formatter::JUnit
     goto:$InstallDone
 
     :$UseCpanm
