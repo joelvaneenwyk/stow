@@ -46,7 +46,9 @@ function remove_intermediate_files() {
     rm -rf "$STOW_ROOT/doc/doc!manual.t2d" >/dev/null 2>&1
     rm -rf "$STOW_ROOT/doc/manual-split" >/dev/null 2>&1
     rm -rf "$STOW_ROOT/cover_db" >/dev/null 2>&1
+    rm -rf "$STOW_ROOT/tmp-testing-trees" >/dev/null 2>&1
     rm -rf "$STOW_ROOT/stow-"* >/dev/null 2>&1
+    rm -rf "$STOW_ROOT/Stow-"* >/dev/null 2>&1
     rm -f "$STOW_ROOT/config."* >/dev/null 2>&1
     rm -f "$STOW_ROOT/stow."* >/dev/null 2>&1
     rm -f "$STOW_ROOT/"*.log >/dev/null 2>&1
@@ -63,6 +65,7 @@ function remove_intermediate_files() {
     rm -f "$STOW_ROOT/stow.log" >/dev/null 2>&1
     rm -f "$STOW_ROOT/stow."* >/dev/null 2>&1
     rm -f "$STOW_ROOT/nul"* >/dev/null 2>&1
+    rm -f "$STOW_ROOT/test_results"*.xml >/dev/null 2>&1
 
     git -C "$STOW_ROOT" checkout -- "$STOW_ROOT/aclocal.m4" >/dev/null 2>&1 || true
 
