@@ -34,6 +34,10 @@ function normalize_path {
     return 0
 }
 
+timestamp() {
+    echo "##[timestamp] $(date +"%T")"
+}
+
 function run_command {
     local command_display
 
@@ -61,6 +65,7 @@ function run_named_command_group() {
         echo "==----------------------"
     fi
 
+    timestamp
     run_command "$@"
 
     if [ -n "${GITHUB_ACTIONS:-}" ]; then
@@ -82,6 +87,7 @@ function run_command_group() {
         echo "==----------------------"
     fi
 
+    timestamp
     "$@"
 
     if [ -n "${GITHUB_ACTIONS:-}" ]; then
@@ -471,9 +477,18 @@ function update_stow_environment() {
     export PERL5LIB
 
     if [ ! -x "$(command -v gmake)" ]; then
-        _perl_c_bin=$(cd "$(dirname "$PERL")" && cd ../../c/bin && pwd)
-        PATH="$_perl_c_bin:$PATH"
-        export PATH
+        _perl_bin="$(dirname "$PERL")"
+
+        if [ -d "$_perl_bin/../../c/bin" ]; then
+            _perl_c_bin=$(cd "$_perl_bin" && cd ../../c/bin && pwd)
+        elif [ -d "$_perl_bin/../../../c/bin" ]; then
+            _perl_c_bin=$(cd "$_perl_bin" && cd ../../../c/bin && pwd)
+        fi
+
+        if [ -d "$_perl_c_bin" ]; then
+            PATH="$_perl_c_bin:$PATH"
+            export PATH
+        fi
     fi
 
     if [ ! "${PERL:-}" == "$STOW_PERL" ]; then
