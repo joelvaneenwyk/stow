@@ -89,8 +89,9 @@ function test_perl_version() {
     # that has not been done yet.
     install_perl_dependencies
 
-    # shellcheck disable=SC2005
-    echo "$("$STOW_PERL" --version)"
+    # Print first non-blank line of Perl version as it includes details of where it
+    # was built e.g., 'x86_64-msys-thread-multi'
+    "$STOW_PERL" --version | sed -e '/^[ \t]*$/d' -e 's/^[ \t]*//' | head -n 1
 
     # Remove all intermediate files before we start to ensure a clean test
     run_command_group "$STOW_ROOT/tools/make-clean.sh"
@@ -156,17 +157,17 @@ function run_stow_tests() {
         PERL_VERSION="$_test_argument"
     fi
 
-    if [[ "$LIST_PERL_VERSIONS" = "0" ]]; then
+    if [ ! "$LIST_PERL_VERSIONS" == "1" ] && [ ! "$_test_argument" == "--no-install" ]; then
         if ! run_command "$STOW_ROOT/tools/install-dependencies.sh"; then
             echo "Failed to install dependencies."
             return 4
         fi
     fi
 
-    if [[ "$LIST_PERL_VERSIONS" = "1" ]]; then
+    if [ "$LIST_PERL_VERSIONS" == "1" ]; then
         echo "Listing Perl versions available from perlbrew ..."
         perlbrew list
-    elif [[ -z "$PERL_VERSION" ]] && [[ -x "$(command -v perlbrew)" ]]; then
+    elif [ -z "$PERL_VERSION" ] && [ -x "$(command -v perlbrew)" ]; then
         echo "Testing all Perl versions"
 
         for input_perl_version in $(perlbrew list | sed 's/ //g' | sed 's/\*//g'); do
@@ -175,7 +176,6 @@ function run_stow_tests() {
 
         run_command_group make distclean
     else
-
         # Test a specific version requested via $PERL_VERSION environment
         # variable.  Make sure set -e doesn't cause us to bail on failure
         # before we start an interactive shell.

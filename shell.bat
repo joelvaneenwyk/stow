@@ -40,8 +40,15 @@ endlocal & exit /b
     set STOW_ROOT=%_root:~0,-1%
     call "%STOW_ROOT%\tools\stow-environment.bat"
 
+    :: We use 'minimal' to match what CI uses by default to ensure we have a clean environment
+    :: for reproducing issues on CI. You can enable 'inherit' if needed but it tends to just make
+    :: debugging more difficult as you get potential binary overlaps.
     set "MSYS2_PATH_TYPE=minimal"
-    set "PATH=%PERL_BIN_C_DIR%;%PATH%"
+
+    :: No need to update PATH when using 'minimal' so this is just here for when you want to enable
+    :: the 'inherit' mode.
+    set "PATH=%TEX_DIR%;%PERL_BIN_DIR%;%PERL_BIN_C_DIR%;%PATH%"
+
     set "STOW_PERL=%STOW_PERL_UNIX%"
     set "HOME=%STOW_HOME%"
 
@@ -50,5 +57,5 @@ endlocal & exit /b
         exit /b 5
     )
 
-    call :Run "%WIN_UNIX_DIR%\msys2_shell.cmd" -no-start -mingw64 -defterm -shell bash -here
+    call :Run "%WIN_UNIX_DIR%\msys2_shell.cmd" -no-start -mingw64 -defterm -shell bash -here -c "source ./tools/stow-environment.sh && bash"
 exit /b

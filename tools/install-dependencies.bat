@@ -32,9 +32,11 @@ exit /b
     if "%STOW_ROOT%"=="" set STOW_ROOT=%_root:~0,-1%
     call "%STOW_ROOT%\tools\stow-environment.bat"
 
+    echo ::group::Initialize CPAN
     (
         echo yes && echo. && echo no && echo exit
     ) | "!STOW_PERL!" -MCPAN -e "shell"
+    echo ::endgroup::
 
     call :RunTaskGroup "!STOW_PERL!" "%~dp0initialize-cpan-config.pl"
 
@@ -69,17 +71,17 @@ exit /b
 exit /b
 
 :RunTaskGroup
-    set _cmd=%*
+    for /F "tokens=*" %%i in ('echo %*') do set _cmd=%%i
     echo ::group::%_cmd%
     echo [command]%_cmd%
-    %_cmd%
+    %*
     echo ::endgroup::
 exit /b
 
 :RunCommand
-    set _cmd=%*
+    for /F "tokens=*" %%i in ('echo %*') do set _cmd=%%i
     echo [command]%_cmd%
-    %_cmd%
+    %*
 exit /b
 
 :InstallPerlModules

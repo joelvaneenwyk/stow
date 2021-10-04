@@ -57,8 +57,8 @@ Function Expand-File {
     $7zip = ""
 
     if ($IsWindows -or $ENV:OS) {
-        $7za920zip = Join-Path -Path "$script:ArchivesDir" -ChildPath "7za920.zip"
-        $7za920 = Join-Path -Path "$script:TempDir" -ChildPath "7za920"
+        $7za920zip = Join-Path -Path "$script:StowArchivesDir" -ChildPath "7za920.zip"
+        $7za920 = Join-Path -Path "$script:StowTempDir" -ChildPath "7za920"
 
         # Download 7zip that was stored in a zip file so that we can extract the latest version stored in 7z format
         if (-not(Test-Path -Path "$7za920zip" -PathType Leaf)) {
@@ -75,8 +75,8 @@ Function Expand-File {
 
         # If older vresion is available, download and extract latest
         if (Test-Path -Path "$7za920/7za.exe" -PathType Leaf) {
-            $7z2103zip = Join-Path -Path "$script:ArchivesDir" -ChildPath "7z2103-extra.7z"
-            $7z2103 = Join-Path -Path "$script:TempDir" -ChildPath "7z2103"
+            $7z2103zip = Join-Path -Path "$script:StowArchivesDir" -ChildPath "7z2103-extra.7z"
+            $7z2103 = Join-Path -Path "$script:StowTempDir" -ChildPath "7z2103"
 
             # Download latest version of 7zip
             if (-not(Test-Path -Path "$7z2103zip" -PathType Leaf)) {
@@ -97,8 +97,8 @@ Function Expand-File {
         }
     }
     else {
-        $7z2103zip = Join-Path -Path "$script:ArchivesDir" -ChildPath "7z2103-linux-x64.tar.xz"
-        $7z2103 = Join-Path -Path "$script:TempDir" -ChildPath "7z2103"
+        $7z2103zip = Join-Path -Path "$script:StowArchivesDir" -ChildPath "7z2103-linux-x64.tar.xz"
+        $7z2103 = Join-Path -Path "$script:StowTempDir" -ChildPath "7z2103"
 
         # Download 7zip that was stored in a zip file so that we can extract the latest version stored in 7z format
         if (-not(Test-Path -Path "$7z2103zip" -PathType Leaf)) {
@@ -244,16 +244,17 @@ Function Get-TexLive {
             Set-ExecutionPolicy RemoteSigned -Scope CurrentUser
         }
 
-        if ( -not(Test-Path -Path "$script:TempDir") ) {
-            New-Item -ItemType directory -Path "$script:TempDir" | Out-Null
+        if ( -not(Test-Path -Path "$script:StowTempDir") ) {
+            New-Item -ItemType directory -Path "$script:StowTempDir" | Out-Null
         }
 
-        $tempTexFolder = "$script:TempDir/texlive-tmp"
-        $tempTexTargetFolder = "$script:TempDir/texlive-install"
-        $tempTexArchive = "$script:ArchivesDir/install-tl.zip"
+        $tempTexFolder = Join-Path -Path "$script:StowTempDir" -ChildPath "texlive-tmp"
+        $tempTexTargetFolder = Join-Path -Path "$script:StowTempDir" -ChildPath "texlive-install"
+        $tempTexTargetInstall = Join-Path -Path "$tempTexTargetFolder" -ChildPath "install-tl-windows.bat"
+        $tempTexArchive = Join-Path -Path "$script:StowArchivesDir" -ChildPath "install-tl.zip"
 
-        if (Test-Path -Path "$tempTexTargetFolder/install-tl-windows.bat" -PathType Leaf) {
-            Write-Host "Installer already available: '$tempTexTargetFolder/install-tl-windows.bat'"
+        if (Test-Path -Path "$tempTexTargetInstall" -PathType Leaf) {
+            Write-Host "Installer already available: '$tempTexTargetInstall'"
         }
         else {
             Get-File -Url "https://mirror.ctan.org/systems/texlive/tlnet/install-tl.zip" -Filename "$tempTexArchive"
@@ -272,29 +273,28 @@ Function Get-TexLive {
             Remove-Item -Recurse -Force "$tempTexFolder" | Out-Null
         }
 
-        $env:TEXLIVE_ROOT = "$script:TempDir/texlive-install"
-        $env:TEXLIVE_INSTALL = "$env:TEXLIVE_ROOT/install-tl-windows.bat"
+        $env:TEXLIVE_ROOT = "$tempTexTargetFolder"
+        $env:TEXLIVE_INSTALL = "$tempTexTargetInstall"
 
-        $env:TEXDIR = "$script:TempDir/texlive"
-        $env:TEXLIVE_BIN = "$env:TEXDIR/bin/win32"
-        $env:TEXMFCONFIG = "$env:TEXDIR/texmf-config"
-        $env:TEXMFHOME = "$env:TEXDIR/texmf-local"
-        $env:TEXMFLOCAL = "$env:TEXDIR/texmf-local"
-        $env:TEXMFSYSCONFIG = "$env:TEXDIR/texmf-config"
-        $env:TEXMFSYSVAR = "$env:TEXDIR/texmf-var"
-        $env:TEXMFVAR = "$env:TEXDIR/texmf-var"
+        $env:TEXDIR = "$script:StowTempDir\texlive"
+        $env:TEXLIVE_BIN = "$env:TEXDIR\bin\win32"
+        $env:TEXMFCONFIG = "$env:TEXDIR\texmf-config"
+        $env:TEXMFHOME = "$env:TEXDIR\texmf-local"
+        $env:TEXMFLOCAL = "$env:TEXDIR\texmf-local"
+        $env:TEXMFSYSCONFIG = "$env:TEXDIR\texmf-config"
+        $env:TEXMFSYSVAR = "$env:TEXDIR\texmf-var"
+        $env:TEXMFVAR = "$env:TEXDIR\texmf-var"
 
         $env:TEXLIVE_INSTALL_PREFIX = "$env:TEXDIR"
         $env:TEXLIVE_INSTALL_TEXDIR = "$env:TEXDIR"
-        $env:TEXLIVE_INSTALL_TEXMFCONFIG = "$env:TEXDIR/texmf-config"
-        $env:TEXLIVE_INSTALL_TEXMFHOME = "$env:TEXDIR/texmf-local"
-        $env:TEXLIVE_INSTALL_TEXMFLOCAL = "$env:TEXDIR/texmf-local"
-        $env:TEXLIVE_INSTALL_TEXMFSYSCONFIG = "$env:TEXDIR/texmf-config"
-        $env:TEXLIVE_INSTALL_TEXMFSYSVAR = "$env:TEXDIR/texmf-var"
-        $env:TEXLIVE_INSTALL_TEXMFVAR = "$env:TEXDIR/texmf-var"
+        $env:TEXLIVE_INSTALL_TEXMFCONFIG = "$env:TEXDIR\texmf-config"
+        $env:TEXLIVE_INSTALL_TEXMFHOME = "$env:TEXDIR\texmf-local"
+        $env:TEXLIVE_INSTALL_TEXMFLOCAL = "$env:TEXDIR\texmf-local"
+        $env:TEXLIVE_INSTALL_TEXMFSYSCONFIG = "$env:TEXDIR\texmf-config"
+        $env:TEXLIVE_INSTALL_TEXMFSYSVAR = "$env:TEXDIR\texmf-var"
+        $env:TEXLIVE_INSTALL_TEXMFVAR = "$env:TEXDIR\texmf-var"
 
-        $texLiveProfile = "$script:TempDir/install-texlive.profile"
-
+        $texLiveProfile = Join-Path -Path "$script:StowTempDir" -ChildPath "install-texlive.profile"
         Set-Content -Path "$texLiveProfile" -Value @"
 # It will NOT be updated and reflects only the
 # installation profile at installation time.
@@ -327,8 +327,9 @@ tlpdbopt_sys_man /usr/local/share/man
 tlpdbopt_w32_multi_user 0
 "@
 
-        If (Test-Path "$env:TEXLIVE_BIN/tex.exe" -PathType Leaf) {
-            Write-Host "Skipped install. Tex executable already exists: '$env:TEXLIVE_BIN/tex.exe'"
+        $texExecutable = Join-Path -Path "$env:TEXLIVE_BIN" -ChildPath "tex.exe"
+        If (Test-Path "$texExecutable" -PathType Leaf) {
+            Write-Host "Skipped install. TeX already exists: '$texExecutable'"
         } elseif ($IsWindows -or $ENV:OS) {
             & cmd.exe /d /c "$env:TEXLIVE_INSTALL" -no-gui -portable -profile "$texLiveProfile"
         } else {
@@ -348,18 +349,18 @@ Function Start-Bash() {
         'PSUseShouldProcessForStateChangingFunctions', '', Scope = 'Function')]
     param()
 
-    Write-Host "bash -c '$Args'"
+    Write-Host "[bash] $Args"
 
     if ($IsWindows -or $ENV:OS) {
-        & "$script:MsysTargetDir/usr/bin/bash.exe" @('--noprofile', '--norc', '-lc') + @Args
+        & "$script:MsysTargetDir/usr/bin/bash.exe" @('-lc') + @Args
     } else {
         Write-Host "Skipped command. This is only supported on Windows."
     }
 }
 
 Function Install-MSYS2 {
-    $script:MsysTargetDir = "$script:TempDir/msys64"
-    $script:MsysArchive = "$script:ArchivesDir/msys2.exe"
+    $script:MsysTargetDir = "$script:StowTempDir/msys64"
+    $script:MsysArchive = "$script:StowArchivesDir/msys2.exe"
 
     if ( -not(Test-Path -Path "$script:MsysTargetDir/mingw64.exe" -PathType Leaf) ) {
         $msysInstaller = "https://github.com/msys2/msys2-installer/releases/download/2021-07-25/msys2-base-x86_64-20210725.sfx.exe"
@@ -372,7 +373,7 @@ Function Install-MSYS2 {
 
         if ( -not(Test-Path -Path "$script:MsysTargetDir/usr/bin/bash.exe" -PathType Leaf) ) {
             Write-Host "::group::Install MSYS2"
-            Expand-File -Path "$script:MsysArchive" -Destination "$script:TempDir"
+            Expand-File -Path "$script:MsysArchive" -Destination "$script:StowTempDir"
             Write-Host "::endgroup::"
         }
     }
@@ -398,7 +399,6 @@ echo '[stow] Post-install complete.'
             $msys2_shell += " -mingw64 -defterm -no-start -where $script:StowRoot -shell bash"
             $msys2_shell += " -c ./tools/install-dependencies.sh"
             & "cmd.exe" /d /s /c "$msys2_shell"
-            Remove-Item -Force "$postInstallScript" | Out-Null
             Write-Host "::endgroup::"
 
             Write-Host "::group::Upgrade MSYS2 Packages"
@@ -408,6 +408,10 @@ echo '[stow] Post-install complete.'
             # Clean entire package cache
             Start-Bash 'pacman --noconfirm -Scc'
             Write-Host "::endgroup::"
+
+            if (Test-Path -Path "$postInstallScript" -PathType Leaf) {
+                Remove-Item -Force "$postInstallScript" | Out-Null
+            }
         }
 
         Write-Host '[stow] Finished MSYS2 install.'
@@ -418,21 +422,24 @@ Function Install-Toolset {
 
     $script:StowRoot = Resolve-Path -Path "$PSScriptRoot/.."
 
-    $env:HOME = $script:StowRoot
-
-    $script:TempDir = Join-Path -Path "$script:StowRoot" -ChildPath ".tmp"
-    if ( -not(Test-Path -Path "$script:TempDir") ) {
-        New-Item -ItemType directory -Path "$script:TempDir" | Out-Null
+    $script:StowTempDir = Join-Path -Path "$script:StowRoot" -ChildPath ".tmp"
+    if ( -not(Test-Path -Path "$script:StowTempDir") ) {
+        New-Item -ItemType directory -Path "$script:StowTempDir" | Out-Null
     }
 
-    $script:ArchivesDir = Join-Path -Path "$script:TempDir" -ChildPath "archives"
-    if ( -not(Test-Path -Path "$script:ArchivesDir") ) {
-        New-Item -ItemType directory -Path "$script:ArchivesDir" | Out-Null
+    $script:StowArchivesDir = Join-Path -Path "$script:StowTempDir" -ChildPath "archives"
+    if ( -not(Test-Path -Path "$script:StowArchivesDir") ) {
+        New-Item -ItemType directory -Path "$script:StowArchivesDir" | Out-Null
     }
 
-    Install-MSYS2
+    $script:StowHome = Join-Path -Path "$script:StowTempDir" -ChildPath "home"
+    if ( -not(Test-Path -Path "$script:StowHome") ) {
+        New-Item -ItemType directory -Path "$script:StowHome" | Out-Null
+    }
+    $env:HOME = $script:StowHome
 
     Get-TexLive
+    Install-MSYS2
 }
 
 Install-Toolset

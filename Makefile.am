@@ -38,7 +38,6 @@ pmstow_DATA = lib/Stow/Util.pm
 
 TEXINFO_TEX = doc/texinfo.tex
 export TEXI2DVI_BUILD_MODE = clean
-AM_MAKEINFOFLAGS = -I $(srcdir) -I $(srcdir)/doc
 
 # We require this -I parameter to ensure that the include of the
 # default ignore list in the manual works.  Unfortunately this is
@@ -48,9 +47,13 @@ AM_MAKEINFOFLAGS = -I $(srcdir) -I $(srcdir)/doc
 #
 # even though it annoyingly produces a warning with the -Wall option
 # to AM_INIT_AUTOMAKE which has to be silenced via -Wno-override.
+AM_MAKEINFOFLAGS = -I $(srcdir) -I $(srcdir)/doc
+
+# Add '--debug' to get a very detailed output log (equivalent to 'set -x')
 TEXI2DVI = texi2dvi $(AM_MAKEINFOFLAGS)
 
-PDFTEX = pdftex
+# Specifically used when converting from '.texi' to '.pdf'
+TEXI2PDF = pdftex -output-format pdf
 
 doc_deps = $(info_TEXINFOS) doc/version.texi
 
@@ -221,22 +224,23 @@ $(HTML): $(doc_deps)
 	    `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi
 
 $(PDF): $(HTML)
-	TEXINPUTS="$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
+	TEXINPUTS="$(STOW_ROOT)/doc$(PATH_SEPARATOR)$(srcdir)$(PATH_SEPARATOR)$(srcdir)/doc$(PATH_SEPARATOR)$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
 	MAKEINFO='$(MAKEINFO) $(AM_MAKEINFOFLAGS) $(MAKEINFOFLAGS) -I doc -I $(srcdir)/doc' \
-	$(TEXI2PDF) -o $@ `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi
+	$(TEXI2DVI) -o $@ `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi
 	rm -f \
 	    "$(srcdir)/doc/texput.log" \
 	    "$(srcdir)/doc/stow.aux" "$(srcdir)/doc/stow.cp" \
 	    "$(srcdir)/doc/stow.log" "$(srcdir)/doc/stow.toc"
 
 #$(PDF): $(HTML)
-#	TEXINPUTS="$(srcdir)$(PATH_SEPARATOR)$(srcdir)/doc$(PATH_SEPARATOR)$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
-#	MAKEINFO='$(MAKEINFO) $(AM_MAKEINFOFLAGS) $(MAKEINFOFLAGS) -I doc -I $(srcdir)/doc' \
-#	$(PDFTEX) -output-directory="$(srcdir)/doc" "$(srcdir)/doc/stow.texi"
-#	mv "$(srcdir)/doc/stow.pdf" "$@"
+#	[ -d doc ] || mkdir doc # required in vpath mode
+#	TEXMFOUTPUT="doc" \
+#	TEXINPUTS="$(STOW_ROOT)/doc$(PATH_SEPARATOR)$(srcdir)$(PATH_SEPARATOR)$(srcdir)/doc$(PATH_SEPARATOR)$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
+#	$(TEXI2PDF) -output-directory="doc/" `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi
+#	mv "doc/stow.pdf" "$@"
 #	rm -rf \
-#	    "$(srcdir)/doc/stow.aux" "$(srcdir)/doc/stow.cp" \
-#	    "$(srcdir)/doc/stow.log" "$(srcdir)/doc/stow.toc"
+#	    "doc/stow.aux" "doc/stow.cp" \
+#	    "doc/stow.log" "doc/stow.toc"
 
 doc/manual-split: $(doc_deps)
 	rm -rf $@.new

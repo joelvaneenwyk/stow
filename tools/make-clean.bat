@@ -44,11 +44,6 @@ exit /b
         echo Removed local 'MSYS2' install.
     )
 
-    :: This is where 'cpan' files live when run through MSYS2 so this will force Perl
-    :: modules to be reinstalled.
-    rmdir /q /s "%STOW_BUILD_TOOLS_ROOT%\home\" > nul 2>&1
-    rmdir /q /s "%STOW_BUILD_TOOLS_ROOT%\temp\" > nul 2>&1
-
     del "\\?\%STOW_ROOT%\nul" > nul 2>&1
     del "%STOW_ROOT%\texput.log" > nul 2>&1
     del "%STOW_ROOT%\Build" > nul 2>&1
@@ -86,6 +81,7 @@ exit /b
     del "%STOW_ROOT%\automake\missing" > nul 2>&1
     del "%STOW_ROOT%\automake\test-driver" > nul 2>&1
     del "%STOW_ROOT%\automake\texinfo.tex" > nul 2>&1
+    rmdir /q /s "%STOW_ROOT%\.gnupg\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\_build\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\_Inline\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\bin\_Inline\" > nul 2>&1
@@ -99,6 +95,11 @@ exit /b
     rmdir /q /s "%STOW_ROOT%\tmp-testing-trees\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\tools\tmp-testing-trees\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\stow-!STOW_VERSION!\" > nul 2>&1
+
+    :: This is where 'cpan' files live when run through MSYS2 so this will force Perl
+    :: modules to be reinstalled.
+    rmdir /q /s "%STOW_BUILD_TOOLS_ROOT%\home\" > nul 2>&1
+    rmdir /q /s "%STOW_BUILD_TOOLS_ROOT%\temp\" > nul 2>&1
 
     git -C "%STOW_ROOT%" checkout -- "%STOW_ROOT%\aclocal.m4" > nul 2>&1
 

@@ -72,7 +72,8 @@ endlocal & exit /b
 
     set PATH_ORIGINAL=%PATH%
 
-    set TEX=%STOW_BUILD_TOOLS_ROOT%\texlive\bin\win32\tex.exe
+    set TEX_DIR=%STOW_BUILD_TOOLS_ROOT%\texlive\bin\win32
+    set TEX=%TEX_DIR%\tex.exe
 
     set STOW_HOME=%STOW_BUILD_TOOLS_ROOT%\home
     if not exist "%STOW_HOME%" mkdir "%STOW_HOME%"
@@ -150,6 +151,7 @@ endlocal & exit /b
         set "STOW_VERSION=%STOW_VERSION%"
         set "STOW_PERL=%STOW_PERL%"
         set "STOW_PERL_UNIX=%STOW_PERL_UNIX%"
+        set "PERL_BIN_DIR=%PERL_BIN_DIR%"
         set "PERL_BIN_C_DIR=%PERL_BIN_C_DIR%"
         set "PERL_LIB=%PERL_LIB%"
         set "PERL_CPAN_CONFIG=%PERL_CPAN_CONFIG%"
@@ -163,6 +165,7 @@ endlocal & exit /b
         set "WIN_UNIX_DIR=%WIN_UNIX_DIR%"
         set "GUILE_LOAD_PATH=%GUILE_LOAD_PATH%"
         set "GUILE_LOAD_COMPILED_PATH=%GUILE_LOAD_COMPILED_PATH%"
+        set "TEX_DIR=%TEX_DIR%"
         set "TEX=%TEX%"
     )
 

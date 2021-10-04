@@ -333,30 +333,30 @@ function make_docs() {
     echo "✔ Used 'doc/stow.texi' to generate 'doc/manual.pdf'"
 
     # Add in paths for where to find 'texinfo.tex' which were found using 'find /usr/ -name texinfo.tex'
-    export PATH=".:$STOW_ROOT:$STOW_ROOT/doc:/usr/share/texmf/tex/texinfo:/usr/share/automake-1.16:$PATH"
+    PATH=".:$STOW_ROOT:$STOW_ROOT/doc:/usr/share/texmf/tex/texinfo:/usr/share/automake-1.16:$PATH"
 
-    export TEXI2DVI="texi2dvi"
-    export TEXINPUTS="../;.;/usr/share/automake-1.16;$STOW_ROOT;$STOW_ROOT/doc;$STOW_ROOT/manual.t2d/version_test;${TEXINPUTS:-}"
-
-    # Valid values of MODE are:
-    #
-    #   `local'      compile in the current directory, leaving all the auxiliary
-    #                files around.  This is the traditional TeX use.
-    #   `tidy'       compile in a local *.t2d directory, where the auxiliary files
-    #                are left.  Output files are copied back to the original file.
-    #   `clean'      same as `tidy', but remove the auxiliary directory afterwards.
-    #                Every compilation therefore requires the full cycle.
-    export TEXI2DVI_BUILD_MODE=tidy
-
-    export TEXI2DVI_USE_RECORDER=yes
-
-    # Generate 'doc/manual.pdf' using texi2dvi tool. Add '--debug' to print
-    # every command exactly like 'set +x' would do.
-    #
-    # IMPORTANT: We add '--expand' here otherwise we get the error that
-    # we "can't find file `txiversion.tex'" which is due to include approach
-    # differences on unix versus msys2/windows.
     (
+        export TEXI2DVI="texi2dvi"
+        export TEXINPUTS="../;.;/usr/share/automake-1.16;$STOW_ROOT;$STOW_ROOT/doc;$STOW_ROOT/manual.t2d/version_test;${TEXINPUTS:-}"
+
+        # Valid values of MODE are:
+        #
+        #   `local'      compile in the current directory, leaving all the auxiliary
+        #                files around.  This is the traditional TeX use.
+        #   `tidy'       compile in a local *.t2d directory, where the auxiliary files
+        #                are left.  Output files are copied back to the original file.
+        #   `clean'      same as `tidy', but remove the auxiliary directory afterwards.
+        #                Every compilation therefore requires the full cycle.
+        export TEXI2DVI_BUILD_MODE=tidy
+
+        export TEXI2DVI_USE_RECORDER=yes
+
+        # Generate 'doc/manual.pdf' using texi2dvi tool. Add '--debug' to print
+        # every command exactly like 'set +x' would do.
+        #
+        # IMPORTANT: We add '--expand' here otherwise we get the error that
+        # we "can't find file `txiversion.tex'" which is due to include approach
+        # differences on unix versus msys2/windows.
         cd "$STOW_ROOT/doc" || true
         run_command_group "$TEXI2DVI" \
             --pdf --language=texinfo \
@@ -390,12 +390,14 @@ function update_stow_environment() {
     fi
     export STOW_ROOT
 
-    _localTexLive="$STOW_ROOT/.tmp/texlive/bin/win32"
-    if [ -f "$_localTexLive/tex.exe" ]; then
-        TEX="$_localTexLive/tex.exe"
-        export PATH="$_localTexLive:$PATH"
-    else
-        TEX="$(which tex 2>/dev/null)"
+    TEX=$(normalize_path "${TEX:-}")
+    if [ ! -f "$TEX" ]; then
+        _localTexLive="$STOW_ROOT/.tmp/texlive/bin/win32"
+        if [ -f "$_localTexLive/tex.exe" ]; then
+            TEX="$_localTexLive/tex.exe"
+        else
+            TEX="$(which tex 2>/dev/null)"
+        fi
     fi
     export TEX
 
@@ -404,7 +406,7 @@ function update_stow_environment() {
 
     while read -r line; do
         # Only print output first time around
-        if [ ! "${STOW_ENVIRONMENT_LOGGED:-}" == "1" ]; then
+        if [ ! "${STOW_ENVIRONMENT_INITIALIZED:-}" == "1" ]; then
             echo "[where.perl] $line"
         fi
 
@@ -417,7 +419,7 @@ function update_stow_environment() {
     done < <(
         # We manually try to find the version of Perl installed since it is not necessarily
         # automatically added to the PATH.
-        _tool_cache="${RUNNER_TOOL_CACHE:-"/c/hostedtoolcache/windows/"}"
+        _tool_cache="${RUNNER_TOOL_CACHE:-"/c/hostedtoolcache/windows"}"
         _root=$(normalize_path "$_tool_cache/strawberry-perl")
         echo "$_root"
         if [ -d "$_root" ]; then
@@ -500,24 +502,29 @@ function update_stow_environment() {
 
         if [ ! -x "$(command -v gmake)" ]; then
             _perl_bin="$(dirname "$STOW_PERL")"
-
             export PERL_BIN="$_perl_bin"
 
             while [ ! "$_perl_bin" == "/" ] && [ -d "$_perl_bin/../" ]; do
                 _perl_bin=$(cd "$_perl_bin" && cd .. && pwd)
-                if [ -d "$_perl_bin/c/bin" ]; then
+                if [ ! "$_perl_bin" == "/" ] && [ -d "$_perl_bin/c/bin" ]; then
                     export PERL_C_BIN="$_perl_bin/c/bin"
-                    PATH="$PERL_C_BIN:$PATH"
-                    export PATH
                     break
                 fi
             done
         fi
     fi
 
-    if [ ! "${STOW_ENVIRONMENT_LOGGED:-}" == "1" ]; then
+    if [ ! "${STOW_ENVIRONMENT_INITIALIZED:-}" == "1" ]; then
         PERL="$STOW_PERL"
         export PERL
+
+        TEX_DIR=""
+        if [ -f "$TEX" ]; then
+            TEX_DIR="$(dirname "$TEX")"
+        fi
+
+        PATH="$PERL_BIN:$PERL_C_BIN:$TEX_DIR:$PATH"
+        export PATH
 
         echo "----------------------------------------"
         echo "Stow Root: '$STOW_ROOT'"
@@ -534,7 +541,7 @@ function update_stow_environment() {
         echo "TeX: '${TEX:-}'"
         echo "----------------------------------------"
 
-        export STOW_ENVIRONMENT_LOGGED="1"
+        export STOW_ENVIRONMENT_INITIALIZED="1"
     fi
 }
 
