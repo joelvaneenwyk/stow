@@ -28,7 +28,7 @@ dist_doc_DATA = \
 	ChangeLog doc/ChangeLog.OLD
 
 # automake magic to define where *_DATA files get installed:
-pmdir = $(PMDIR)
+pmdir = `$(CYGPATH_P) $(PMDIR)`
 pmstowdir = $(pmdir)/Stow
 
 pm_DATA = lib/Stow.pm

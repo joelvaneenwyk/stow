@@ -42,7 +42,6 @@ endlocal & exit /b
 
     set "MSYS2_PATH_TYPE=minimal"
     set "PATH=%PERL_BIN_C_DIR%;%PATH%"
-    set "PERL=%STOW_PERL_UNIX%"
     set "STOW_PERL=%STOW_PERL_UNIX%"
     set "HOME=%STOW_HOME%"
 

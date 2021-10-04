@@ -43,7 +43,7 @@ bash "$STOW_ROOT/tools/install-dependencies.sh"
     run_command make
 
     # This will create 'Build' or 'Build.bat' depending on platform
-    run_command "$PERL" -I "$STOW_ROOT" -I "$STOW_ROOT/lib" "$STOW_ROOT/Build.PL"
+    run_command "$STOW_PERL" -I "$STOW_ROOT" -I "$STOW_ROOT/lib" "$STOW_ROOT/Build.PL"
 
     # shellcheck source=tools/make-stow.sh
     run_command "$STOW_ROOT/tools/make-stow.sh"

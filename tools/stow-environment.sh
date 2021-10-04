@@ -25,10 +25,6 @@ function normalize_path {
         fi
     fi
 
-    if [ ! -e "$input_path" ]; then
-        input_path=""
-    fi
-
     echo "$input_path"
 
     return 0
@@ -180,7 +176,7 @@ function install_packages() {
             )
         fi
 
-        run_command_group pacman -S --quiet --noconfirm --needed "${packages[@]}"
+        run_named_command_group "Install Packages" pacman -S --quiet --noconfirm --needed "${packages[@]}"
     fi
 }
 
@@ -410,38 +406,39 @@ function update_stow_environment() {
 
     while read -r line; do
         # Only print output first time around
-        if [ ! "${PERL_LOCAL_SEARCH:-}" == "1" ]; then
+        if [ ! "${STOW_ENVIRONMENT_LOGGED:-}" == "1" ]; then
             echo "[where.perl] $line"
         fi
 
         line=$(normalize_path "$line")
 
-        if [[ ! "$line" == "$MSYSTEM_PREFIX"* ]] && [[ ! "$line" == /usr/* ]]; then
+        if [ -f "$line" ] && [[ ! "$line" == "$MSYSTEM_PREFIX"* ]] && [[ ! "$line" == /usr/* ]]; then
             PERL_LOCAL="$line"
             break
         fi
     done < <(
+        # We manually try to find the version of Perl installed since it is not necessarily
+        # automatically added to the PATH.
         _runner_os=$(echo "${RUNNER_OS:-windows}" | awk '{print tolower($0)}')
-        _strawberry_perl_install_root=$(
-            normalize_path "${RUNNER_TOOL_CACHE:-}/$_runner_os/strawberry-perl"
-        )
-        if [ -d "$_strawberry_perl_install_root" ]; then
-            for perl_dir in "$_strawberry_perl_install_root"*; do
-                for variant in "x64/perl/bin/perl.exe" "x64/perl/bin/perl"; do
+        _tool_cache="${RUNNER_TOOL_CACHE:-"C:\\hostedtoolcache"}"
+        _root=$(normalize_path "$_tool_cache/$_runner_os/strawberry-perl")
+        echo "$_root"
+        find "$_root" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | (
+            while read -r perl_dir; do
+                for variant in "perl/bin/perl.exe" "x64/perl/bin/perl.exe" "x64/perl/bin/perl"; do
                     _perl="$perl_dir/$variant"
                     if [ -e "$_perl" ]; then
                         echo "$_perl"
                     fi
                 done
             done
-        fi
+        )
 
         _where=$(normalize_path "${WINDIR:-}\\system32\\where.exe")
         if [ -f "$_where" ]; then
             "$_where" perl
         fi
     )
-    export PERL_LOCAL_SEARCH="1"
     export PERL_LOCAL
 
     # Update version we use after we install in case the default version should be
@@ -495,24 +492,35 @@ function update_stow_environment() {
     export PERL5LIB
 
     if [ ! -x "$(command -v gmake)" ]; then
-        _perl_bin="$(dirname "$PERL")"
+        _perl_bin="$(dirname "$STOW_PERL")"
 
-        if [ -d "$_perl_bin/../../c/bin" ]; then
-            _perl_c_bin=$(cd "$_perl_bin" && cd ../../c/bin && pwd)
-        elif [ -d "$_perl_bin/../../../c/bin" ]; then
-            _perl_c_bin=$(cd "$_perl_bin" && cd ../../../c/bin && pwd)
-        fi
+        export PERL_BIN="$_perl_bin"
 
-        if [ -d "${_perl_c_bin:-}" ]; then
-            PATH="$_perl_c_bin:$PATH"
-            export PATH
-        fi
+        while [ -d "$_perl_bin/../" ]; do
+            _perl_bin=$(cd "$_perl_bin" && cd .. && pwd)
+            if [ -d "$_perl_bin/c/bin" ]; then
+                export PERL_C_BIN="$_perl_bin/c/bin"
+                PATH="$PERL_C_BIN:$PATH"
+                export PATH
+                break
+            fi
+        done
     fi
 
-    if [ ! "${PERL:-}" == "$STOW_PERL" ]; then
+    _localTexLive="$STOW_ROOT/.tmp/texlive/bin/win32"
+    if [ -f "$_localTexLive/tex.exe" ]; then
+        TEX="$_localTexLive/tex.exe"
+        export PATH="$_localTexLive:$PATH"
+    else
+        TEX="$(which tex)"
+    fi
+    export TEX
+
+    if [ ! "${STOW_ENVIRONMENT_LOGGED:-}" == "1" ]; then
         PERL="$STOW_PERL"
         export PERL
 
+        echo "----------------------------------------"
         echo "Stow Root: '$STOW_ROOT'"
         echo "Stow Version: 'v$STOW_VERSION'"
         echo "Perl: '$PERL'"
@@ -523,7 +531,10 @@ function update_stow_environment() {
 
         echo "Perl Lib: '$PERL_LIB'"
         echo "Perl Module (PMDIR): '$PMDIR'"
+        echo "TEX: '${TEX:-}'"
         echo "----------------------------------------"
+
+        export STOW_ENVIRONMENT_LOGGED="1"
     fi
 }
 

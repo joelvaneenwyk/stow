@@ -19,6 +19,16 @@ AC_INIT([stow], [2.3.2], [bug-stow@gnu.org])
 AC_PREREQ([2.61])
 AC_CONFIG_AUX_DIR([automake])
 
+# test whether we have cygpath
+if test -z "$CYGPATH_P"; then
+  if (cygpath --version) >/dev/null 2>/dev/null; then
+    CYGPATH_P='cygpath -p -u'
+  else
+    CYGPATH_P=echo
+  fi
+fi
+AC_SUBST([CYGPATH_P])
+
 # Unfortunately we have to disable warnings for overrides, because we
 # need to override the built-in `check' rule and also the TEXI2DVI
 # variable.
@@ -59,11 +69,11 @@ done
 #   pmdir_relative_path=`echo "${installsitelib}" | sed -e "s!^$siteprefix/!!"`
 #
 # but this is cleaner:
-pmdir_relative_path=`\
-  $PERL -MConfig \
+pmdir_relative_path=`$CYGPATH_P \
+  \`$PERL -MConfig \
         -wle '($_ = $Config{installsitelib})
               =~ s!^\Q$Config{siteprefix}/!!; \
-              print'`
+              print'\``
 
 AC_ARG_WITH(
     [pmdir],
