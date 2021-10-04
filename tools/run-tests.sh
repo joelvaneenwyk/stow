@@ -151,7 +151,7 @@ function run_stow_tests() {
     fi
 
     if [[ "$LIST_PERL_VERSIONS" = "0" ]]; then
-        if ! run_command_group "$STOW_ROOT/tools/install-dependencies.sh"; then
+        if ! run_command "$STOW_ROOT/tools/install-dependencies.sh"; then
             echo "Failed to install dependencies."
             return 4
         fi

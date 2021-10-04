@@ -102,7 +102,7 @@ function use_sudo {
 function install_perl_modules() {
     if "$STOW_PERL" -MApp::cpanminus::fatscript -le 1 2>/dev/null; then
         # shellcheck disable=SC2016
-        run_named_command_group "Install Perl Modules" use_sudo "$STOW_PERL" -MApp::cpanminus::fatscript -le \
+        run_named_command_group "Install Modules: $*" use_sudo "$STOW_PERL" -MApp::cpanminus::fatscript -le \
             'my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;' -- \
             --notest "$@"
     else
@@ -228,9 +228,9 @@ function initialize_perl() {
         echo ""
         echo "no"
         echo "exit"
-    ) | run_command use_sudo "$STOW_PERL" -MCPAN -e "shell" || true
+    ) | run_command_group use_sudo "$STOW_PERL" -MCPAN -e "shell" || true
 
-    run_command use_sudo "$STOW_PERL" "$STOW_ROOT/tools/initialize-cpan-config.pl" || true
+    run_command_group use_sudo "$STOW_PERL" "$STOW_ROOT/tools/initialize-cpan-config.pl" || true
 
     # Depending on install order it is possible in an MSYS environment to get errors about
     # the 'pl2bat' file being missing. Workaround here is to ensure ExtUtils::MakeMaker is
@@ -244,7 +244,7 @@ function initialize_perl() {
         # We intentionally use 'which' here as we are on Windows
         # shellcheck disable=SC2230
         if [ -x "$(command -v pl2bat)" ]; then
-            pl2bat "$(which pl2bat)" 2>/dev/null || true
+            pl2bat "$(which pl2bat 2>/dev/null)" 2>/dev/null || true
         fi
     fi
 
@@ -422,16 +422,18 @@ function update_stow_environment() {
         _tool_cache="${RUNNER_TOOL_CACHE:-"C:\\hostedtoolcache\\windows"}"
         _root=$(normalize_path "$_tool_cache/strawberry-perl")
         echo "$_root"
-        find "$_root" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | (
-            while read -r perl_dir; do
-                for variant in "perl/bin/perl.exe" "x64/perl/bin/perl.exe" "x64/perl/bin/perl"; do
-                    _perl="$perl_dir/$variant"
-                    if [ -e "$_perl" ]; then
-                        echo "$_perl"
-                    fi
+        if [ -d "$_root" ]; then
+            find "$_root" -maxdepth 1 -mindepth 1 -type d | (
+                while read -r perl_dir; do
+                    for variant in "perl/bin/perl.exe" "x64/perl/bin/perl.exe" "x64/perl/bin/perl"; do
+                        _perl="$perl_dir/$variant"
+                        if [ -e "$_perl" ]; then
+                            echo "$_perl"
+                        fi
+                    done
                 done
-            done
-        )
+            )
+        fi
 
         _where=$(normalize_path "${WINDIR:-}\\system32\\where.exe")
         if [ -f "$_where" ]; then
@@ -511,7 +513,7 @@ function update_stow_environment() {
         TEX="$_localTexLive/tex.exe"
         export PATH="$_localTexLive:$PATH"
     else
-        TEX="$(which tex)"
+        TEX="$(which tex 2>/dev/null)"
     fi
     export TEX
 

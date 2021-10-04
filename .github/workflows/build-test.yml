@@ -112,6 +112,9 @@ jobs:
           # Only applies to Windows and uses fallback for other platforms
           distribution: ${{ env.perl_distribution }}
 
+      - name: Check Environment
+        run: ${{ env.script_tool }}stow-environment${{ env.script_extension }}
+
       - name: Install Dependencies
         run: ${{ env.script_tool }}install-dependencies${{ env.script_extension }}
 
