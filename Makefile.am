@@ -46,7 +46,7 @@ AM_MAKEINFOFLAGS = -I $(srcdir) -I $(srcdir)/doc
 #
 # even though it annoyingly produces a warning with the -Wall option
 # to AM_INIT_AUTOMAKE which has to be silenced via -Wno-override.
-TEXI2PDF = pdftex
+TEXI2DVI = texi2dvi $(AM_MAKEINFOFLAGS)
 PDFTEX = pdftex
 
 doc_deps = $(info_TEXINFOS) doc/version.texi
