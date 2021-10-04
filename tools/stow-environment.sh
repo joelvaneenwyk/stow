@@ -19,10 +19,8 @@
 function normalize_path {
     input_path="${1:-}"
 
-    if [ -n "$input_path" ]; then
-        if [ -x "$(command -v cygpath)" ]; then
-            input_path="$(cygpath "$input_path")"
-        fi
+    if [ -n "$input_path" ] && [ -x "$(command -v cygpath)" ]; then
+        input_path="$(cygpath "$input_path")"
     fi
 
     echo "$input_path"
@@ -497,7 +495,7 @@ function update_stow_environment() {
 
         export PERL_BIN="$_perl_bin"
 
-        while [ -d "$_perl_bin/../" ]; do
+        while [ ! "$_perl_bin" == "/" ] && [ -d "$_perl_bin/../" ]; do
             _perl_bin=$(cd "$_perl_bin" && cd .. && pwd)
             if [ -d "$_perl_bin/c/bin" ]; then
                 export PERL_C_BIN="$_perl_bin/c/bin"
