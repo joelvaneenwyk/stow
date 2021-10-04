@@ -101,6 +101,7 @@ jobs:
         if: ${{ matrix.msys }}
         with:
           msystem: MINGW64
+          path-type: minimal
           update: false
 
       - name: Setup Perl ${{ matrix.perl }}

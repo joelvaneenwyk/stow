@@ -67,8 +67,6 @@ endlocal & exit /b
     set WIN_UNIX_DIR_UNIX=
     if exist "!WIN_UNIX_DIR!" set WIN_UNIX_DIR_UNIX=!WIN_UNIX_DIR:\=/!
 
-    set SHELL=!WIN_UNIX_DIR!\bin\sh.exe
-
     set GUILE_LOAD_PATH=!WIN_UNIX_DIR!\usr\share\guile\2.0
     set GUILE_LOAD_COMPILED_PATH=!WIN_UNIX_DIR!\usr\lib\guile\2.0\ccache
 
@@ -76,8 +74,8 @@ endlocal & exit /b
 
     set TEX=%STOW_BUILD_TOOLS_ROOT%\texlive\bin\win32\tex.exe
 
-    set HOME=%STOW_BUILD_TOOLS_ROOT%\home
-    if not exist "%HOME%" mkdir "%HOME%"
+    set STOW_HOME=%STOW_BUILD_TOOLS_ROOT%\home
+    if not exist "%STOW_HOME%" mkdir "%STOW_HOME%"
 
     set BASH_EXE=!WIN_UNIX_DIR!\usr\bin\bash.exe
     set BASH="%BASH_EXE%" --noprofile --norc -c
@@ -124,8 +122,9 @@ endlocal & exit /b
     )
 
     ::call :GetCygpath "!STOW_ROOT!" "STOW_ROOT_MSYS"
+    ::set PERL5LIB=!STOW_ROOT_MSYS!/lib;/usr/share/automake-1.16;/share/autoconf
+
     set PERL_INCLUDE_UNIX=-I %WIN_UNIX_DIR_UNIX%/usr/share/automake-1.16 -I %WIN_UNIX_DIR_UNIX%/share/autoconf
-    set PERL5LIB=!STOW_ROOT_MSYS!/lib;/usr/share/automake-1.16;/share/autoconf
 
     :$InitializeEnvironment
         echo Perl: '!STOW_PERL!'
@@ -156,9 +155,8 @@ endlocal & exit /b
         set "PERL_CPAN_CONFIG=%PERL_CPAN_CONFIG%"
         set "PERL_INCLUDE_UNIX=%PERL_INCLUDE_UNIX%"
         set "PERL5LIB=%PERL5LIB%"
-        set "HOME=%HOME%"
+        set "STOW_HOME=%STOW_HOME%"
         set "STARTING_DIR=%STARTING_DIR%"
-        set "SHELL=%SHELL%"
         set "BASH=%BASH%"
         set "BASH_EXE=%BASH_EXE%"
         set "TMPDIR=%TMPDIR%"
@@ -182,7 +180,7 @@ exit /b 0
         for /f "tokens=* usebackq" %%a in (`""%WIN_UNIX_DIR%\usr\bin\cygpath.exe" "%_inPath%""`) do (
             set "_outPath=%%a"
         )
-    :$Done
+        :$Done
     endlocal & (
         set "%~2=%_outPath%"
     )

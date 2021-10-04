@@ -44,6 +44,7 @@ endlocal & exit /b
     set "PATH=%PERL_BIN_C_DIR%;%PATH%"
     set "PERL=%STOW_PERL_UNIX%"
     set "STOW_PERL=%STOW_PERL_UNIX%"
+    set "HOME=%STOW_HOME%"
 
     if not exist "%WIN_UNIX_DIR%\msys2_shell.cmd" (
         echo ERROR: Failed to find MSYS2 installation.

@@ -151,7 +151,11 @@ endlocal & exit /b
     set "MSYS2_PATH_TYPE=inherit"
     set "PERL=%STOW_PERL_UNIX%"
     set "STOW_PERL=%STOW_PERL_UNIX%"
+    set "HOME=%STOW_HOME%"
     set "PATH=%PERL_BIN_C_DIR%;%WIN_UNIX_DIR%\usr\bin;%WIN_UNIX_DIR%\bin;%STOW_BUILD_TOOLS_ROOT%\texlive\bin\win32;%WIN_UNIX_DIR%\usr\bin\core_perl;%WIN_UNIX_DIR%\mingw32\bin"
+
+    :: We allow profile to be loaded here because we override the HOME directory
+    set BASH="%BASH_EXE%" -c
 
     call :Run %BASH% "source ./tools/stow-environment.sh && install_packages"
     call :Run %BASH% "source ./tools/stow-environment.sh && make_docs"

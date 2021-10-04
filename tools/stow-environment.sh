@@ -407,23 +407,41 @@ function update_stow_environment() {
 
     # Find the local Windows install if it exists
     PERL_LOCAL="${PERL_LOCAL:-}"
-    _where=$(normalize_path "${WINDIR:-}\\system32\\where.exe")
-    if [ -f "$_where" ]; then
-        while read -r line; do
-            line=$(normalize_path "$line")
 
-            # Only print output first time around
-            if [ ! "${PERL_LOCAL_SEARCH:-}" == "1" ]; then
-                echo "[where.perl] $line"
-            fi
+    while read -r line; do
+        # Only print output first time around
+        if [ ! "${PERL_LOCAL_SEARCH:-}" == "1" ]; then
+            echo "[where.perl] $line"
+        fi
 
-            if [[ ! "$line" == "$MSYSTEM_PREFIX"* ]] && [[ ! "$line" == /usr/* ]]; then
-                PERL_LOCAL="$line"
-                break
-            fi
-        done < <("$_where" perl)
-        export PERL_LOCAL_SEARCH="1"
-    fi
+        line=$(normalize_path "$line")
+
+        if [[ ! "$line" == "$MSYSTEM_PREFIX"* ]] && [[ ! "$line" == /usr/* ]]; then
+            PERL_LOCAL="$line"
+            break
+        fi
+    done < <(
+        _runner_os=$(echo "${RUNNER_OS:-windows}" | awk '{print tolower($0)}')
+        _strawberry_perl_install_root=$(
+            normalize_path "${RUNNER_TOOL_CACHE:-}/$_runner_os/strawberry-perl"
+        )
+        if [ -d "$_strawberry_perl_install_root" ]; then
+            for perl_dir in "$_strawberry_perl_install_root"*; do
+                for variant in "x64/perl/bin/perl.exe" "x64/perl/bin/perl"; do
+                    _perl="$perl_dir/$variant"
+                    if [ -e "$_perl" ]; then
+                        echo "$_perl"
+                    fi
+                done
+            done
+        fi
+
+        _where=$(normalize_path "${WINDIR:-}\\system32\\where.exe")
+        if [ -f "$_where" ]; then
+            "$_where" perl
+        fi
+    )
+    export PERL_LOCAL_SEARCH="1"
     export PERL_LOCAL
 
     # Update version we use after we install in case the default version should be
