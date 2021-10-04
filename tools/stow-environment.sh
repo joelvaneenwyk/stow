@@ -59,34 +59,25 @@ function run_named_command_group() {
         echo "==----------------------"
     fi
 
+    return_code=0
     timestamp
-    run_command "$@"
+    if run_command "$@"; then
+        echo "✔ Command succeeded."
+    else
+        return_code=$?
+        echo "x Command failed, return code: '$return_code'"
+    fi
 
     if [ -n "${GITHUB_ACTIONS:-}" ]; then
         echo "::endgroup::"
     fi
+
+    return $return_code
 }
 
 function run_command_group() {
-    local command_display
-
-    command_display="$*"
-    command_display=${command_display//$'\n'/} # Remove all newlines
-
-    if [ -n "${GITHUB_ACTIONS:-}" ]; then
-        echo "::group::$command_display"
-    else
-        echo "==----------------------"
-        echo "##[cmd] $command_display"
-        echo "==----------------------"
-    fi
-
-    timestamp
-    "$@"
-
-    if [ -n "${GITHUB_ACTIONS:-}" ]; then
-        echo "::endgroup::"
-    fi
+    # Remove all newlines from arguments for display group name
+    run_named_command_group "${*//$'\n'/}" "$@"
 }
 
 function use_sudo {
@@ -100,7 +91,7 @@ function use_sudo {
 function install_perl_modules() {
     if "$STOW_PERL" -MApp::cpanminus::fatscript -le 1 2>/dev/null; then
         # shellcheck disable=SC2016
-        run_named_command_group "Install Modules: $*" use_sudo "$STOW_PERL" -MApp::cpanminus::fatscript -le \
+        run_named_command_group "Install Module(s): '$*'" use_sudo "$STOW_PERL" -MApp::cpanminus::fatscript -le \
             'my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;' -- \
             --notest "$@"
     else
@@ -530,7 +521,7 @@ function update_stow_environment() {
 
         echo "Perl Lib: '$PERL_LIB'"
         echo "Perl Module (PMDIR): '$PMDIR'"
-        echo "TEX: '${TEX:-}'"
+        echo "Tex: '${TEX:-}'"
         echo "----------------------------------------"
 
         export STOW_ENVIRONMENT_LOGGED="1"

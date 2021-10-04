@@ -142,7 +142,7 @@ jobs:
           eval `perl -V:siteprefix`
 
           # Note: this will complain Test::Output isn't yet installed:
-          ./configure --prefix=$siteprefix
+          ./configure --prefix="$siteprefix"
 
           make
 

@@ -69,11 +69,17 @@ done
 #   pmdir_relative_path=`echo "${installsitelib}" | sed -e "s!^$siteprefix/!!"`
 #
 # but this is cleaner:
-pmdir_relative_path=`$CYGPATH_P \
-  \`$PERL -MConfig \
+pmdir_relative_path=`\
+  $PERL -MConfig \
         -wle '($_ = $Config{installsitelib})
               =~ s!^\Q$Config{siteprefix}/!!; \
-              print'\``
+              print'`
+
+#pmdir_relative_path=`$CYGPATH_P \
+#  \`$PERL -MConfig \
+#        -wle '($_ = $Config{installsitelib})
+#              =~ s!^\Q$Config{siteprefix}/!!; \
+#              print'\``
 
 AC_ARG_WITH(
     [pmdir],

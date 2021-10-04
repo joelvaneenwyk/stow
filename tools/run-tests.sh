@@ -117,16 +117,21 @@ function test_perl_version() {
         run_command_group cover -test
 
         result_filename=$(
-            echo "test_results_${RUNNER_OS:-}_${MSYSTEM:-default}.xml" | awk '{print tolower($0)}'
+            echo "test_results_${RUNNER_OS:-$(uname)}_${MSYSTEM:-default}.xml" | awk '{print tolower($0)}'
         )
 
         prove -I t/ -I bin/ -I lib/ \
-            --formatter TAP::Formatter::JUnit \
+            --formatter "TAP::Formatter::JUnit" \
             --timer --verbose --normalize --parse \
             t/ | tee "$result_filename"
 
+        # Insert newline as the above XML output does not add trailing newline
+        echo ""
+
         # Run 'distcheck' at the end to ensure intermediate test results are excluded
         run_command_group ./Build distcheck
+
+        echo "Test results: '$result_filename'"
     )
 }
 
@@ -136,9 +141,10 @@ function run_stow_tests() {
     LIST_PERL_VERSIONS=0
     PERL_VERSION=""
 
-    STOW_PERL="${STOW_PERL:-${PERL:-perl}}"
     if [ -x "$(command -v perlbrew)" ]; then
         STOW_PERL=perl
+    else
+        STOW_PERL="${STOW_PERL:-${PERL:-perl}}"
     fi
     export STOW_PERL
 
