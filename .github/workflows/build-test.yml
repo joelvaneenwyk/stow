@@ -65,7 +65,7 @@ jobs:
             perl: '5.16'
 
           - platform: windows-latest
-            perl: '5.32'
+            perl: '5.28'
             msys: true
 
     env:

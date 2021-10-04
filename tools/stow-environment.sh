@@ -419,9 +419,8 @@ function update_stow_environment() {
     done < <(
         # We manually try to find the version of Perl installed since it is not necessarily
         # automatically added to the PATH.
-        _runner_os=$(echo "${RUNNER_OS:-windows}" | awk '{print tolower($0)}')
-        _tool_cache="${RUNNER_TOOL_CACHE:-"C:\\hostedtoolcache"}"
-        _root=$(normalize_path "$_tool_cache/$_runner_os/strawberry-perl")
+        _tool_cache="${RUNNER_TOOL_CACHE:-"C:\\hostedtoolcache\\windows"}"
+        _root=$(normalize_path "$_tool_cache/strawberry-perl")
         echo "$_root"
         find "$_root" -maxdepth 1 -mindepth 1 -type d 2>/dev/null | (
             while read -r perl_dir; do
