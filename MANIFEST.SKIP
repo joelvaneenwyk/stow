@@ -16,10 +16,6 @@
 \bDESCRIP.MMS$
 \bdescrip.mms$
 
-# Avoid helper scripts and config files for building
-\bsetup.sh$
-\bsetup.bat$
-
 # Avoid Makemaker generated and utility files.
 \bMANIFEST\.bak
 \bMakefile$
@@ -97,7 +93,6 @@
 # Avoid test files and intermediate data
 tmp-testing-trees
 test_results.*$
-shell.bat
 ^docker/
 ^.devcontainer/
 ^.github/

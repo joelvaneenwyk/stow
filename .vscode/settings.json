@@ -1,6 +1,6 @@
 {
     "[shellscript]": {
-        "editor.formatOnSave": false,
+        "editor.formatOnSave": true,
         "files.eol": "\n"
     },
 

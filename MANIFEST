@@ -70,6 +70,11 @@ tools/run-tests.bat
 tools/run-tests.sh
 tools/stow-environment.sh
 tools/stow-environment.bat
+setup.sh
+setup.bat
+test.sh
+test.bat
+shell.bat
 THANKS
 TODO
 META.yml
