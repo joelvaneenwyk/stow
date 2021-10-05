@@ -73,7 +73,7 @@ _log="$STOW_ROOT/texi2dvi_$(uname -s).log"
             unset MAKEINFO
 
             COMSPEC="" TEXINPUTS=".:$STOW_ROOT/automake:/usr/share/automake-1.16:$STOW_ROOT/doc:" \
-                texi2dvi --pdf \
+                "$STOW_ROOT/doc/texi2dvi.sh" --pdf \
                 --debug --verbose --tidy \
                 -o "manual.pdf" "stow.texi"
             mv "$STOW_ROOT/doc/manual.pdf" "$STOW_ROOT/doc/manual_$(uname -s).pdf"

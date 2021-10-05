@@ -23,8 +23,7 @@ exit /b
     setlocal EnableExtensions EnableDelayedExpansion
 
     set _root=%~dp1
-    set STOW_ROOT=%_root:~0,-1%
-    call "%STOW_ROOT%\tools\stow-environment.bat"
+    call "%_root:~0,-1%\tools\stow-environment.bat"
 
     :: Shut down 'gpg-agent' otherwise some files can't be deleted from 'msys64' folder
     if exist "%WIN_UNIX_DIR%\usr\bin\gpg-agent.exe" (
@@ -71,8 +70,9 @@ exit /b
     del "%STOW_ROOT%\doc\stow.cp" > nul 2>&1
     del "%STOW_ROOT%\doc\stow.info" > nul 2>&1
     del "%STOW_ROOT%\doc\stow.log" > nul 2>&1
-    del "%STOW_ROOT%\doc\stow.pdf" > nul 2>&1
     del "%STOW_ROOT%\doc\stow.toc" > nul 2>&1
+    del "%STOW_ROOT%\doc\*.pdf" > nul 2>&1
+    del "%STOW_ROOT%\doc\*.dvi" > nul 2>&1
     del "%STOW_ROOT%\doc\version.texi" > nul 2>&1
     del "%STOW_ROOT%\doc\manual-single.html" > nul 2>&1
     del "%STOW_ROOT%\doc\manual.pdf" > nul 2>&1
@@ -90,6 +90,7 @@ exit /b
     rmdir /q /s "%STOW_ROOT%\autom4te.cache\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\blib\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\doc\manual-split\" > nul 2>&1
+    rmdir /q /s "%STOW_ROOT%\doc\manual.t2d\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\stow\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\cover_db\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\tmp-testing-trees\" > nul 2>&1

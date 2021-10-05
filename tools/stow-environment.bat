@@ -16,7 +16,9 @@
 :: along with this program. If not, see https://www.gnu.org/licenses/.
 ::
 
-call :SetupStowEnvironment "%~dp0..\"
+if not exist "%STOW_ROOT%" (
+    call :SetupStowEnvironment "%~dp0..\"
+)
 
 exit /b
 

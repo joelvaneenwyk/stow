@@ -37,8 +37,10 @@ exit /b
     setlocal EnableExtensions EnableDelayedExpansion
 
     set _root=%~dp1
-    set STOW_ROOT=%_root:~0,-1%
-    call "%STOW_ROOT%\tools\stow-environment.bat"
+    call "%_root:~0,-1%\tools\stow-environment.bat"
+
+    :: Remove all intermediate files before we start
+    call "%STOW_ROOT%\tools\make-clean.bat"
 
     :: We use 'minimal' to match what CI uses by default to ensure we have a clean environment
     :: for reproducing issues on CI. You can enable 'inherit' if needed but it tends to just make
