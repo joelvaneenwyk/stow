@@ -31,7 +31,7 @@ exit /b
         echo [command]%*
     )
     call %*
-endlocal & exit /b
+exit /b
 
 :StartShell
     setlocal EnableExtensions EnableDelayedExpansion
@@ -58,9 +58,10 @@ endlocal & exit /b
     )
 
     call :Run wsl bash test.sh
-    if errorlevel 1 (
-        echo WSL Failed.
+    if not "!ERRORLEVEL!"=="0" (
+        echo ERROR: WSL doc build failed.
         exit /b 1
     )
+
     call :Run "%WIN_UNIX_DIR%\msys2_shell.cmd" -no-start -mingw64 -defterm -shell bash -here -c "./test.sh"
 exit /b

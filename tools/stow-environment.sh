@@ -413,6 +413,25 @@ function update_stow_environment() {
         if [ -f "$_localTexLive/tex.exe" ]; then
             if [ ! -f "$TEX" ]; then
                 TEX="$_localTexLive/tex.exe"
+
+                export TEXLIVE_ROOT="$STOW_ROOT/.tmp/texlive"
+                export TEXLIVE_INSTALL="$STOW_ROOT/.tmp/texlive"
+                export TEXDIR="$STOW_ROOT/.tmp/texlive"
+                export TEXLIVE_BIN="$TEXDIR/bin/win32"
+                export TEXMFCONFIG="$TEXDIR/texmf-config"
+                export TEXMFHOME="$TEXDIR/texmf-local"
+                export TEXMFLOCAL="$TEXDIR/texmf-local"
+                export TEXMFSYSCONFIG="$TEXDIR/texmf-config"
+                export TEXMFSYSVAR="$TEXDIR/texmf-var"
+                export TEXMFVAR="$TEXDIR/texmf-var"
+                export TEXLIVE_INSTALL_PREFIX="$TEXDIR"
+                export TEXLIVE_INSTALL_TEXDIR="$TEXDIR"
+                export TEXLIVE_INSTALL_TEXMFCONFIG="$TEXDIR/texmf-config"
+                export TEXLIVE_INSTALL_TEXMFHOME="$TEXDIR/texmf-local"
+                export TEXLIVE_INSTALL_TEXMFLOCAL="$TEXDIR/texmf-local"
+                export TEXLIVE_INSTALL_TEXMFSYSCONFIG="$TEXDIR/texmf-config"
+                export TEXLIVE_INSTALL_TEXMFSYSVAR="$TEXDIR/texmf-var"
+                export TEXLIVE_INSTALL_TEXMFVAR="$TEXDIR/texmf-var"
             fi
 
             if [ ! -f "$PDFTEX" ]; then

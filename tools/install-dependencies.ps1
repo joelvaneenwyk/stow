@@ -310,7 +310,7 @@ instopt_adjustrepo 1
 #instopt_desktop_integration 0
 #instopt_file_assocs 0
 instopt_letter 0
-instopt_portable 1
+instopt_portable 0
 instopt_write18_restricted 1
 tlpdbopt_autobackup 1
 tlpdbopt_backupdir tlpkg/backups
@@ -334,6 +334,11 @@ tlpdbopt_w32_multi_user 0
             & cmd.exe /d /c "$env:TEXLIVE_INSTALL" -no-gui -portable -profile "$texLiveProfile"
         } else {
             Write-Host "TeX Live install process only supported on Windows."
+        }
+
+        if ($IsWindows -or $ENV:OS) {
+            $env:Path = "$env:TEXLIVE_BIN;$env:Path"
+            & cmd.exe /d /c "call $env:TEXLIVE_BIN/tlmgr.bat update -all"
         }
     }
     catch [Exception] {
