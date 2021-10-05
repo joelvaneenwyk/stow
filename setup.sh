@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/bin/sh
 #
 # This file is part of GNU Stow.
 #
@@ -17,34 +17,25 @@
 #
 
 # Standard safety protocol
-set -ef -o pipefail
+set -eu
 
-STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+if [ -n "${BASH_VERSION:-}" ]; then
+    echo "Bash v$BASH_VERSION"
 
-# shellcheck source=tools/stow-environment.sh
-source "$STOW_ROOT/tools/stow-environment.sh"
+    # shellcheck disable=SC3028,SC3054
+    STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
-# shellcheck source=tools/make-clean.sh
-bash "$STOW_ROOT/tools/make-clean.sh"
+    # shellcheck source=tools/stow-environment.sh
+    . "$STOW_ROOT/tools/stow-environment.sh"
 
-# shellcheck source=tools/install-dependencies.sh
-bash "$STOW_ROOT/tools/install-dependencies.sh"
+    stow_setup
+else
+    STOW_ROOT="$(cd -P -- "$(dirname -- "$0")" && pwd)"
 
-(
-    cd "$STOW_ROOT" || true
+    if [ -x "$(command -v apk)" ] && [ ! -x "$(command -v bash)" ]; then
+        apk update
+        apk add bash
+    fi
 
-    # This will create 'configure' script
-    run_command autoreconf -iv
-
-    # Run configure to generate 'Makefile' and then run make to create the
-    # stow library and binary files e.g., 'stow', 'chkstow', etc.
-    run_command ./configure --srcdir="$STOW_ROOT" --with-pmdir="${PMDIR:-}" --prefix="${STOW_SITE_PREFIX:-}"
-
-    run_command make
-
-    # This will create 'Build' or 'Build.bat' depending on platform
-    run_command "$STOW_PERL" -I "$STOW_ROOT" -I "$STOW_ROOT/lib" "$STOW_ROOT/Build.PL"
-
-    # shellcheck source=tools/make-stow.sh
-    run_command "$STOW_ROOT/tools/make-stow.sh"
-)
+    bash "$STOW_ROOT/setup.sh"
+fi

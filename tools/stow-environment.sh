@@ -28,7 +28,16 @@ function normalize_path {
     return 0
 }
 
-timestamp() {
+function resolve_path {
+    input_path="$(normalize_path "${1:-}")"
+    if [ ! -e "$input_path" ]; then
+        input_path=""
+    fi
+    echo "$input_path"
+    return 0
+}
+
+function timestamp() {
     echo "##[timestamp] $(date +"%T")"
 }
 
@@ -113,19 +122,22 @@ function install_packages() {
     packages=("$@")
 
     if [ -x "$(command -v apt-get)" ]; then
-        use_sudo apt-get update --allow-releaseinfo-change
-        use_sudo apt-get -y install \
-            sudo bzip2 gawk curl patch \
-            build-essential make autotools-dev automake autoconf \
-            texlive texinfo "${packages[@]}"
+        DEBIAN_FRONTEND=noninteractive use_sudo apt-get update \
+            --allow-releaseinfo-change
+        DEBIAN_FRONTEND=noninteractive use_sudo apt-get -y install \
+            --no-install-recommends "${packages[@]}"
     elif [ -x "$(command -v brew)" ]; then
-        brew install autoconf automake libtool texinfo "${packages[@]}"
+        brew install "${packages[@]}"
 
         # Needed for tex binaries
-        brew install --cask basictex
+        if [ ! -x "$(command -v tex)" ]; then
+            brew install --cask basictex
+        fi
 
         # Allows tex to be used right after installation
-        eval "$(/usr/libexec/path_helper)"
+        if [ -f "/usr/libexec/path_helper" ]; then
+            eval "$(/usr/libexec/path_helper)"
+        fi
 
         # Need to make sure that latest texinfo and makeinfo are found first as the version
         # that comes with macOS is too old and you will get errors while building docs with
@@ -138,61 +150,51 @@ function install_packages() {
         fi
     elif [ -x "$(command -v apk)" ]; then
         use_sudo apk update
-        use_sudo apk add \
-            sudo wget curl unzip build-base make bash "${packages[@]}"
+        use_sudo apk add "${packages[@]}"
+    elif [ -x "$(command -v pacman)" ]; then
+        run_named_command_group "Install Packages" pacman \
+            -S --quiet --noconfirm --needed "${packages[@]}"
+    fi
+}
+
+function install_system_dependencies() {
+    packages=()
+
+    if [ -x "$(command -v apt-get)" ]; then
+        packages+=(
+            sudo git bzip2 gawk curl patch
+            perl cpanminus libssl-dev
+            build-essential make autotools-dev automake autoconf
+            texlive texinfo
+        )
+    elif [ -x "$(command -v brew)" ]; then
+        packages+=(
+            autoconf automake libtool texinfo
+        )
+    elif [ -x "$(command -v apk)" ]; then
+        packages+=(
+            sudo wget curl unzip bash xclip git
+            build-base gcc g++ make musl-dev openssl openssl-dev zlib-dev
+            automake autoconf
+            perl perl-dev perl-utils perl-app-cpanminus
+            texinfo texlive
+        )
     elif [ -x "$(command -v pacman)" ]; then
         if [ ! -x "$(command -v git)" ]; then
             packages+=(git)
         fi
 
         packages+=(
-            msys2-keyring base-devel
-            make autoconf automake1.16 automake-wrapper
+            base-devel gcc make autoconf automake1.16 automake-wrapper libtool
+            perl-devel libcrypt-devel openssl openssl-devel
             texinfo texinfo-tex
         )
 
-        if [ -n "${MINGW_PACKAGE_PREFIX:-}" ]; then
+        if [ -n "${MSYSTEM:-}" ]; then
             packages+=(
-                "$MINGW_PACKAGE_PREFIX-make"
-                "$MINGW_PACKAGE_PREFIX-binutils"
+                msys2-keyring msys2-runtime-devel msys2-w32api-headers msys2-w32api-runtime
             )
         fi
-
-        if [ ! -x "$(command -v tex)" ]; then
-            packages+=(
-                "${MINGW_PACKAGE_PREFIX:-mingw-w64-x86_64}-texlive-bin"
-                "${MINGW_PACKAGE_PREFIX:-mingw-w64-x86_64}-texlive-core"
-            )
-        fi
-
-        run_named_command_group "Install Packages" pacman -S --quiet --noconfirm --needed "${packages[@]}"
-    fi
-}
-
-function install_system_dependencies() {
-    packages=("$@")
-
-    if [ -x "$(command -v apt-get)" ]; then
-        install_packages \
-            sudo bzip2 gawk curl libssl-dev patch \
-            build-essential make autotools-dev automake autoconf \
-            cpanminus \
-            texlive texinfo "${packages[@]}"
-    elif [ -x "$(command -v brew)" ]; then
-        install_packages autoconf automake libtool texinfo "${packages[@]}"
-    elif [ -x "$(command -v apk)" ]; then
-        install_packages \
-            sudo wget curl unzip xclip \
-            build-base gcc g++ make musl-dev openssl-dev zlib-dev \
-            perl-dev perl-utils perl-app-cpanminus \
-            bash openssl "${packages[@]}"
-    elif [ -x "$(command -v pacman)" ]; then
-        packages+=(
-            msys2-keyring msys2-runtime-devel msys2-w32api-headers msys2-w32api-runtime
-            base-devel gcc make autoconf automake1.16 automake-wrapper
-            libtool libcrypt-devel openssl openssl-devel
-            perl-devel
-        )
 
         if [ -n "${MINGW_PACKAGE_PREFIX:-}" ]; then
             packages+=(
@@ -201,10 +203,19 @@ function install_system_dependencies() {
                 "$MINGW_PACKAGE_PREFIX-binutils"
                 "$MINGW_PACKAGE_PREFIX-openssl"
             )
-        fi
 
-        install_packages "${packages[@]}"
+            if [ ! -x "$(command -v tex)" ]; then
+                packages+=(
+                    "${MINGW_PACKAGE_PREFIX:-mingw-w64-x86_64}-texlive-bin"
+                    "${MINGW_PACKAGE_PREFIX:-mingw-w64-x86_64}-texlive-core"
+                )
+            fi
+        fi
     fi
+
+    install_packages "${packages[@]}"
+
+    unset STOW_ENVIRONMENT_INITIALIZED
 }
 
 function initialize_perl() {
@@ -212,51 +223,55 @@ function initialize_perl() {
     # updating and installing modules.
     update_stow_environment
 
-    (
-        echo "yes"
-        echo ""
-        echo "no"
-        echo "exit"
-    ) | run_command_group use_sudo "$STOW_PERL" -MCPAN -e "shell" || true
+    if [ -x "$STOW_PERL" ]; then
+        if "$STOW_PERL" -MCPAN -le 1 2>/dev/null; then
+            (
+                echo "yes"
+                echo ""
+                echo "no"
+                echo "exit"
+            ) | run_command_group use_sudo "$STOW_PERL" -MCPAN -e "shell" || true
 
-    run_command_group use_sudo "$STOW_PERL" "$STOW_ROOT/tools/initialize-cpan-config.pl" || true
-
-    # Depending on install order it is possible in an MSYS environment to get errors about
-    # the 'pl2bat' file being missing. Workaround here is to ensure ExtUtils::MakeMaker is
-    # installed and then calling 'pl2bat' to generate it. It should be located under bin
-    # folder at '/mingw64/bin/core_perl/pl2bat.bat'
-    if [ -n "${MSYSTEM:-}" ]; then
-        if [ ! "${MSYSTEM:-}" = "MSYS" ]; then
-            export PATH="$PATH:$MSYSTEM_PREFIX/bin:$MSYSTEM_PREFIX/bin/core_perl"
+            run_command_group use_sudo "$STOW_PERL" "$STOW_ROOT/tools/initialize-cpan-config.pl" || true
         fi
 
-        # We intentionally use 'which' here as we are on Windows
-        # shellcheck disable=SC2230
-        if [ -x "$(command -v pl2bat)" ]; then
-            pl2bat "$(which pl2bat 2>/dev/null)" 2>/dev/null || true
+        # Depending on install order it is possible in an MSYS environment to get errors about
+        # the 'pl2bat' file being missing. Workaround here is to ensure ExtUtils::MakeMaker is
+        # installed and then calling 'pl2bat' to generate it. It should be located under bin
+        # folder at '/mingw64/bin/core_perl/pl2bat.bat'
+        if [ -n "${MSYSTEM:-}" ]; then
+            if [ ! "${MSYSTEM:-}" = "MSYS" ]; then
+                export PATH="$PATH:$MSYSTEM_PREFIX/bin:$MSYSTEM_PREFIX/bin/core_perl"
+            fi
+
+            # We intentionally use 'which' here as we are on Windows
+            # shellcheck disable=SC2230
+            if [ -x "$(command -v pl2bat)" ]; then
+                pl2bat "$(which pl2bat 2>/dev/null)" 2>/dev/null || true
+            fi
         fi
-    fi
 
-    if ! "$STOW_PERL" -MApp::cpanminus -le 1 2>/dev/null; then
-        local _cpanm
-        _cpanm="$STOW_ROOT/cpanm"
-
-        if [ -x "$(command -v curl)" ]; then
-            curl -L --silent "https://cpanmin.us/" -o "$_cpanm"
-        fi
-
-        chmod +x "$_cpanm"
-        run_command use_sudo "$STOW_PERL" "$_cpanm" --notest App::cpanminus || true
-        rm -f "$_cpanm"
-
-        # Use 'cpan' to install as a last resort
         if ! "$STOW_PERL" -MApp::cpanminus -le 1 2>/dev/null; then
-            install_perl_modules "App::cpanminus" || true
-        fi
-    fi
+            local _cpanm
+            _cpanm="$STOW_ROOT/cpanm"
 
-    # Install this to silence warning when doing initial configure
-    install_perl_modules "Test::Output"
+            if [ -x "$(command -v curl)" ]; then
+                curl -L --silent "https://cpanmin.us/" -o "$_cpanm"
+            fi
+
+            chmod +x "$_cpanm"
+            run_command use_sudo "$STOW_PERL" "$_cpanm" --notest App::cpanminus || true
+            rm -f "$_cpanm"
+
+            # Use 'cpan' to install as a last resort
+            if ! "$STOW_PERL" -MApp::cpanminus -le 1 2>/dev/null; then
+                install_perl_modules "App::cpanminus" || true
+            fi
+        fi
+
+        # Install this to silence warning when doing initial configure
+        install_perl_modules "Test::Output"
+    fi
 }
 
 function install_perl_dependencies() {
@@ -285,7 +300,7 @@ function install_perl_dependencies() {
 }
 
 function install_dependencies() {
-    install_system_dependencies "$@"
+    install_system_dependencies
     install_perl_dependencies
 }
 
@@ -392,12 +407,18 @@ function update_stow_environment() {
 
     TEX=$(normalize_path "${TEX:-}")
     if [ ! -f "$TEX" ]; then
-        _localTexLive="$STOW_ROOT/.tmp/texlive/bin/win32"
-        if [ -f "$_localTexLive/tex.exe" ]; then
-            TEX="$_localTexLive/tex.exe"
-        else
-            TEX="$(which tex 2>/dev/null)"
+        if _tex="$(which tex 2>/dev/null)"; then
+            TEX=$_tex
         fi
+
+        case "$(uname -s)" in
+        CYGWIN* | MINGW32* | MSYS* | MINGW*)
+            _localTexLive="$STOW_ROOT/.tmp/texlive/bin/win32"
+            if [ -f "$_localTexLive/tex.exe" ]; then
+                TEX="$_localTexLive/tex.exe"
+            fi
+            ;;
+        esac
     fi
     export TEX
 
@@ -446,71 +467,80 @@ function update_stow_environment() {
     # different e.g., we just installed mingw64 version of perl and want to use that.
     STOW_PERL="$(normalize_path "${PERL_LOCAL:-${STOW_PERL:-${PERL:-}}}")"
     if [ ! -f "$STOW_PERL" ]; then
-        STOW_PERL="$(command -v perl)"
+        STOW_PERL=""
 
-        if [ ! -f "$STOW_PERL" ] && [ -f "/mingw64/bin/perl" ]; then
-            STOW_PERL="/mingw64/bin/perl"
-        fi
-
-        if [ -z "$STOW_PERL" ]; then
-            STOW_PERL=perl
+        if ! STOW_PERL="$(command -v perl)"; then
+            if [ -f "/mingw64/bin/perl" ]; then
+                STOW_PERL="/mingw64/bin/perl"
+            fi
         fi
     fi
     export STOW_PERL
 
     STOW_VERSION="0.0.0"
+    PERL_C_BIN=""
+    PERL_BIN=""
+    PERL_LIB=""
+    PMDIR=""
+
     _perl_version="0.0"
 
-    if _perl_version=$("$STOW_PERL" -e "print substr($^V, 1)"); then
-        STOW_VERSION="$("$STOW_PERL" "$STOW_ROOT/tools/get-version")"
-        export STOW_VERSION
+    if [ -n "$STOW_PERL" ]; then
+        if _perl_version=$("$STOW_PERL" -e "print substr($^V, 1)"); then
+            STOW_VERSION="$("$STOW_PERL" "$STOW_ROOT/tools/get-version")"
+            export STOW_VERSION
 
-        # shellcheck disable=SC2016
-        PERL_LIB="$("$STOW_PERL" -MCPAN -e 'use Config; print $Config{privlib};')"
-        PERL_LIB="$(normalize_path "$PERL_LIB")"
-        export PERL_LIB
+            PERL_LIB="${PERL_LIB:-}"
+            PERL_CPAN_CONFIG="${PERL_CPAN_CONFIG:-}"
+            if "$STOW_PERL" -MCPAN -le 1 2>/dev/null; then
+                # shellcheck disable=SC2016
+                PERL_LIB="$("$STOW_PERL" -MCPAN -e 'use Config; print $Config{privlib};')"
+                PERL_LIB="$(resolve_path "$PERL_LIB")"
+                [[ -z "$PERL_LIB" ]] && PERL_LIB="${HOME:-}"
 
-        # This is the default location where we can expect to find the config. If it
-        # exists then we have already been setup.
-        PERL_CPAN_CONFIG="$PERL_LIB/CPAN/Config.pm"
-        export PERL_CPAN_CONFIG
+                # This is the default location where we can expect to find the config. If it
+                # exists then we have already been setup.
+                PERL_CPAN_CONFIG="$(resolve_path "$PERL_LIB/CPAN/Config.pm")"
+            fi
+            export PERL_LIB PERL_CPAN_CONFIG
 
-        if [ ! -d "${PMDIR:-}" ]; then
-            PMDIR="$(
-                "$STOW_PERL" -V |
-                    awk '/@INC/ {p=1; next} (p==1) {print $1}' |
-                    sed 's/\\/\//g' |
-                    head -n 1
-            )"
-        fi
-        PMDIR=$(normalize_path "$PMDIR")
-        export PMDIR
+            if [ ! -d "${PMDIR:-}" ]; then
+                PMDIR="$(
+                    "$STOW_PERL" -V |
+                        awk '/@INC:/ {p=1; next} (p==1) {print $1}' |
+                        sed 's/\\/\//g' |
+                        head -n 1
+                )"
+            fi
+            PMDIR=$(resolve_path "$PMDIR")
+            export PMDIR
 
-        # Only find a prefix if PMDIR does not exist on its own
-        STOW_SITE_PREFIX="${STOW_SITE_PREFIX:-}"
-        if [ ! -d "$PMDIR" ]; then
-            siteprefix=""
-            eval "$("$STOW_PERL" -V:siteprefix)"
-            STOW_SITE_PREFIX=$(normalize_path "$siteprefix")
-        fi
-        export STOW_SITE_PREFIX
+            # Only find a prefix if PMDIR does not exist on its own
+            STOW_SITE_PREFIX="${STOW_SITE_PREFIX:-}"
+            if [ ! -d "$PMDIR" ]; then
+                siteprefix=""
+                eval "$("$STOW_PERL" -V:siteprefix)"
+                STOW_SITE_PREFIX=$(normalize_path "$siteprefix")
+            fi
+            export STOW_SITE_PREFIX
 
-        # shellcheck disable=SC2016
-        PERL5LIB=$("$STOW_PERL" -le 'print $INC[0]')
-        PERL5LIB=$(normalize_path "$PERL5LIB")
-        export PERL5LIB
+            # shellcheck disable=SC2016
+            PERL5LIB=$("$STOW_PERL" -le 'print $INC[0]')
+            PERL5LIB=$(normalize_path "$PERL5LIB")
+            export PERL5LIB
 
-        if [ ! -x "$(command -v gmake)" ]; then
-            _perl_bin="$(dirname "$STOW_PERL")"
-            export PERL_BIN="$_perl_bin"
+            if [ ! -x "$(command -v gmake)" ]; then
+                _perl_bin="$(dirname "$STOW_PERL")"
+                export PERL_BIN="$_perl_bin"
 
-            while [ ! "$_perl_bin" == "/" ] && [ -d "$_perl_bin/../" ]; do
-                _perl_bin=$(cd "$_perl_bin" && cd .. && pwd)
-                if [ ! "$_perl_bin" == "/" ] && [ -d "$_perl_bin/c/bin" ]; then
-                    export PERL_C_BIN="$_perl_bin/c/bin"
-                    break
-                fi
-            done
+                while [ ! "$_perl_bin" == "/" ] && [ -d "$_perl_bin/../" ]; do
+                    _perl_bin=$(cd "$_perl_bin" && cd .. && pwd)
+                    if [ ! "$_perl_bin" == "/" ] && [ -d "$_perl_bin/c/bin" ]; then
+                        export PERL_C_BIN="$_perl_bin/c/bin"
+                        break
+                    fi
+                done
+            fi
         fi
     fi
 
@@ -543,6 +573,37 @@ function update_stow_environment() {
 
         export STOW_ENVIRONMENT_INITIALIZED="1"
     fi
+}
+
+function stow_setup() {
+    shopt -s failglob 2>&1 || true
+
+    set -o pipefail >/dev/null 2>&1 || true
+
+    # shellcheck source=tools/make-clean.sh
+    bash "$STOW_ROOT/tools/make-clean.sh"
+
+    # shellcheck source=tools/install-dependencies.sh
+    bash "$STOW_ROOT/tools/install-dependencies.sh"
+
+    (
+        cd "$STOW_ROOT" || true
+
+        # This will create 'configure' script
+        run_command autoreconf -iv
+
+        # Run configure to generate 'Makefile' and then run make to create the
+        # stow library and binary files e.g., 'stow', 'chkstow', etc.
+        run_command ./configure --srcdir="$STOW_ROOT" --with-pmdir="${PMDIR:-}" --prefix="${STOW_SITE_PREFIX:-}"
+
+        run_command make
+
+        # This will create 'Build' or 'Build.bat' depending on platform
+        run_command "$STOW_PERL" -I "$STOW_ROOT" -I "$STOW_ROOT/lib" "$STOW_ROOT/Build.PL"
+
+        # shellcheck source=tools/make-stow.sh
+        run_command "$STOW_ROOT/tools/make-stow.sh"
+    )
 }
 
 update_stow_environment

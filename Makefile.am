@@ -132,7 +132,7 @@ edit = sed -e 's|[@]PERL[@]|$(PERL)|g'       \
 
 pmdir_in_INC = \
 	PERL5LIB= $(PERL) -V | \
-	    awk '/@INC/ {p=1; next} p==1 {print $$1}' | \
+	    awk '/@INC:/ {p=1; next} p==1 {print $$1}' | \
 	    sed 's/\\/\//g' | \
 	    grep -q "$(pmdir)"
 

@@ -16,9 +16,6 @@
 # along with this program. If not, see https://www.gnu.org/licenses/.
 #
 
-STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && cd ../ && pwd -P)"
-source "$STOW_ROOT/tools/stow-environment.sh"
-
 function initialize_package_manager() {
     if [ -x "$(command -v pacman)" ]; then
         echo "[stow] Initializing MSYS2 package manager."
@@ -66,8 +63,11 @@ EOL
     echo "[stow] Initialized package manager."
 }
 
+STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && cd ../ && pwd -P)"
+source "$STOW_ROOT/tools/stow-environment.sh"
+
 if [ -f '/etc/post-install/09-stow.post' ]; then
     initialize_package_manager
 else
-    install_dependencies "$@"
+    install_dependencies
 fi

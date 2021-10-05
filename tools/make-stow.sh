@@ -61,7 +61,7 @@ function make_stow() {
 
         if ! PERL5LIB=$(
             "$STOW_PERL" -V |
-                awk '/@INC/ {p=1; next} (p==1) {print $1}' |
+                awk '/@INC:/ {p=1; next} (p==1) {print $1}' |
                 sed 's/\\/\//g' |
                 grep "$PMDIR" |
                 head -n 1

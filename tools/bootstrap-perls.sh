@@ -17,7 +17,7 @@
 #
 
 # Standard safety protocol
-set -ef -o pipefail
+set -euo pipefail
 
 PERLBREW_ROOT="${PERLBREW_ROOT:-/usr/local/perlbrew}"
 
