@@ -406,21 +406,28 @@ function update_stow_environment() {
     export STOW_ROOT
 
     TEX=$(normalize_path "${TEX:-}")
-    if [ ! -f "$TEX" ]; then
-        if _tex="$(command -v tex 2>/dev/null)"; then
-            TEX=$_tex
-        fi
-
-        case "$(uname -s)" in
-        CYGWIN* | MINGW32* | MSYS* | MINGW*)
-            _localTexLive="$STOW_ROOT/.tmp/texlive/bin/win32"
-            if [ -f "$_localTexLive/tex.exe" ]; then
+    PDFTEX=$(normalize_path "${PDFTEX:-}")
+    case "$(uname -s)" in
+    CYGWIN* | MINGW32* | MSYS* | MINGW*)
+        _localTexLive="$STOW_ROOT/.tmp/texlive/bin/win32"
+        if [ -f "$_localTexLive/tex.exe" ]; then
+            if [ ! -f "$TEX" ]; then
                 TEX="$_localTexLive/tex.exe"
             fi
-            ;;
-        esac
+
+            if [ ! -f "$PDFTEX" ]; then
+                PDFTEX="$_localTexLive/pdfetex.exe"
+            fi
+        fi
+        ;;
+    esac
+    if [ ! -f "$TEX" ] && _tex="$(which tex 2>/dev/null)"; then
+        TEX=$_tex
     fi
-    export TEX
+    if [ ! -f "$PDFTEX" ] && _pdftex="$(which pdfetex 2>/dev/null)"; then
+        PDFTEX=$_pdftex
+    fi
+    export TEX PDFTEX
 
     # Find the local Windows install if it exists
     PERL_LOCAL="${PERL_LOCAL:-}"

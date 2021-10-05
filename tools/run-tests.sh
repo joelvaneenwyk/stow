@@ -117,14 +117,15 @@ function test_perl_version() {
         run_command_group ./Build build
         run_command_group cover -test
 
-        result_filename=$(
+        _result_filename=$(
             echo "test_results_${RUNNER_OS:-$(uname)}_${MSYSTEM:-default}.xml" | awk '{print tolower($0)}'
         )
+        test_results_path="$STOW_ROOT/$_result_filename"
 
         prove -I t/ -I bin/ -I lib/ \
             --formatter "TAP::Formatter::JUnit" \
             --timer --verbose --normalize --parse \
-            t/ | tee "$result_filename"
+            t/ | tee "$test_results_path"
 
         # Insert newline as the above XML output does not add trailing newline
         echo ""
@@ -132,7 +133,7 @@ function test_perl_version() {
         # Run 'distcheck' at the end to ensure intermediate test results are excluded
         run_command_group ./Build distcheck
 
-        echo "Test results: '$result_filename'"
+        echo "Test results: '$test_results_path'"
     )
 }
 

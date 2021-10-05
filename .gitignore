@@ -20,20 +20,22 @@ doc/stow.info
 doc/version.texi
 doc/ChangeLog.OLD
 doc/manual.texi
-doc/manual.pdf
+doc/manual*.pdf
 doc/manual-single.html
 doc/manual-single-old-texi2html.html
 doc/manual-single-texi2html-wrapper.html
-doc/manual-split/
-doc/manual.t2d/
-doc/stow.t2d/
-doc/stow.t2p/
 doc/stow.dvi
 doc/stow.pdf
 doc/stow.8
 doc/stow.toc
 doc/stow.aux
 doc/stow.cp
+
+# Ignore all intermediate documentation files
+manual-split/
+manual.t2d/
+stow.t2d/
+stow.t2p/
 
 lib/*.pm
 lib/Stow/*.pm

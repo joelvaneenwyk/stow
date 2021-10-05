@@ -159,7 +159,7 @@ endlocal & exit /b
     :: We allow profile to be loaded here because we override the HOME directory
     set BASH="%BASH_EXE%" -c
 
-    call :Run %BASH% "source ./tools/stow-environment.sh && install_packages"
+    call :Run %BASH% "source ./tools/stow-environment.sh && install_system_dependencies"
     call :Run %BASH% "source ./tools/stow-environment.sh && make_docs"
     call :Run %BASH% "autoreconf --install --verbose"
     call :Run %BASH% "./configure --prefix='' --with-pmdir='%PERL5LIB%'"
