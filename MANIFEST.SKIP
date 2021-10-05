@@ -81,12 +81,16 @@
 ^config\.(log|status)$
 ^doc/\.dirstamp$
 ^doc/manual-split/
+^doc/stow.t2p/
+^doc/stow.t2d/
+^doc/stow.html/
 ^doc/stamp-vti$
 ^doc/HOWTO-RELEASE$
 ^doc/stow.aux$
 ^doc/stow.log$
 ^doc/stow.cp$
 ^doc/stow.toc$
+^doc/stow.dvi$
 
 \btools/texinfo/\b
 

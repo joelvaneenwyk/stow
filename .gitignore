@@ -26,6 +26,9 @@ doc/manual-single-old-texi2html.html
 doc/manual-single-texi2html-wrapper.html
 doc/manual-split/
 doc/manual.t2d/
+doc/stow.t2d/
+doc/stow.t2p/
+doc/stow.dvi
 doc/stow.pdf
 doc/stow.8
 doc/stow.toc

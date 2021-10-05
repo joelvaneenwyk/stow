@@ -27,6 +27,9 @@ function remove_intermediate_files() {
 
     rm -rf "$STOW_ROOT/doc/doc!manual.t2d" >/dev/null 2>&1
     rm -rf "$STOW_ROOT/doc/manual-split" >/dev/null 2>&1
+    rm -rf "$STOW_ROOT/doc/stow.t2d" >/dev/null 2>&1
+    rm -rf "$STOW_ROOT/doc/stow.t2p" >/dev/null 2>&1
+    rm -rf "$STOW_ROOT/doc/stow.html" >/dev/null 2>&1
     rm -rf "$STOW_ROOT/cover_db" >/dev/null 2>&1
     rm -rf "$STOW_ROOT/tmp-testing-trees" >/dev/null 2>&1
     rm -rf "$STOW_ROOT/.gnupg" >/dev/null 2>&1
@@ -50,6 +53,7 @@ function remove_intermediate_files() {
     rm -f "$STOW_ROOT/doc/stow.cp" >/dev/null 2>&1
     rm -f "$STOW_ROOT/doc/stow.aux" >/dev/null 2>&1
     rm -f "$STOW_ROOT/doc/stow.pdf" >/dev/null 2>&1
+    rm -f "$STOW_ROOT/doc/stow.dvi" >/dev/null 2>&1
     rm -f "$STOW_ROOT/doc/stow.toc" >/dev/null 2>&1
     rm -f "$STOW_ROOT/doc/version.texi" >/dev/null 2>&1
     rm -f "$STOW_ROOT/config."* >/dev/null 2>&1
