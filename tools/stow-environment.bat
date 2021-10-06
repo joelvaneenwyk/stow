@@ -16,10 +16,12 @@
 :: along with this program. If not, see https://www.gnu.org/licenses/.
 ::
 
-if not exist "%STOW_ROOT%" (
-    call :SetupStowEnvironment "%~dp0..\"
-)
+if not exist "%STOW_ROOT%" goto:$Setup
+if "%~1"=="--refresh" goto:$Setup
+exit /b 0
 
+:$Setup
+call :SetupStowEnvironment "%~dp0..\"
 exit /b
 
 ::
@@ -53,7 +55,7 @@ endlocal & exit /b
     set WIN_UNIX_DIR=%STOW_BUILD_TOOLS_ROOT%\msys64
     if exist "!WIN_UNIX_DIR!" goto:$FoundUnixTools
     "C:\Windows\System32\WHERE.exe" /Q msys2_shell
-    if not !ERRORLEVEL!==0 goto:$FoundUnixTools
+    if not "!ERRORLEVEL!"=="0" goto:$FoundUnixTools
         for /f "tokens=* usebackq" %%a in (`"C:\Windows\System32\WHERE.exe" msys2_shell`) do (
             set WIN_UNIX_DIR=%%a
             goto:$FixUnixToolPath
@@ -131,7 +133,7 @@ endlocal & exit /b
         echo Perl (MSYS): '!STOW_PERL_UNIX!'
         echo Perl CPAN Config: '%PERL_CPAN_CONFIG%'
         echo Stow Root (MSYS): '!STOW_ROOT_MSYS!'
-        echo MSYS2: '!WIN_UNIX_DIR_UNIX!'
+        echo MSYS2: '!WIN_UNIX_DIR!' '!WIN_UNIX_DIR_UNIX!'
         echo Stow v!STOW_VERSION!
 
     if not exist "!WIN_UNIX_DIR!\post-install.bat" goto:$SkipPostInstall

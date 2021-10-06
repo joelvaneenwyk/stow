@@ -1143,22 +1143,20 @@ run_makeinfo() {
         # Run in a temporary directory to avoid leaving files.
         version_test_dir=$t2ddir/version_test
         ensure_dir "$version_test_dir"
-        cd "$version_test_dir"
-        which kpsewhich
-        which mktexmf
-        echo '\input texinfo.tex @bye' >txiversion.tex
-        TEXINPUTS=".:/c/Users/jovaneen/dotfiles/source/stow/doc:/c/Users/jovaneen/dotfiles/source/stow/autoconf:/usr/share/automake-1.16:/c/Users/jovaneen/dotfiles/source/stow/doc:/c/Users/jovaneen/dotfiles/source/stow/doc/.:/c/Users/jovaneen/dotfiles/source/stow/doc/.:/c/Users/jovaneen/dotfiles/source/stow/automake:/usr/share/automake-1.16:/c/Users/jovaneen/dotfiles/source/stow/doc:" $TEX txiversion.tex
         if (
             cd "$version_test_dir"
+            report "PWD: $(pwd)"
             echo '\input texinfo.tex @bye' >txiversion.tex
             # Be sure that if tex wants to fail, it is not interactive:
             # close stdin.
-            TEXINPUTS=".:/c/Users/jovaneen/dotfiles/source/stow/doc:/c/Users/jovaneen/dotfiles/source/stow/autoconf:/usr/share/automake-1.16:/c/Users/jovaneen/dotfiles/source/stow/doc:/c/Users/jovaneen/dotfiles/source/stow/doc/.:/c/Users/jovaneen/dotfiles/source/stow/doc/.:/c/Users/jovaneen/dotfiles/source/stow/automake:/usr/share/automake-1.16:/c/Users/jovaneen/dotfiles/source/stow/doc:" $TEX txiversion.tex
+            #TEXINPUTS=".;../;doc/;;"
+            $TEX txiversion.tex </dev/null >txiversion.out 2>txiversion.err
         ); then :; else
             report "texinfo.tex appears to be broken.
 This may be due to the environment variable TEX set to something
 other than (plain) tex, a corrupt texinfo.tex file, or
 to tex itself simply not working."
+            report "TEXINPUTS = $TEXINPUTS"
             cat "$version_test_dir/txiversion.out"
             cat "$version_test_dir/txiversion.err" >&2
             error 1 "quitting."
@@ -1597,7 +1595,7 @@ cleanup() {
     true:true) mostly_clean ;; # build mode is "clean"
     false:false)
         cd_orig
-        remove "$t2ddir"
+        #remove "$t2ddir"
         ;; # build mode is "local"
     esac
 }

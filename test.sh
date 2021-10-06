@@ -23,6 +23,31 @@ fi
     echo "@set VERSION $STOW_VERSION"
 ) >"$STOW_ROOT/doc/version.texi"
 
+unset BIBINPUTS BSTINPUTS DVIPSHEADERS INDEXSTYLE MFINPUTS MPINPUTS TEXINPUTS TFMFONTS
+unset COMSPEC ComSpec
+
+(
+    rm -rf "$STOW_ROOT/doc/manual.t2d/version_test"
+    mkdir -p "$STOW_ROOT/doc/manual.t2d/version_test"
+    cd "$STOW_ROOT/doc/manual.t2d/version_test"
+    echo '\input texinfo.tex @bye' >txiversion.tex
+    export TEXINPUTS=".:$STOW_ROOT/doc/:doc/::"
+    /mingw64/bin/tex txiversion.tex
+)
+
+#STOW_TEXI2DVI="$STOW_ROOT/doc/texi2dvi.sh"
+STOW_TEXI2DVI=texi2dvi
+
+cd "$STOW_ROOT/doc" || true
+export PATH=".:$PATH"
+export LOCAL='.'
+TEXINPUTS='$LOCAL:doc/::' "$STOW_TEXI2DVI" --pdf \
+    -I '$LOCAL/ding' \
+    --verbose --build=local \
+    -o "manual.pdf" "stow.texi"
+
+exit 0
+
 _log="$STOW_ROOT/texi2dvi_$(uname -s).log"
 (
     rm -f \
@@ -48,8 +73,8 @@ _log="$STOW_ROOT/texi2dvi_$(uname -s).log"
         rm -rf "$STOW_ROOT/doc/manual.t2d"
 
         cd "$STOW_ROOT/doc" || true
-        TEXINPUTS="../;." run_command_group pdftex "./stow.texi"
-        mv "$STOW_ROOT/doc/stow.pdf" "$STOW_ROOT/doc/manual_$(uname -s)_pdftex.pdf"
+        #TEXINPUTS="../;." run_command_group pdftex "./stow.texi"
+        #mv "$STOW_ROOT/doc/stow.pdf" "$STOW_ROOT/doc/manual_$(uname -s)_pdftex.pdf"
     ); then
         echo "✔ Used 'doc/stow.texi' to generate 'doc/manual.pdf'"
 
@@ -65,17 +90,22 @@ _log="$STOW_ROOT/texi2dvi_$(uname -s).log"
             rm -rf "$STOW_ROOT/manual.t2d"
             rm -rf "$STOW_ROOT/doc/manual.t2d"
 
-            cd "$STOW_ROOT/doc" || true
-
             export TEXINPUTS=".:$STOW_ROOT/automake:/usr/share/automake-1.16:$STOW_ROOT/doc:"
 
             #export MAKEINFO='sh "$STOW_ROOT/automake/missing" makeinfo -I . -I ./doc  -I doc -I ./doc -I ../'
             unset MAKEINFO
 
-            COMSPEC="" TEXINPUTS=".:$STOW_ROOT/automake:/usr/share/automake-1.16:$STOW_ROOT/doc:" \
-                "$STOW_ROOT/doc/texi2dvi.sh" --pdf \
-                --debug --verbose --tidy \
-                -o "manual.pdf" "stow.texi"
+            #cd "$STOW_ROOT" || true
+            #COMSPEC="" TEXINPUTS=".:$STOW_ROOT/automake:/usr/share/automake-1.16:$STOW_ROOT/doc:" \
+            #    . "$STOW_ROOT/doc/texi2dvi.sh" --pdf \
+            #    --debug --verbose \
+            #    -o "manual.pdf" "stow.texi"
+
+            cd "$STOW_ROOT" || true
+            . "$STOW_ROOT/doc/texi2dvi.sh" --pdf \
+                --debug --verbose --build=local \
+                -o "doc/manual.pdf" "doc/stow.texi"
+
             mv "$STOW_ROOT/doc/manual.pdf" "$STOW_ROOT/doc/manual_$(uname -s).pdf"
         )
     fi

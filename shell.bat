@@ -37,8 +37,7 @@ endlocal & exit /b
     setlocal EnableExtensions EnableDelayedExpansion
 
     set _root=%~dp1
-    set STOW_ROOT=%_root:~0,-1%
-    call "%STOW_ROOT%\tools\stow-environment.bat"
+    call "%_root:~0,-1%\tools\stow-environment.bat"
 
     :: We use 'minimal' to match what CI uses by default to ensure we have a clean environment
     :: for reproducing issues on CI. You can enable 'inherit' if needed but it tends to just make
@@ -53,9 +52,12 @@ endlocal & exit /b
     set "HOME=%STOW_HOME%"
 
     if not exist "%WIN_UNIX_DIR%\msys2_shell.cmd" (
-        echo ERROR: Failed to find MSYS2 installation.
+        echo ERROR: Missing MSYS2 shell: '%WIN_UNIX_DIR%\msys2_shell.cmd'
         exit /b 5
     )
+
+    :: Let the shell decide which version of TeX to use
+    set TEX=
 
     call :Run "%WIN_UNIX_DIR%\msys2_shell.cmd" -no-start -mingw64 -defterm -shell bash -here -c "source ./tools/stow-environment.sh && bash"
 exit /b

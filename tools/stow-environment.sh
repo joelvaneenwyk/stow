@@ -390,6 +390,8 @@ function update_stow_environment() {
     unset temp
     unset tmp
 
+    export STOW_PREFER_NATIVE=1
+
     STOW_ROOT="$(normalize_path "${STOW_ROOT:-$(pwd)}")"
     if [ ! -f "$STOW_ROOT/Build.PL" ]; then
         if [ -f "/stow/Build.PL" ]; then
@@ -407,46 +409,47 @@ function update_stow_environment() {
 
     TEX=$(normalize_path "${TEX:-}")
     PDFTEX=$(normalize_path "${PDFTEX:-}")
-    case "$(uname -s)" in
-    CYGWIN* | MINGW32* | MSYS* | MINGW*)
-        _localTexLive="$STOW_ROOT/.tmp/texlive/bin/win32"
-        if [ -f "$_localTexLive/tex.exe" ]; then
-            if [ ! -f "$TEX" ]; then
-                TEX="$_localTexLive/tex.exe"
 
-                export TEXLIVE_ROOT="$STOW_ROOT/.tmp/texlive"
-                export TEXLIVE_INSTALL="$STOW_ROOT/.tmp/texlive"
-                export TEXDIR="$STOW_ROOT/.tmp/texlive"
-                export TEXLIVE_BIN="$TEXDIR/bin/win32"
-                export TEXMFCONFIG="$TEXDIR/texmf-config"
-                export TEXMFHOME="$TEXDIR/texmf-local"
-                export TEXMFLOCAL="$TEXDIR/texmf-local"
-                export TEXMFSYSCONFIG="$TEXDIR/texmf-config"
-                export TEXMFSYSVAR="$TEXDIR/texmf-var"
-                export TEXMFVAR="$TEXDIR/texmf-var"
-                export TEXLIVE_INSTALL_PREFIX="$TEXDIR"
-                export TEXLIVE_INSTALL_TEXDIR="$TEXDIR"
-                export TEXLIVE_INSTALL_TEXMFCONFIG="$TEXDIR/texmf-config"
-                export TEXLIVE_INSTALL_TEXMFHOME="$TEXDIR/texmf-local"
-                export TEXLIVE_INSTALL_TEXMFLOCAL="$TEXDIR/texmf-local"
-                export TEXLIVE_INSTALL_TEXMFSYSCONFIG="$TEXDIR/texmf-config"
-                export TEXLIVE_INSTALL_TEXMFSYSVAR="$TEXDIR/texmf-var"
-                export TEXLIVE_INSTALL_TEXMFVAR="$TEXDIR/texmf-var"
-            fi
-
-            if [ ! -f "$PDFTEX" ]; then
-                PDFTEX="$_localTexLive/pdfetex.exe"
-            fi
-        fi
-        ;;
-    esac
     if [ ! -f "$TEX" ] && _tex="$(which tex 2>/dev/null)"; then
         TEX=$_tex
     fi
+    export TEX
+
     if [ ! -f "$PDFTEX" ] && _pdftex="$(which pdfetex 2>/dev/null)"; then
         PDFTEX=$_pdftex
     fi
-    export TEX PDFTEX
+    export PDFTEX
+
+    case "$(uname -s)" in
+    CYGWIN* | MINGW32* | MSYS* | MINGW*)
+        _localTexLive="$STOW_ROOT/.tmp/texlive/bin/win32"
+        if [ ! -f "$TEX" ] && [ -f "$_localTexLive/tex.exe" ]; then
+            TEX="$_localTexLive/tex.exe"
+            PDFTEX="$_localTexLive/pdfetex.exe"
+        fi
+        ;;
+    esac
+
+    if [[ "$TEX" == *.exe ]]; then
+        export TEXLIVE_ROOT="$STOW_ROOT/.tmp/texlive"
+        export TEXLIVE_INSTALL="$STOW_ROOT/.tmp/texlive"
+        export TEXDIR="$STOW_ROOT/.tmp/texlive"
+        export TEXLIVE_BIN="$TEXDIR/bin/win32"
+        export TEXMFCONFIG="$TEXDIR/texmf-config"
+        export TEXMFHOME="$TEXDIR/texmf-local"
+        export TEXMFLOCAL="$TEXDIR/texmf-local"
+        export TEXMFSYSCONFIG="$TEXDIR/texmf-config"
+        export TEXMFSYSVAR="$TEXDIR/texmf-var"
+        export TEXMFVAR="$TEXDIR/texmf-var"
+        export TEXLIVE_INSTALL_PREFIX="$TEXDIR"
+        export TEXLIVE_INSTALL_TEXDIR="$TEXDIR"
+        export TEXLIVE_INSTALL_TEXMFCONFIG="$TEXDIR/texmf-config"
+        export TEXLIVE_INSTALL_TEXMFHOME="$TEXDIR/texmf-local"
+        export TEXLIVE_INSTALL_TEXMFLOCAL="$TEXDIR/texmf-local"
+        export TEXLIVE_INSTALL_TEXMFSYSCONFIG="$TEXDIR/texmf-config"
+        export TEXLIVE_INSTALL_TEXMFSYSVAR="$TEXDIR/texmf-var"
+        export TEXLIVE_INSTALL_TEXMFVAR="$TEXDIR/texmf-var"
+    fi
 
     # Find the local Windows install if it exists
     PERL_LOCAL="${PERL_LOCAL:-}"
@@ -491,13 +494,13 @@ function update_stow_environment() {
 
     # Update version we use after we install in case the default version should be
     # different e.g., we just installed mingw64 version of perl and want to use that.
-    STOW_PERL="$(normalize_path "${PERL_LOCAL:-${STOW_PERL:-${PERL:-}}}")"
-    if [ ! -f "$STOW_PERL" ]; then
-        STOW_PERL=""
-
-        if ! STOW_PERL="$(command -v perl)"; then
+    if ! STOW_PERL="$(command -v perl)"; then
+        STOW_PERL="$(normalize_path "${PERL_LOCAL:-${PERL:-}}")"
+        if [ ! -f "$STOW_PERL" ]; then
             if [ -f "/mingw64/bin/perl" ]; then
                 STOW_PERL="/mingw64/bin/perl"
+            else
+                STOW_PERL=""
             fi
         fi
     fi
