@@ -206,8 +206,9 @@ function install_system_dependencies() {
 
             if [ ! -x "$(command -v tex)" ]; then
                 packages+=(
-                    "${MINGW_PACKAGE_PREFIX:-mingw-w64-x86_64}-texlive-bin"
-                    "${MINGW_PACKAGE_PREFIX:-mingw-w64-x86_64}-texlive-core"
+                    "${MINGW_PACKAGE_PREFIX}-texlive-bin"
+                    "${MINGW_PACKAGE_PREFIX}-texlive-core"
+                    "${MINGW_PACKAGE_PREFIX}-texlive-fonts-recommended"
                 )
             fi
         fi
@@ -492,15 +493,24 @@ function update_stow_environment() {
     )
     export PERL_LOCAL
 
-    # Update version we use after we install in case the default version should be
-    # different e.g., we just installed mingw64 version of perl and want to use that.
-    if ! STOW_PERL="$(command -v perl)"; then
-        STOW_PERL="$(normalize_path "${PERL_LOCAL:-${PERL:-}}")"
-        if [ ! -f "$STOW_PERL" ]; then
-            if [ -f "/mingw64/bin/perl" ]; then
-                STOW_PERL="/mingw64/bin/perl"
-            else
-                STOW_PERL=""
+    # Only favor local Perl install if running on CI
+    if [ -n "${GITHUB_ACTIONS:-}" ]; then
+        STOW_PERL="$(normalize_path "${PERL_LOCAL:-${STOW_PERL:-${PERL:-}}}")"
+    else
+        STOW_PERL=""
+    fi
+
+    if [ ! -f "$STOW_PERL" ]; then
+        # Update version we use after we install in case the default version should be
+        # different e.g., we just installed mingw64 version of perl and want to use that.
+        if ! STOW_PERL="$(command -v perl)"; then
+            STOW_PERL="$(normalize_path "${PERL_LOCAL:-${PERL:-}}")"
+            if [ ! -f "$STOW_PERL" ]; then
+                if [ -f "/mingw64/bin/perl" ]; then
+                    STOW_PERL="/mingw64/bin/perl"
+                else
+                    STOW_PERL=""
+                fi
             fi
         fi
     fi

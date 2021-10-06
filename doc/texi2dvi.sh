@@ -1150,7 +1150,10 @@ run_makeinfo() {
             # Be sure that if tex wants to fail, it is not interactive:
             # close stdin.
             #TEXINPUTS=".;../;doc/;;"
-            $TEX txiversion.tex </dev/null >txiversion.out 2>txiversion.err
+            unset BIBINPUTS BSTINPUTS DVIPSHEADERS INDEXSTYLE MFINPUTS MPINPUTS TEXINPUTS TFMFONTS
+            unset COMSPEC ComSpec
+            TEXINPUTS=".;../;doc/;;" TFMFONTS="" \
+                $TEX txiversion.tex </dev/null >txiversion.out 2>txiversion.err
         ); then :; else
             report "texinfo.tex appears to be broken.
 This may be due to the environment variable TEX set to something

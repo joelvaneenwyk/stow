@@ -35,8 +35,8 @@ unset COMSPEC ComSpec
     /mingw64/bin/tex txiversion.tex
 )
 
-#STOW_TEXI2DVI="$STOW_ROOT/doc/texi2dvi.sh"
-STOW_TEXI2DVI=texi2dvi
+STOW_TEXI2DVI="$STOW_ROOT/doc/texi2dvi.sh"
+#STOW_TEXI2DVI=texi2dvi
 
 cd "$STOW_ROOT/doc" || true
 export PATH=".:$PATH"
