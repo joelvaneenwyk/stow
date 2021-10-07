@@ -55,10 +55,10 @@ AM_MAKEINFOFLAGS = -I $(srcdir) -I $(srcdir)/doc -I $(srcdir)/automake
 export TEXI2DVI_BUILD_MODE = clean
 
 # Add '--debug' to get a very detailed output log (equivalent to 'set -x')
-TEXI2DVI = texi2dvi --expand --debug $(AM_MAKEINFOFLAGS)
+TEXI2DVI = texi2dvi $(AM_MAKEINFOFLAGS)
 
 # Specifically used when converting from '.texi' to '.pdf'
-TEXI2PDF = $(TEXI2DVI) --pdf --batch -I $(srcdir)/doc/
+TEXI2PDF = $(TEXI2DVI) --pdf
 
 #TEXI2PDF = $(TEXI2DVI) --pdf --batch
 #TEXI2PDF = pdfetex -output-format pdf
@@ -233,7 +233,7 @@ $(HTML): $(doc_deps)
 
 $(PDF): $(doc_deps) $(HTML)
 	TEXINPUTS="$(STOW_ROOT)/doc$(PATH_SEPARATOR)$(srcdir)$(PATH_SEPARATOR)$(srcdir)/automake$(PATH_SEPARATOR)$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
-	MAKEINFO='$(MAKEINFO) $(AM_MAKEINFOFLAGS) $(MAKEINFOFLAGS) -I automake -I doc -I $(srcdir)/doc -I $(srcdir)/automake' \
+	MAKEINFO='$(MAKEINFO) $(AM_MAKEINFOFLAGS) $(MAKEINFOFLAGS) -I doc -I $(srcdir)/doc -I automake -I $(srcdir)/automake' \
 	$(TEXI2PDF) -o $@ `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi
 
 #$(PDF): $(HTML)

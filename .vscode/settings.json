@@ -89,7 +89,7 @@
             "icon": "terminal-bash"
         }
     },
-
+    "vscode-nmake-tools.workspaceBuildDirectories": [],
     "cSpell.ignorePaths": [
         "package-lock.json",
         "node_modules",
@@ -100,7 +100,6 @@
         "default-ignore-list",
         "texinfo.tex"
     ],
-
     "cSpell.words": [
         "aclocal",
         "adamspiers",

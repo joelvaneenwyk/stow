@@ -28,14 +28,14 @@ exit /b
     setlocal EnableExtensions EnableDelayedExpansion
 
     set _root=%~dp1
-    set STOW_ROOT=%_root:~0,-1%
+    set _stow_root=%_root:~0,-1%
 
-    call "%STOW_ROOT%\tools\make-clean.bat"
+    call "%_stow_root%\tools\make-clean.bat"
     if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
 
-    call "%STOW_ROOT%\tools\install-dependencies.bat"
+    call "%_stow_root%\tools\install-dependencies.bat"
     if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
 
-    call "%STOW_ROOT%\tools\make-stow.bat"
+    call "%_stow_root%\tools\make-stow.bat"
     if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
 endlocal & exit /b

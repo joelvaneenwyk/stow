@@ -208,7 +208,6 @@ function install_system_dependencies() {
                 packages+=(
                     "${MINGW_PACKAGE_PREFIX}-texlive-bin"
                     "${MINGW_PACKAGE_PREFIX}-texlive-core"
-                    "${MINGW_PACKAGE_PREFIX}-texlive-fonts-recommended"
                 )
             fi
         fi
@@ -391,7 +390,27 @@ function update_stow_environment() {
     unset temp
     unset tmp
 
-    export STOW_PREFER_NATIVE=1
+    export STOW_USE_WINDOWS_TOOLS=0
+
+    local POSITIONAL=()
+    while [[ $# -gt 0 ]]; do
+        key="$1"
+
+        case $key in
+        -w | --use-windows-tools)
+            export STOW_USE_WINDOWS_TOOLS=1
+            shift # past argument
+            ;;
+        -d | --debug)
+            set -x
+            shift # past argument
+            ;;
+        *)                     # unknown option
+            POSITIONAL+=("$1") # save it in an array for later
+            shift              # past argument
+            ;;
+        esac
+    done
 
     STOW_ROOT="$(normalize_path "${STOW_ROOT:-$(pwd)}")"
     if [ ! -f "$STOW_ROOT/Build.PL" ]; then
@@ -411,16 +430,6 @@ function update_stow_environment() {
     TEX=$(normalize_path "${TEX:-}")
     PDFTEX=$(normalize_path "${PDFTEX:-}")
 
-    if [ ! -f "$TEX" ] && _tex="$(which tex 2>/dev/null)"; then
-        TEX=$_tex
-    fi
-    export TEX
-
-    if [ ! -f "$PDFTEX" ] && _pdftex="$(which pdfetex 2>/dev/null)"; then
-        PDFTEX=$_pdftex
-    fi
-    export PDFTEX
-
     case "$(uname -s)" in
     CYGWIN* | MINGW32* | MSYS* | MINGW*)
         _localTexLive="$STOW_ROOT/.tmp/texlive/bin/win32"
@@ -431,26 +440,41 @@ function update_stow_environment() {
         ;;
     esac
 
-    if [[ "$TEX" == *.exe ]]; then
-        export TEXLIVE_ROOT="$STOW_ROOT/.tmp/texlive"
-        export TEXLIVE_INSTALL="$STOW_ROOT/.tmp/texlive"
-        export TEXDIR="$STOW_ROOT/.tmp/texlive"
-        export TEXLIVE_BIN="$TEXDIR/bin/win32"
-        export TEXMFCONFIG="$TEXDIR/texmf-config"
-        export TEXMFHOME="$TEXDIR/texmf-local"
-        export TEXMFLOCAL="$TEXDIR/texmf-local"
-        export TEXMFSYSCONFIG="$TEXDIR/texmf-config"
-        export TEXMFSYSVAR="$TEXDIR/texmf-var"
-        export TEXMFVAR="$TEXDIR/texmf-var"
-        export TEXLIVE_INSTALL_PREFIX="$TEXDIR"
-        export TEXLIVE_INSTALL_TEXDIR="$TEXDIR"
-        export TEXLIVE_INSTALL_TEXMFCONFIG="$TEXDIR/texmf-config"
-        export TEXLIVE_INSTALL_TEXMFHOME="$TEXDIR/texmf-local"
-        export TEXLIVE_INSTALL_TEXMFLOCAL="$TEXDIR/texmf-local"
-        export TEXLIVE_INSTALL_TEXMFSYSCONFIG="$TEXDIR/texmf-config"
-        export TEXLIVE_INSTALL_TEXMFSYSVAR="$TEXDIR/texmf-var"
-        export TEXLIVE_INSTALL_TEXMFVAR="$TEXDIR/texmf-var"
+    if [ "${TEX: -4}" == ".exe" ]; then
+        if [ ! "$STOW_USE_WINDOWS_TOOLS" = "1" ]; then
+            TEX=""
+            PDFTEX=""
+        else
+            export TEXLIVE_ROOT="$STOW_ROOT/.tmp/texlive"
+            export TEXLIVE_INSTALL="$STOW_ROOT/.tmp/texlive"
+            export TEXDIR="$STOW_ROOT/.tmp/texlive"
+            export TEXLIVE_BIN="$TEXDIR/bin/win32"
+            export TEXMFCONFIG="$TEXDIR/texmf-config"
+            export TEXMFHOME="$TEXDIR/texmf-local"
+            export TEXMFLOCAL="$TEXDIR/texmf-local"
+            export TEXMFSYSCONFIG="$TEXDIR/texmf-config"
+            export TEXMFSYSVAR="$TEXDIR/texmf-var"
+            export TEXMFVAR="$TEXDIR/texmf-var"
+            export TEXLIVE_INSTALL_PREFIX="$TEXDIR"
+            export TEXLIVE_INSTALL_TEXDIR="$TEXDIR"
+            export TEXLIVE_INSTALL_TEXMFCONFIG="$TEXDIR/texmf-config"
+            export TEXLIVE_INSTALL_TEXMFHOME="$TEXDIR/texmf-local"
+            export TEXLIVE_INSTALL_TEXMFLOCAL="$TEXDIR/texmf-local"
+            export TEXLIVE_INSTALL_TEXMFSYSCONFIG="$TEXDIR/texmf-config"
+            export TEXLIVE_INSTALL_TEXMFSYSVAR="$TEXDIR/texmf-var"
+            export TEXLIVE_INSTALL_TEXMFVAR="$TEXDIR/texmf-var"
+        fi
     fi
+
+    if [ ! -f "$TEX" ] && _tex="$(which tex 2>/dev/null)"; then
+        TEX=$_tex
+    fi
+    export TEX
+
+    if [ ! -f "$PDFTEX" ] && _pdftex="$(which pdfetex 2>/dev/null)"; then
+        PDFTEX=$_pdftex
+    fi
+    export PDFTEX
 
     # Find the local Windows install if it exists
     PERL_LOCAL="${PERL_LOCAL:-}"
@@ -494,7 +518,7 @@ function update_stow_environment() {
     export PERL_LOCAL
 
     # Only favor local Perl install if running on CI
-    if [ -n "${GITHUB_ACTIONS:-}" ]; then
+    if [ -n "${GITHUB_ACTIONS:-}" ] || [ "$STOW_USE_WINDOWS_TOOLS" = "1" ]; then
         STOW_PERL="$(normalize_path "${PERL_LOCAL:-${STOW_PERL:-${PERL:-}}}")"
     else
         STOW_PERL=""
@@ -506,8 +530,8 @@ function update_stow_environment() {
         if ! STOW_PERL="$(command -v perl)"; then
             STOW_PERL="$(normalize_path "${PERL_LOCAL:-${PERL:-}}")"
             if [ ! -f "$STOW_PERL" ]; then
-                if [ -f "/mingw64/bin/perl" ]; then
-                    STOW_PERL="/mingw64/bin/perl"
+                if [ -f "${MSYSTEM_PREFIX:-}/bin/perl" ]; then
+                    STOW_PERL="${MSYSTEM_PREFIX:-}/bin/perl"
                 else
                     STOW_PERL=""
                 fi
@@ -645,4 +669,4 @@ function stow_setup() {
     )
 }
 
-update_stow_environment
+update_stow_environment "$@"

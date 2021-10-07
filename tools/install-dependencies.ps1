@@ -422,6 +422,38 @@ echo '[stow] Post-install complete.'
         Write-Host '[stow] Finished MSYS2 install.'
     }
 }
+
+<#
+.SYNOPSIS
+    Returns true if the given command can be executed from the shell.
+.INPUTS
+    Command name which does not need to be a full path.
+.OUTPUTS
+    Whether or not the command exists and can be executed.
+#>
+Function Test-CommandValid {
+    Param ($command)
+
+    $oldPreference = $ErrorActionPreference
+
+    $ErrorActionPreference = 'stop'
+    $IsValid = $false
+
+    try {
+        if (Get-Command $command) {
+            $IsValid = $true
+        }
+    }
+    Catch {
+        Write-Host "Command '$command' does not exist."
+    }
+    finally {
+        $ErrorActionPreference = $oldPreference
+    }
+
+    return $IsValid
+} #end function Test-CommandValid
+
 Function Install-Toolset {
     [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
@@ -442,6 +474,35 @@ Function Install-Toolset {
         New-Item -ItemType directory -Path "$script:StowHome" | Out-Null
     }
     $env:HOME = $script:StowHome
+
+    # Install git so we can clone repositories
+    try {
+        if (-Not (Test-Path -Path "$script:StowTempDir/git/bin/git.exe" -PathType Leaf)) {
+            $gitFilename = "MinGit-2.33.0.2-64-bit.zip"
+            Get-File -Url "https://github.com/git-for-windows/git/releases/download/v2.33.0.windows.2/$gitFilename" -Filename "$script:StowArchivesDir/$gitFilename"
+            Expand-File -Path "$script:StowArchivesDir/$gitFilename" -DestinationPath "$script:StowTempDir/git"
+        }
+
+        & "$script:StowTempDir/git/bin/git.exe" clone "https://git.savannah.gnu.org/git/texinfo.git" "$script:StowTempDir/texinfo"
+        & "$script:StowTempDir/git/bin/git.exe" clone "git://git.sv.gnu.org/autoconf" "$script:StowTempDir/autoconf"
+    }
+    catch [Exception] {
+        Write-Host "Failed to install MinGit.", $_.Exception.Message
+    }
+
+    # Install a version of Perl regardless of whether or not a version already exists so
+    # that we always have a version to use.
+    try {
+        if (-Not (Test-Path -Path "$script:StowTempDir/perl/portableshell.bat" -PathType Leaf)) {
+            $strawberryPerlVersion = "5.32.1.1"
+            $strawberyPerlUrl = "https://strawberryperl.com/download/$strawberryPerlVersion/strawberry-perl-$strawberryPerlVersion-64bit-portable.zip"
+            Get-File -Url "$strawberyPerlUrl" -Filename "$script:StowArchivesDir/strawberry-perl-$strawberryPerlVersion-64bit-portable.zip"
+            Expand-File -Path "$script:StowArchivesDir/strawberry-perl-$strawberryPerlVersion-64bit-portable.zip" -DestinationPath "$script:StowTempDir/perl"
+        }
+    }
+    catch [Exception] {
+        Write-Host "Failed to install Strawberry Perl.", $_.Exception.Message
+    }
 
     Get-TexLive
     Install-MSYS2

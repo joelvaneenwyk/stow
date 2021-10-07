@@ -4,6 +4,9 @@ STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 source "$STOW_ROOT/tools/stow-environment.sh"
 
+make_docs
+
+exit 0
 if [ ! -f "$STOW_ROOT/Makefile" ]; then
     "$STOW_ROOT/tools/make-clean.sh"
     autoreconf -iv && ./configure
@@ -32,7 +35,7 @@ unset COMSPEC ComSpec
     cd "$STOW_ROOT/doc/manual.t2d/version_test"
     echo '\input texinfo.tex @bye' >txiversion.tex
     export TEXINPUTS=".:$STOW_ROOT/doc/:doc/::"
-    /mingw64/bin/tex txiversion.tex
+    "$TEX" txiversion.tex
 )
 
 STOW_TEXI2DVI="$STOW_ROOT/doc/texi2dvi.sh"

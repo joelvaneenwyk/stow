@@ -38,12 +38,8 @@ endlocal & exit /b
 
     set _root=%~dp1
     set _cd=%CD%
-    set STOW_ROOT=%_root:~0,-1%
-    call "%STOW_ROOT%\tools\stow-environment.bat"
-
-    :: Generate documentation using 'bash' and associated unix tools which
-    :: are required due to reliance on autoconf.
-    call :MakeDocs
+    set _stow_root=%_root:~0,-1%
+    call "%_stow_root%\tools\stow-environment.bat"
 
     set USE_LIB_PMDIR=
     set PMDIR=%STOW_ROOT%\lib
@@ -80,16 +76,14 @@ endlocal & exit /b
     call :ReplaceVariables "%STOW_ROOT%\bin\chkstow"
     call :ReplaceVariables "%STOW_ROOT%\bin\stow"
     call :ReplaceVariables "%STOW_ROOT%\lib\Stow\Util.pm"
-
     call :ReplaceVariables "%STOW_ROOT%\lib\Stow.pm"
+
+    :: Append ignore list to the end of the Stow library
     type "%STOW_ROOT%\default-ignore-list" >> "%STOW_ROOT%\lib\Stow.pm"
 
-    call pod2man --name stow --section 8 "%STOW_ROOT%\bin\stow" > "%STOW_ROOT%\doc\stow.8"
-
-    cd /d "%STOW_ROOT%"
-
-    :: Exeute 'Build.PL' to generate build scripts: 'Build' and 'Build.bat'
-    call :Run %STOW_PERL% -I "%STOW_ROOT%\lib" -I "%STOW_ROOT%\bin" "%STOW_ROOT%\Build.PL"
+    call :Run "%PERL_BIN_DIR%\pod2man.bat" --name stow --section 8 "%STOW_ROOT%\bin\stow" > "%STOW_ROOT%\doc\stow.8"
+    if not "!ERRORLEVEL!"=="0" exit /b
+    echo Created 'stow.8' with 'pod2man' Perl script.
 
     :: Remove all intermediate files before running Stow for the first time
     rmdir /q /s "%STOW_ROOT%\_Inline\" > nul 2>&1
@@ -97,7 +91,20 @@ endlocal & exit /b
     rmdir /q /s "%STOW_ROOT%\tools\_Inline\" > nul 2>&1
 
     :: Make sure that 'stow' was successfully compiled by printing out the version.
-    call :Run %STOW_PERL% -I "%STOW_ROOT%\lib" "%STOW_ROOT%\bin\stow" --version
+    cd /d "%STOW_ROOT%"
+    call :Run "%STOW_PERL%" -I "%STOW_ROOT%\lib" "%STOW_ROOT%\bin\stow" --version
+    if not "!ERRORLEVEL!"=="0" exit /b
+
+    call :CreateVersionTexi
+
+    :: Exeute 'Build.PL' to generate build scripts: 'Build' and 'Build.bat'
+    cd /d "%STOW_ROOT%"
+    call :Run "%STOW_PERL%" -I "%STOW_ROOT%\lib" -I "%STOW_ROOT%\bin" "%STOW_ROOT%\Build.PL"
+    if not "!ERRORLEVEL!"=="0" exit /b
+
+    :: Generate documentation using 'bash' and associated unix tools which
+    :: are required due to reliance on autoconf.
+    call :MakeDocs
 
     :$MakeEnd
         :: Remove leftover files so that 'Build distcheck' succeeds
@@ -159,16 +166,29 @@ endlocal & exit /b
 
     cd /d "%STOW_ROOT%"
     call :Run %BASH% "source ./tools/stow-environment.sh && install_system_dependencies"
+    if not "!ERRORLEVEL!"=="0" exit /b
+
     call :Run %BASH% "source ./tools/stow-environment.sh && make_docs"
+    if not "!ERRORLEVEL!"=="0" exit /b
+
     call :Run %BASH% "autoreconf --install --verbose"
+    if not "!ERRORLEVEL!"=="0" exit /b
+
     call :Run %BASH% "./configure --prefix='' --with-pmdir='%PERL5LIB%'"
+    if not "!ERRORLEVEL!"=="0" exit /b
+
     call :Run %BASH% "make doc/manual.pdf"
+    if not "!ERRORLEVEL!"=="0" exit /b
+
     call :Run %BASH% "make bin/stow bin/chkstow lib/Stow.pm lib/Stow/Util.pm"
+    if not "!ERRORLEVEL!"=="0" exit /b
+
     call :Run %BASH% "make doc/manual-single.html"
+    if not "!ERRORLEVEL!"=="0" exit /b
     echo ----------------------------------------
 exit /b
 
-:CreateStowInfo
+:CreateVersionTexi
     setlocal EnableExtensions EnableDelayedExpansion
 
     for /F "skip=1 delims=" %%F in ('
@@ -201,6 +221,10 @@ exit /b
     echo @set UPDATED-MONTH %CurrentMonthName% %CurrentYear% >>"%STOW_VERSION_TEXI%"
     echo @set EDITION %STOW_VERSION% >>"%STOW_VERSION_TEXI%"
     echo @set VERSION %STOW_VERSION% >>"%STOW_VERSION_TEXI%"
+exit /b 0
+
+:CreateStowInfo
+    setlocal EnableExtensions EnableDelayedExpansion
 
     set PERL_INCLUDE=-I %WIN_UNIX_DIR_UNIX%/usr/share/automake-1.16
     set PERL_INCLUDE=!PERL_INCLUDE! -I %WIN_UNIX_DIR_UNIX%/usr/share/autoconf
@@ -213,4 +237,4 @@ exit /b
     cd "%STOW_ROOT%"
     call :Run "%WIN_UNIX_DIR%\usr\bin\perl" %PERL_INCLUDE% "%WIN_UNIX_DIR%\usr\bin\texi2any" -I doc\ -o doc\ doc\stow.texi
     echo Generated 'doc\stow.info'
-exit /b 0
+exit /b

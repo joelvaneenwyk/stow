@@ -16,7 +16,7 @@
 :: along with this program. If not, see https://www.gnu.org/licenses/.
 ::
 
-call :StartShell "%~dp0"
+call :StartShell "%~dp0" %*
 
 exit /b
 
@@ -37,10 +37,19 @@ exit /b
     setlocal EnableExtensions EnableDelayedExpansion
 
     set _root=%~dp1
-    call "%_root:~0,-1%\tools\stow-environment.bat"
+    set _stow_root=%_root:~0,-1%
+
+    set _args=
+    shift
+    :$ArgumentParse
+        set "_args=!_args! %1"
+        shift
+    if not "%~1"=="" goto:$ArgumentParse
+
+    call "%_stow_root%\tools\stow-environment.bat"
 
     :: Remove all intermediate files before we start
-    call "%STOW_ROOT%\tools\make-clean.bat"
+    call "%_stow_root%\tools\make-clean.bat"
 
     :: We use 'minimal' to match what CI uses by default to ensure we have a clean environment
     :: for reproducing issues on CI. You can enable 'inherit' if needed but it tends to just make
@@ -65,5 +74,5 @@ exit /b
         exit /b 1
     )
 
-    call :Run "%WIN_UNIX_DIR%\msys2_shell.cmd" -no-start -mingw64 -defterm -shell bash -here -c "./test.sh"
+    call :Run "%WIN_UNIX_DIR%\msys2_shell.cmd" -no-start -mingw64 -defterm -shell bash -here -c "./test.sh!_args!"
 exit /b

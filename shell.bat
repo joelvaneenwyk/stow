@@ -16,7 +16,7 @@
 :: along with this program. If not, see https://www.gnu.org/licenses/.
 ::
 
-call :StartShell "%~dp0"
+call :StartShell "%~dp0" %*
 
 exit /b
 
@@ -59,5 +59,5 @@ endlocal & exit /b
     :: Let the shell decide which version of TeX to use
     set TEX=
 
-    call :Run "%WIN_UNIX_DIR%\msys2_shell.cmd" -no-start -mingw64 -defterm -shell bash -here -c "source ./tools/stow-environment.sh && bash"
+    call :Run "%WIN_UNIX_DIR%\msys2_shell.cmd" -no-start -mingw64 -defterm -shell bash -here -c "source ./tools/stow-environment.sh %* && bash"
 exit /b
