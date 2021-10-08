@@ -165,7 +165,8 @@ Function Get-File {
     # Convert local/relative path to absolute path
     if (![System.IO.Path]::IsPathRooted($Filename)) {
         $FilePath = Join-Path (Get-Item -Path "./" -Verbose).FullName $Filename
-    } else {
+    }
+    else {
         $FilePath = $Filename
     }
 
@@ -330,9 +331,11 @@ tlpdbopt_w32_multi_user 0
         $texExecutable = Join-Path -Path "$env:TEXLIVE_BIN" -ChildPath "tex.exe"
         If (Test-Path "$texExecutable" -PathType Leaf) {
             Write-Host "Skipped install. TeX already exists: '$texExecutable'"
-        } elseif ($IsWindows -or $ENV:OS) {
+        }
+        elseif ($IsWindows -or $ENV:OS) {
             & cmd.exe /d /c "$env:TEXLIVE_INSTALL" -no-gui -portable -profile "$texLiveProfile"
-        } else {
+        }
+        else {
             Write-Host "TeX Live install process only supported on Windows."
         }
 
@@ -358,7 +361,8 @@ Function Start-Bash() {
 
     if ($IsWindows -or $ENV:OS) {
         & "$script:MsysTargetDir/usr/bin/bash.exe" @('-lc') + @Args
-    } else {
+    }
+    else {
         Write-Host "Skipped command. This is only supported on Windows."
     }
 }
@@ -477,17 +481,40 @@ Function Install-Toolset {
 
     # Install git so we can clone repositories
     try {
-        if (-Not (Test-Path -Path "$script:StowTempDir/git/bin/git.exe" -PathType Leaf)) {
-            $gitFilename = "MinGit-2.33.0.2-64-bit.zip"
-            Get-File -Url "https://github.com/git-for-windows/git/releases/download/v2.33.0.windows.2/$gitFilename" -Filename "$script:StowArchivesDir/$gitFilename"
-            Expand-File -Path "$script:StowArchivesDir/$gitFilename" -DestinationPath "$script:StowTempDir/git"
-        }
+        $StowGitDir = Join-Path -Path "$script:StowTempDir" -ChildPath "git"
+        $StowGitBinDir = Join-Path -Path "$StowGitDir" -ChildPath "cmd"
+        $script:StowGit = Join-Path -Path "$StowGitBinDir" -ChildPath "git.exe"
 
-        & "$script:StowTempDir/git/bin/git.exe" clone "https://git.savannah.gnu.org/git/texinfo.git" "$script:StowTempDir/texinfo"
-        & "$script:StowTempDir/git/bin/git.exe" clone "git://git.sv.gnu.org/autoconf" "$script:StowTempDir/autoconf"
+        if (-Not (Test-Path -Path "$script:StowGit" -PathType Leaf)) {
+            $gitFilename = "MinGit-2.33.0.2-64-bit.zip"
+            $gitArchive = Join-Path -Path "$script:StowArchivesDir" -ChildPath "$gitFilename"
+            Get-File -Url "https://github.com/git-for-windows/git/releases/download/v2.33.0.windows.2/$gitFilename" -Filename "$gitArchive"
+            Expand-File -Path "$gitArchive" -DestinationPath "$StowGitDir"
+        }
     }
     catch [Exception] {
         Write-Host "Failed to install MinGit.", $_.Exception.Message
+    }
+
+    try {
+        if (Test-Path -Path "$script:StowTempDir/texinfo") {
+            & "$script:StowGit" -C "$script:StowTempDir/texinfo" checkout master
+            & "$script:StowGit" -C "$script:StowTempDir/texinfo" pull
+        }
+        else {
+            & "$script:StowGit" clone "https://git.savannah.gnu.org/git/texinfo.git" "$script:StowTempDir/texinfo"
+        }
+
+        if (Test-Path -Path "$script:StowTempDir/autoconf") {
+            & "$script:StowGit" -C "$script:StowTempDir/autoconf" checkout master
+            & "$script:StowGit" -C "$script:StowTempDir/autoconf" pull
+        }
+        else {
+            & "$script:StowGit" clone "git://git.sv.gnu.org/autoconf" "$script:StowTempDir/autoconf"
+        }
+    }
+    catch [Exception] {
+        Write-Host "Failed to clone texinfo and autoconf repositories.", $_.Exception.Message
     }
 
     # Install a version of Perl regardless of whether or not a version already exists so
