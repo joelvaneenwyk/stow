@@ -22,7 +22,7 @@ set -eu
 if [ -n "${BASH_VERSION:-}" ]; then
     echo "Bash v$BASH_VERSION"
 
-    # shellcheck disable=SC3028,SC3054
+    # shellcheck disable=SC3028,SC3054,SC2039
     STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
     # shellcheck source=tools/stow-environment.sh

@@ -407,7 +407,7 @@ function update_stow_environment() {
 
     TEX=$(normalize_path "${TEX:-}")
     if [ ! -f "$TEX" ]; then
-        if _tex="$(which tex 2>/dev/null)"; then
+        if _tex="$(command -v tex 2>/dev/null)"; then
             TEX=$_tex
         fi
 
