@@ -98,16 +98,24 @@ function use_sudo {
 }
 
 function install_perl_modules() {
-    if "$STOW_PERL" -Mlocal::lib="$STOW_PERL_LOCAL_LIB" -MApp::cpanminus::fatscript -le 1 2>/dev/null; then
+    if "$STOW_PERL" -MApp::cpanminus::fatscript -le 1 2>/dev/null; then
         # shellcheck disable=SC2016
-        run_named_command_group "Install Module(s): '$*'" "$STOW_PERL" -Mlocal::lib="$STOW_PERL_LOCAL_LIB" -MApp::cpanminus::fatscript -le \
+        run_named_command_group "Install Module(s): '$*'" "$STOW_PERL" -MApp::cpanminus::fatscript -le \
             'my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;' -- \
-            --local-lib "$STOW_PERL_LOCAL_LIB" --notest "$@"
+            --skip-installed --skip-satisfied --local-lib "$STOW_PERL_LOCAL_LIB" --notest "$@"
     else
         for package in "$@"; do
-            if ! run_named_command_group "Install '$package'" "$STOW_PERL" -MCPAN -Mlocal::lib="$STOW_PERL_LOCAL_LIB" -e "CPAN::Shell->notest('install', '$package')"; then
-                echo "❌ Failed to install '$package' module."
-                return $?
+            cpan_args=()
+
+            if "$STOW_PERL" -Mlocal::lib -le 1 2>/dev/null; then
+                cpan_args+=(-Mlocal::lib="$STOW_PERL_LOCAL_LIB")
+            fi
+
+            if ! "$STOW_PERL" "${cpan_args[@]}" -M"$package" -le 1 2>/dev/null; then
+                if ! run_named_command_group "Install '$package'" "$STOW_PERL" -MCPAN "${cpan_args[@]}" -e "CPAN::Shell->notest('install', '$package')"; then
+                    echo "❌ Failed to install '$package' module."
+                    return $?
+                fi
             fi
         done
     fi
@@ -251,32 +259,33 @@ function initialize_perl() {
             fi
         fi
 
-        if ! run_named_command_group "Install 'local::lib'" "$STOW_PERL" -MCPAN -e "CPAN::Shell->notest('install', 'local::lib')"; then
-            echo "❌ Failed to install 'local::lib' module."
+        if ! "$STOW_PERL" -I "$STOW_PERL_LOCAL_LIB" -Mlocal::lib -le 1 2>/dev/null; then
+            install_perl_modules 'YAML' 'ExtUtils::MakeMaker' 'ExtUtils::Config' 'local::lib'
         fi
 
-        eval "$("$STOW_PERL" -I"$STOW_PERL_LOCAL_LIB" -Mlocal::lib="$STOW_PERL_LOCAL_LIB")"
+        _perl_local_setup="$("$STOW_PERL" -I "$STOW_PERL_LOCAL_LIB" -Mlocal::lib="$STOW_PERL_LOCAL_LIB")"
+        echo "$_perl_local_setup"
+        eval "$_perl_local_setup"
 
         if ! "$STOW_PERL" -Mlocal::lib="$STOW_PERL_LOCAL_LIB" -MApp::cpanminus -le 1 2>/dev/null; then
             local _cpanm
-            _cpanm="$STOW_ROOT/cpanm"
+            _cpanm="$STOW_PERL_LOCAL_LIB/cpanm"
 
             if [ -x "$(command -v curl)" ]; then
                 curl -L --silent "https://cpanmin.us/" -o "$_cpanm"
             fi
 
             chmod +x "$_cpanm"
-            run_command "$STOW_PERL" "$_cpanm" --local-lib "$STOW_PERL_LOCAL_LIB" --notest App::cpanminus || true
-            rm -f "$_cpanm"
+            run_command "$STOW_PERL" "$_cpanm" --local-lib "$STOW_PERL_LOCAL_LIB" --notest 'App::cpanminus' || true
 
             # Use 'cpan' to install as a last resort
             if ! "$STOW_PERL" -Mlocal::lib="$STOW_PERL_LOCAL_LIB" -MApp::cpanminus -le 1 2>/dev/null; then
-                install_perl_modules "App::cpanminus" || true
+                install_perl_modules "App::cpanminus"
             fi
         fi
 
         # Install this to silence warning when doing initial configure
-        install_perl_modules "Test::Output"
+        install_perl_modules 'Test::Output'
     fi
 }
 
@@ -548,22 +557,38 @@ function update_stow_environment() {
         fi
     fi
     export STOW_PERL
+    export STOW_VERSION="0.0.0"
 
-    STOW_VERSION="0.0.0"
-    PERL_C_BIN=""
-    PERL_BIN=""
-    PERL_LIB=""
-    PMDIR=""
+    # Clear out all Perl variables so that they can be reset
+    export PMDIR=""
+    export PERL=""
+    export PERL5LIB=""
+    export PERL_C_BIN=""
+    export PERL_BIN=""
+    export PERL_BIN_C_DIR=""
+    export PERL_BIN_DIR=""
+    export PERL_LIB=""
+    export PERL_LOCAL_LIB_ROOT=""
+    export PERL_MB_OPT=""
+    export PERL_MM_OPT=""
+    export PERL_SITE_BIN_DIR=""
 
+    os_name="$(uname -o | sed 's#/#_#g' | awk '{print tolower($0)}')"
     if grep -qEi "(Microsoft|WSL)" /proc/version &>/dev/null; then
-        STOW_PERL_LOCAL_LIB="$STOW_LOCAL_BUILD_ROOT/perllib/wsl"
-    else
-        STOW_PERL_LOCAL_LIB="$STOW_LOCAL_BUILD_ROOT/perllib/${MSYSTEM:-linux}"
+        os_name="wsl_$os_name"
+    elif [ "$os_name" = "msys" ]; then
+        os_name="$(echo "${os_name}_${MSYSTEM}" | awk '{print tolower($0)}')"
     fi
+    STOW_PERL_LOCAL_LIB="${STOW_LOCAL_BUILD_ROOT}/perllib/${os_name}"
     mkdir -p "$STOW_PERL_LOCAL_LIB"
     export STOW_PERL_LOCAL_LIB
 
     export PERL_LOCAL_LIB_ROOT="$STOW_PERL_LOCAL_LIB"
+
+    # shellcheck disable=SC2016
+    PERL5LIB="$PERL_LOCAL_LIB_ROOT"
+    PERL5LIB=$(normalize_path "$PERL5LIB")
+    export PERL5LIB
 
     _perl_version="0.0"
 
@@ -606,11 +631,6 @@ function update_stow_environment() {
             STOW_SITE_PREFIX=$(normalize_path "$siteprefix")
         fi
         export STOW_SITE_PREFIX
-
-        # shellcheck disable=SC2016
-        PERL5LIB=$("$STOW_PERL" -le 'print $INC[0]')
-        PERL5LIB=$(normalize_path "$PERL5LIB")
-        export PERL5LIB
 
         if [ ! -x "$(command -v gmake)" ]; then
             _perl_bin="$(dirname "$STOW_PERL")"

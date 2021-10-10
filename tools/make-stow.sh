@@ -47,7 +47,6 @@ function make_stow() {
         # shellcheck disable=SC2016
         PERL5LIB=$("$STOW_PERL" -le 'print $INC[0]')
         PERL5LIB=$(normalize_path "$PERL5LIB")
-        export PERL5LIB
 
         echo "Perl: '$STOW_PERL'"
         echo "Perl Lib: '$PERL5LIB'"

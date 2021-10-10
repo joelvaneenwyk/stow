@@ -19,7 +19,7 @@
 setlocal EnableExtensions EnableDelayedExpansion
 
 call :RunCommand powershell -NoLogo -NoProfile -Command "Set-ExecutionPolicy RemoteSigned -scope CurrentUser;"
-call :RunCommand powershell -NoLogo -NoProfile -File "%~dp0install-dependencies.ps1"
+echo call :RunCommand powershell -NoLogo -NoProfile -File "%~dp0install-dependencies.ps1"
 
 call :InstallPerlDependencies "%~dp0..\"
 
@@ -34,25 +34,20 @@ exit /b
     echo ::group::Initialize CPAN
     (
         echo yes && echo. && echo no && echo exit
-    ) | "%STOW_PERL%" -MCPAN -e "shell"
+    ) | "%STOW_PERL%" -I "%STOW_PERL_LOCAL_LIB%" -MCPAN -e "shell"
     echo ::endgroup::
 
-    call :RunTaskGroup "%STOW_PERL%" "%~dp0initialize-cpan-config.pl"
+    call :RunTaskGroup "%STOW_PERL%" -I "%STOW_PERL_LOCAL_LIB%" "%~dp0initialize-cpan-config.pl"
 
-    call :RunTaskGroup "%STOW_PERL%" -MCPAN -e "CPAN::Shell->notest('install', 'local::lib')"
-
-    :: Already installed as part of Strawberry Perl but install/update regardless.
-    "%STOW_PERL%" -Mlocal::lib="%STOW_PERL_LOCAL_LIB%" -MApp::cpanminus::fatscript -le 1 > nul 2>&1
-    if not "!ERRORLEVEL!"=="0" (
-        call :RunTaskGroup "%STOW_PERL%" -MCPAN -e "install App::cpanminus"
-    )
+    :: First install 'cpanminus' and 'local::lib' before installing remaining libraries
+    call :InstallPerlModules ^
+        "YAML" "ExtUtils::MakeMaker" "ExtUtils::Config" ^
+        "App::cpanminus" ^
+        "local::lib"
 
     :: Install dependencies. Note that 'Inline::C' requires 'make' and 'gcc' to be installed. It
     :: is recommended to install MSYS2 packages for copmiling (e.g. mingw-w64-x86_64-make) but
     :: many/most Perl distributions already come with the required tools for compiling.
-    cd /d "!STOW_ROOT!"
-    "%STOW_PERL%" -MApp::cpanminus::fatscript -le 1 > nul 2>&1
-    if "!ERRORLEVEL!"=="0" goto:$UseCpanm
     call :InstallPerlModules ^
         "Carp" "Module::Build" "IO::Scalar" ^
         "Devel::Cover::Report::Coveralls" ^
@@ -60,12 +55,6 @@ exit /b
         "ExtUtils::PL2Bat" "Inline::C" "Win32::Mutex" ^
         "TAP::Formatter::JUnit"
     goto:$InstallDone
-
-    :$UseCpanm
-    call :RunTaskGroup "%STOW_PERL%" ^
-        -Mlocal::lib="%STOW_PERL_LOCAL_LIB%" -MApp::cpanminus::fatscript -le ^
-        "my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;" -- ^
-        --local-lib "%STOW_PERL_LOCAL_LIB%" --installdeps --notest .
 
     :$InstallDone
     cd /d "%STARTING_DIR%"
@@ -86,10 +75,49 @@ exit /b
 exit /b
 
 :InstallPerlModules
+    cd /d "!STOW_ROOT!"
+
+    set _cmd_base="%STOW_PERL%" -I "%STOW_PERL_LOCAL_LIB%" -MCPAN
+
+    "%STOW_PERL%" -MApp::cpanminus::fatscript -le 1 > nul 2>&1
+    if "!ERRORLEVEL!"=="0" goto:$UseCpanm
+
     :$Install
         set _module=%~1
         shift
-        if "%_module%"=="" exit /b
-        call :RunTaskGroup "%STOW_PERL%" -Mlocal::lib="%STOW_PERL_LOCAL_LIB%" -MCPAN -e "CPAN::Shell->notest('install', '%_module%')"
-    goto:$Install
+        if "%_module%"=="" goto:$Done
+
+        set _cmd=!_cmd_base!
+
+        "%STOW_PERL%" -Mlocal::lib -le 1 > nul 2>&1
+        if "!ERRORLEVEL!"=="0" set _cmd=!_cmd! -Mlocal::lib="%STOW_PERL_LOCAL_LIB%"
+
+        set _cmd=!_cmd_base! -e "CPAN::Shell->notest('install', '!_module!')"
+        echo ::group::Install '!_module!'
+        echo [command]!_cmd!
+        !_cmd!
+        echo ::endgroup::
+        if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
+        goto:$Install
+
+    :$UseCpanm
+        set _modules=
+        :$GetModulesLoop
+            set _modules=!_modules! %~1
+            shift
+            if not "%~1"=="" goto:$GetModulesLoop
+
+        "%STOW_PERL%" -Mlocal::lib -le 1 > nul 2>&1
+        if "!ERRORLEVEL!"=="0" set _cmd_base=!_cmd_base! -Mlocal::lib="%STOW_PERL_LOCAL_LIB%"
+
+        set _cmd=!_cmd_base! -MApp::cpanminus::fatscript -le
+        set _cmd=!_cmd! "my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;" --
+        set _cmd=!_cmd! --skip-installed --skip-satisfied --local-lib "%STOW_PERL_LOCAL_LIB%" --notest
+        set _cmd=!_cmd! !_modules!
+
+        echo ::group::Install Module(s)
+        echo [command]!_cmd!
+        !_cmd!
+        echo ::endgroup::
+    :$Done
 exit /b

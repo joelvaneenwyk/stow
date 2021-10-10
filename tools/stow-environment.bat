@@ -104,6 +104,8 @@ endlocal & exit /b
     if not exist "!STOW_LOCAL_BUILD_ROOT!\perllib" mkdir "!STOW_LOCAL_BUILD_ROOT!\perllib"
     if not exist "!STOW_PERL_LOCAL_LIB!" mkdir "!STOW_PERL_LOCAL_LIB!"
 
+    set PERL5LIB=!STOW_PERL_LOCAL_LIB!\lib
+
     set PERL_LOCAL_LIB_ROOT=%STOW_PERL_LOCAL_LIB%
     "!STOW_PERL!" -I"!STOW_PERL_LOCAL_LIB!" -Mlocal::lib="!STOW_PERL_LOCAL_LIB!" >"!STOW_PERL_LOCAL_LIB!\init.bat"
 
