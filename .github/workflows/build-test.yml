@@ -71,7 +71,7 @@ jobs:
 
       # Default paths but these should be overridden by test scripts
       STOW_TEST_RESULTS: ${{ github.workspace }}/test_results*.xml
-      STOW_CPAN_LOGS: ${{ matrix.msys && 'C:\msys64\home\runneradmin\.cpan*\work\**\*.log' || ${{ github.workspace }}/*.log }}
+      STOW_CPAN_LOGS: ${{ matrix.msys && 'C:\msys64\home\runneradmin\.cpan*\work\**\*.log' || format('{0}/*.log', github.workspace) }}
 
       # Define variants by platform
       script_extension: ${{ (startsWith(matrix.platform, 'windows') && !matrix.msys) && '.bat' || '.sh' }}
