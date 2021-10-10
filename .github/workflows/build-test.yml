@@ -31,7 +31,7 @@ jobs:
         env:
           SHELLCHECK_OPTS: --external-sources
         with:
-          ignore: bin doc/texi2dvi.sh
+          ignore: bin doc
 
 
   perl_test_matrix:
