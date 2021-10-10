@@ -79,6 +79,22 @@ EOF
     exit "$_error"
 }
 
+function run_prove() {
+    _result_filename=$(
+        echo "test_results_${RUNNER_OS:-$(uname)}_${MSYSTEM:-default}.xml" | awk '{print tolower($0)}'
+    )
+    test_results_path="$STOW_ROOT/$_result_filename"
+
+    prove -I t/ -I bin/ -I lib/ \
+        --formatter "TAP::Formatter::JUnit" \
+        --timer --verbose --normalize --parse \
+        t/ | tee "$test_results_path"
+
+    # Insert newline as the above XML output does not add trailing newline
+    echo ""
+    echo "Test results: '$test_results_path'"
+}
+
 function test_perl_version() {
     # Use the version of Perl passed in if 'perlbrew' is installed
     if [ -x "$(command -v perlbrew)" ]; then
@@ -104,36 +120,16 @@ function test_perl_version() {
 
         eval "$("$STOW_PERL" -V:siteprefix)"
         STOW_SITE_PREFIX=$(normalize_path "${siteprefix:-}")
-
-        # shellcheck disable=SC2154
         run_command_group ./configure --prefix="$STOW_SITE_PREFIX"
 
         run_command_group make
-
-        # Run tests
         run_command_group make distcheck
-
-        run_command_group "$STOW_PERL" Build.PL
-        run_command_group ./Build build
         run_command_group cover -test
+        run_named_command_group "prove" run_prove
 
-        _result_filename=$(
-            echo "test_results_${RUNNER_OS:-$(uname)}_${MSYSTEM:-default}.xml" | awk '{print tolower($0)}'
-        )
-        test_results_path="$STOW_ROOT/$_result_filename"
-
-        prove -I t/ -I bin/ -I lib/ \
-            --formatter "TAP::Formatter::JUnit" \
-            --timer --verbose --normalize --parse \
-            t/ | tee "$test_results_path"
-
-        # Insert newline as the above XML output does not add trailing newline
-        echo ""
-
-        # Run 'distcheck' at the end to ensure intermediate test results are excluded
-        run_command_group ./Build distcheck
-
-        echo "Test results: '$test_results_path'"
+        #run_command_group "$STOW_PERL" Build.PL
+        #run_command_group ./Build build
+        #run_command_group ./Build distcheck
     )
 }
 

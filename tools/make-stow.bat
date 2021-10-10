@@ -36,10 +36,10 @@ endlocal & exit /b
 :MakeStow
     setlocal EnableExtensions EnableDelayedExpansion
 
-    set _root=%~dp1
-    set _cd=%CD%
+    set _root=%~dp17
     set _stow_root=%_root:~0,-1%
     call "%_stow_root%\tools\stow-environment.bat"
+    if not "!ERRORLEVEL!"=="0" exit /b
 
     set USE_LIB_PMDIR=
     set PMDIR=%STOW_ROOT%\lib
@@ -116,7 +116,7 @@ endlocal & exit /b
         rmdir /q /s "%STOW_ROOT%\tools\_Inline\" > nul 2>&1
 
         :: Restore original directory
-        cd /d "%_cd%"
+        cd /d "%STARTING_DIR%"
 endlocal & exit /b
 
 :ReplaceVariables

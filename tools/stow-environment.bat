@@ -167,7 +167,10 @@ endlocal & exit /b
         set "TEX=%TEX%"
     )
 
-    if not exist "%STOW_PERL%" exit /b 55
+    if not exist "%STOW_PERL%" (
+        echo ERROR: Perl not found. 
+        exit /b 55
+    )
 exit /b 0
 
 :GetCygPath
