@@ -55,9 +55,11 @@ function initialize_brewperl() {
     source "$STOW_ROOT/tools/stow-environment.sh"
 }
 
-function error_handler() {
+function exit_handler() {
     _error=$?
-    cat <<EOF
+
+    if [ ! "$_error" = "0" ]; then
+        cat <<EOF
 =================================================
 ❌ ERROR: Tests failed. Return code: '$_error'
 =================================================
@@ -70,10 +72,11 @@ Code can be edited on the host and will immediately take effect inside
 this container.
 EOF
 
-    # Launch a bash instance so we can debug failures if we
-    # are running in Docker container.
-    if [ -f /.dockerenv ] && [ -z "${GITHUB_ACTIONS:-}" ]; then
-        bash
+        # Launch a bash instance so we can debug failures if we
+        # are running in Docker container.
+        if [ -f /.dockerenv ] && [ -z "${GITHUB_ACTIONS:-}" ]; then
+            bash
+        fi
     fi
 
     exit "$_error"
@@ -191,7 +194,7 @@ initialize_brewperl
 # we get errors with unbound variables
 set -euo pipefail
 shopt -s inherit_errexit nullglob >/dev/null 2>&1 || true
-trap error_handler EXIT
+trap exit_handler EXIT
 
 run_stow_tests "$@"
 trap - EXIT

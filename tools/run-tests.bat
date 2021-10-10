@@ -34,10 +34,7 @@ endlocal & exit /b
 
 :RunStowTests
     setlocal EnableExtensions EnableDelayedExpansion
-
     set _root=%~dp1
-    set STOW_ROOT=%_root:~0,-1%
-    call "%STOW_ROOT%\tools\stow-environment.bat"
-
+    call "%_root:~0,-1%\tools\stow-environment.bat"
     call :Run prove -I "%STOW_ROOT_UNIX%/t/" -I "%STOW_ROOT_UNIX%/bin/" -I "%STOW_ROOT_UNIX%/lib/" --timer --formatter "TAP::Formatter::JUnit" "%STOW_ROOT_UNIX%/t/"
 endlocal & exit /b
