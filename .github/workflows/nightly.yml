@@ -12,10 +12,6 @@ jobs:
   docker_build:
     name: Docker Perl Tests
 
-    # Skip Docker build if the test matrix fails as this will take a long time and
-    # does essentially the same as above but with 'perlbrew'
-    needs: perl_test_matrix
-
     runs-on: ubuntu-latest
 
     steps:
