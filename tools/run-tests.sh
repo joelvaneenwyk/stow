@@ -104,10 +104,7 @@ function run_prove() {
     prove -I t/ -I bin/ -I lib/ \
         --formatter "TAP::Formatter::JUnit" \
         --timer --verbose --normalize --parse \
-        t/ | tee "$test_results_path"
-
-    # Insert newline as the above XML output does not add trailing newline
-    echo ""
+        t/ >"$test_results_path"
     echo "Test results: '$test_results_path'"
 }
 

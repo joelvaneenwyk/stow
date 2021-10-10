@@ -38,17 +38,11 @@ endlocal & exit /b
     call "%_root:~0,-1%\tools\stow-environment.bat"
 
     set _cmd="%PERL_BIN_DIR%\prove.bat"
-    set _cmd=!_cmd! -I "%STOW_ROOT_UNIX%/t/" -I
-    set _cmd=!_cmd! -I "%STOW_ROOT_UNIX%/bin/" -I
-    set _cmd=!_cmd! -I "%STOW_ROOT_UNIX%/lib/" -I
+    set _cmd=!_cmd! -I "%STOW_ROOT_UNIX%/t/"
+    set _cmd=!_cmd! -I "%STOW_ROOT_UNIX%/bin/"
+    set _cmd=!_cmd! -I "%STOW_ROOT_UNIX%/lib/"
     set _cmd=!_cmd! --verbose --timer --normalize --formatter "TAP::Formatter::JUnit"
     set _cmd=!_cmd! "%STOW_ROOT_UNIX%/t/"
-
-    if "%GITHUB_ACTIONS%"=="" (
-        echo ##[cmd] !_cmd!
-    ) else (
-        echo [command]!_cmd!
-    )
 
     set _result_filename=%STOW_ROOT%\test_results_windows.xml
 
@@ -57,12 +51,18 @@ endlocal & exit /b
     echo STOW_CPAN_LOGS=%USER_PROFILE%\.cpan*\work\**\*.log >>"%GITHUB_ENV%"
 
     :$RunProve
+    cd /d "%STOW_ROOT%"
+    if "%GITHUB_ACTIONS%"=="" (
+        echo ##[cmd] !_cmd!
+    ) else (
+        echo [command]!_cmd!
+    )
     call !_cmd! >"%_result_filename%"
     echo Test results: '%_result_filename%'
     if not "!ERRORLEVEL!"=="0" (
         echo Tests failed with error code: '!ERRORLEVEL!'
+        endlocal & exit /b !ERRORLEVEL!
     )
-
 
     del "%STOW_ROOT%\Build" > nul 2>&1
     del "%STOW_ROOT%\Build.bat" > nul 2>&1
@@ -76,4 +76,4 @@ endlocal & exit /b
     rmdir /q /s "%STOW_ROOT%\cover_db\" > nul 2>&1
     mkdir "%STOW_ROOT%\cover_db\"
     call :Run "%PERL_SITE_BIN_DIR%\cover.bat" -test -report coveralls
-endlocal & exit /b
+endlocal & exit /b 0
