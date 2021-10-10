@@ -46,13 +46,13 @@ endlocal & exit /b
     set STOW_ROOT_UNIX=%STOW_ROOT:\=/%
     set STOW_VERSION=0.0.0
 
-    set STOW_BUILD_TOOLS_ROOT=%STOW_ROOT%\.tmp
-    if not exist "%STOW_BUILD_TOOLS_ROOT%" mkdir "%STOW_BUILD_TOOLS_ROOT%"
+    set STOW_LOCAL_BUILD_ROOT=%STOW_ROOT%\.tmp
+    if not exist "%STOW_LOCAL_BUILD_ROOT%" mkdir "%STOW_LOCAL_BUILD_ROOT%"
 
-    set TMPDIR=%STOW_ROOT%\.tmp\temp
+    set TMPDIR=%STOW_LOCAL_BUILD_ROOT%\temp
     if not exist "%TMPDIR%" mkdir "%TMPDIR%"
 
-    set WIN_UNIX_DIR=%STOW_BUILD_TOOLS_ROOT%\msys64
+    set WIN_UNIX_DIR=%STOW_LOCAL_BUILD_ROOT%\msys64
     if exist "!WIN_UNIX_DIR!" goto:$FoundUnixTools
     "C:\Windows\System32\WHERE.exe" /Q msys2_shell
     if not "!ERRORLEVEL!"=="0" goto:$FoundUnixTools
@@ -76,10 +76,10 @@ endlocal & exit /b
 
     set PATH_ORIGINAL=%PATH%
 
-    set TEX_DIR=%STOW_BUILD_TOOLS_ROOT%\texlive\bin\win32
+    set TEX_DIR=%STOW_LOCAL_BUILD_ROOT%\texlive\bin\win32
     set TEX=%TEX_DIR%\tex.exe
 
-    set STOW_HOME=%STOW_BUILD_TOOLS_ROOT%\home
+    set STOW_HOME=%STOW_LOCAL_BUILD_ROOT%\home
     if not exist "%STOW_HOME%" mkdir "%STOW_HOME%"
 
     set BASH_EXE=!WIN_UNIX_DIR!\usr\bin\bash.exe
@@ -99,6 +99,13 @@ endlocal & exit /b
         echo ERROR: Perl executable invalid or missing: '!STOW_PERL!'
         goto:$InitializeEnvironment
     )
+
+    set STOW_PERL_LOCAL_LIB=!STOW_LOCAL_BUILD_ROOT!\perllib\windows
+    if not exist "!STOW_LOCAL_BUILD_ROOT!\perllib" mkdir "!STOW_LOCAL_BUILD_ROOT!\perllib"
+    if not exist "!STOW_PERL_LOCAL_LIB!" mkdir "!STOW_PERL_LOCAL_LIB!"
+
+    set PERL_LOCAL_LIB_ROOT=%STOW_PERL_LOCAL_LIB%
+    "!STOW_PERL!" -I"!STOW_PERL_LOCAL_LIB!" -Mlocal::lib="!STOW_PERL_LOCAL_LIB!" >"!STOW_PERL_LOCAL_LIB!\init.bat"
 
     for %%F in ("!STOW_PERL!") do set PERL_BIN_DIR=%%~dpF
     if exist "!PERL_BIN_DIR!" set PERL_BIN_DIR=%PERL_BIN_DIR:~0,-1%
@@ -154,10 +161,11 @@ endlocal & exit /b
     endlocal & (
         set "STOW_ROOT=%STOW_ROOT%"
         set "STOW_ROOT_UNIX=%STOW_ROOT_UNIX%"
-        set "STOW_BUILD_TOOLS_ROOT=%STOW_BUILD_TOOLS_ROOT%"
+        set "STOW_LOCAL_BUILD_ROOT=%STOW_LOCAL_BUILD_ROOT%"
         set "STOW_VERSION=%STOW_VERSION%"
         set "STOW_PERL=%STOW_PERL%"
         set "STOW_PERL_UNIX=%STOW_PERL_UNIX%"
+        set "STOW_PERL_LOCAL_LIB=%STOW_PERL_LOCAL_LIB%"
         set "PERL_BIN_DIR=%PERL_BIN_DIR%"
         set "PERL_BIN_C_DIR=%PERL_BIN_C_DIR%"
         set "PERL_SITE_BIN_DIR=%PERL_SITE_BIN_DIR%"
@@ -175,6 +183,8 @@ endlocal & exit /b
         set "TEX_DIR=%TEX_DIR%"
         set "TEX=%TEX%"
     )
+
+    call "%STOW_PERL_LOCAL_LIB%\init.bat"
 
     if not exist "%STOW_PERL%" (
         echo ERROR: Perl not found.

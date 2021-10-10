@@ -155,7 +155,7 @@ endlocal & exit /b
     set "MSYSTEM=MSYS"
     set "MSYS2_PATH_TYPE=inherit"
     set "HOME=%STOW_HOME%"
-    set "PATH=%PERL_BIN_C_DIR%;%WIN_UNIX_DIR%\usr\bin;%WIN_UNIX_DIR%\bin;%STOW_BUILD_TOOLS_ROOT%\texlive\bin\win32;%WIN_UNIX_DIR%\usr\bin\core_perl;%WIN_UNIX_DIR%\mingw32\bin"
+    set "PATH=%PERL_BIN_C_DIR%;%WIN_UNIX_DIR%\usr\bin;%WIN_UNIX_DIR%\bin;%STOW_LOCAL_BUILD_ROOT%\texlive\bin\win32;%WIN_UNIX_DIR%\usr\bin\core_perl;%WIN_UNIX_DIR%\mingw32\bin"
 
     :: Important that we set both 'Perl' versions here
     set "PERL=%STOW_PERL_UNIX%"

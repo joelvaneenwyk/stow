@@ -98,14 +98,14 @@ function use_sudo {
 }
 
 function install_perl_modules() {
-    if "$STOW_PERL" -MApp::cpanminus::fatscript -le 1 2>/dev/null; then
+    if "$STOW_PERL" -Mlocal::lib="$STOW_PERL_LOCAL_LIB" -MApp::cpanminus::fatscript -le 1 2>/dev/null; then
         # shellcheck disable=SC2016
-        run_named_command_group "Install Module(s): '$*'" use_sudo "$STOW_PERL" -MApp::cpanminus::fatscript -le \
+        run_named_command_group "Install Module(s): '$*'" "$STOW_PERL" -Mlocal::lib="$STOW_PERL_LOCAL_LIB" -MApp::cpanminus::fatscript -le \
             'my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;' -- \
-            --notest "$@"
+            --local-lib "$STOW_PERL_LOCAL_LIB" --notest "$@"
     else
         for package in "$@"; do
-            if ! run_named_command_group "Install '$package'" use_sudo "$STOW_PERL" -MCPAN -e "CPAN::Shell->notest('install', '$package')"; then
+            if ! run_named_command_group "Install '$package'" "$STOW_PERL" -MCPAN -Mlocal::lib="$STOW_PERL_LOCAL_LIB" -e "CPAN::Shell->notest('install', '$package')"; then
                 echo "❌ Failed to install '$package' module."
                 return $?
             fi
@@ -230,9 +230,9 @@ function initialize_perl() {
                 echo ""
                 echo "no"
                 echo "exit"
-            ) | run_command_group use_sudo "$STOW_PERL" -MCPAN -e "shell" || true
+            ) | run_command_group "$STOW_PERL" -MCPAN -Mlocal::lib="$STOW_PERL_LOCAL_LIB" -e "shell" || true
 
-            run_command_group use_sudo "$STOW_PERL" "$STOW_ROOT/tools/initialize-cpan-config.pl" || true
+            run_command_group "$STOW_PERL" -Mlocal::lib="$STOW_PERL_LOCAL_LIB" "$STOW_ROOT/tools/initialize-cpan-config.pl" || true
         fi
 
         # Depending on install order it is possible in an MSYS environment to get errors about
@@ -251,7 +251,7 @@ function initialize_perl() {
             fi
         fi
 
-        if ! "$STOW_PERL" -MApp::cpanminus -le 1 2>/dev/null; then
+        if ! "$STOW_PERL" -Mlocal::lib="$STOW_PERL_LOCAL_LIB" -MApp::cpanminus -le 1 2>/dev/null; then
             local _cpanm
             _cpanm="$STOW_ROOT/cpanm"
 
@@ -260,11 +260,11 @@ function initialize_perl() {
             fi
 
             chmod +x "$_cpanm"
-            run_command use_sudo "$STOW_PERL" "$_cpanm" --notest App::cpanminus || true
+            run_command "$STOW_PERL" "$_cpanm" --local-lib "$STOW_PERL_LOCAL_LIB" --notest App::cpanminus || true
             rm -f "$_cpanm"
 
             # Use 'cpan' to install as a last resort
-            if ! "$STOW_PERL" -MApp::cpanminus -le 1 2>/dev/null; then
+            if ! "$STOW_PERL" -Mlocal::lib="$STOW_PERL_LOCAL_LIB" -MApp::cpanminus -le 1 2>/dev/null; then
                 install_perl_modules "App::cpanminus" || true
             fi
         fi
@@ -427,12 +427,15 @@ function update_stow_environment() {
     fi
     export STOW_ROOT
 
+    export STOW_LOCAL_BUILD_ROOT="$STOW_ROOT/.tmp"
+    mkdir -p "$STOW_LOCAL_BUILD_ROOT"
+
     TEX=$(normalize_path "${TEX:-}")
     PDFTEX=$(normalize_path "${PDFTEX:-}")
 
     case "$(uname -s)" in
     CYGWIN* | MINGW32* | MSYS* | MINGW*)
-        _localTexLive="$STOW_ROOT/.tmp/texlive/bin/win32"
+        _localTexLive="$STOW_LOCAL_BUILD_ROOT/texlive/bin/win32"
         if [ ! -f "$TEX" ] && [ -f "$_localTexLive/tex.exe" ]; then
             TEX="$_localTexLive/tex.exe"
             PDFTEX="$_localTexLive/pdfetex.exe"
@@ -445,9 +448,9 @@ function update_stow_environment() {
             TEX=""
             PDFTEX=""
         else
-            export TEXLIVE_ROOT="$STOW_ROOT/.tmp/texlive"
-            export TEXLIVE_INSTALL="$STOW_ROOT/.tmp/texlive"
-            export TEXDIR="$STOW_ROOT/.tmp/texlive"
+            export TEXLIVE_ROOT="$STOW_LOCAL_BUILD_ROOT/texlive"
+            export TEXLIVE_INSTALL="$STOW_LOCAL_BUILD_ROOT/texlive"
+            export TEXDIR="$STOW_LOCAL_BUILD_ROOT/texlive"
             export TEXLIVE_BIN="$TEXDIR/bin/win32"
             export TEXMFCONFIG="$TEXDIR/texmf-config"
             export TEXMFHOME="$TEXDIR/texmf-local"
@@ -546,64 +549,76 @@ function update_stow_environment() {
     PERL_LIB=""
     PMDIR=""
 
+    if grep -qEi "(Microsoft|WSL)" /proc/version &>/dev/null; then
+        STOW_PERL_LOCAL_LIB="$STOW_LOCAL_BUILD_ROOT/perllib/wsl"
+    else
+        STOW_PERL_LOCAL_LIB="$STOW_LOCAL_BUILD_ROOT/perllib/${MSYSTEM:-linux}"
+    fi
+    mkdir -p "$STOW_PERL_LOCAL_LIB"
+    export STOW_PERL_LOCAL_LIB
+
+    export PERL_LOCAL_LIB_ROOT="$STOW_PERL_LOCAL_LIB"
+
     _perl_version="0.0"
 
-    if [ -n "$STOW_PERL" ]; then
-        if _perl_version=$("$STOW_PERL" -e "print substr($^V, 1)"); then
-            STOW_VERSION="$("$STOW_PERL" "$STOW_ROOT/tools/get-version")"
-            export STOW_VERSION
+    if [ -z "$STOW_PERL" ] || ! _perl_version=$("$STOW_PERL" -e "print substr($^V, 1)"); then
+        echo "Failed to find Perl install."
+    else
+        eval "$("$STOW_PERL" -I"$STOW_PERL_LOCAL_LIB" -Mlocal::lib="$STOW_PERL_LOCAL_LIB")"
 
-            PERL_LIB="${PERL_LIB:-}"
-            PERL_CPAN_CONFIG="${PERL_CPAN_CONFIG:-}"
-            if "$STOW_PERL" -MCPAN -le 1 2>/dev/null; then
-                # shellcheck disable=SC2016
-                PERL_LIB="$("$STOW_PERL" -MCPAN -e 'use Config; print $Config{privlib};')"
-                PERL_LIB="$(resolve_path "$PERL_LIB")"
-                [[ -z "$PERL_LIB" ]] && PERL_LIB="${HOME:-}"
+        STOW_VERSION="$("$STOW_PERL" "$STOW_ROOT/tools/get-version")"
+        export STOW_VERSION
 
-                # This is the default location where we can expect to find the config. If it
-                # exists then we have already been setup.
-                PERL_CPAN_CONFIG="$(resolve_path "$PERL_LIB/CPAN/Config.pm")"
-            fi
-            export PERL_LIB PERL_CPAN_CONFIG
-
-            if [ ! -d "${PMDIR:-}" ]; then
-                PMDIR="$(
-                    "$STOW_PERL" -V |
-                        awk '/@INC:/ {p=1; next} (p==1) {print $1}' |
-                        sed 's/\\/\//g' |
-                        head -n 1
-                )"
-            fi
-            PMDIR=$(resolve_path "$PMDIR")
-            export PMDIR
-
-            # Only find a prefix if PMDIR does not exist on its own
-            STOW_SITE_PREFIX="${STOW_SITE_PREFIX:-}"
-            if [ ! -d "$PMDIR" ]; then
-                siteprefix=""
-                eval "$("$STOW_PERL" -V:siteprefix)"
-                STOW_SITE_PREFIX=$(normalize_path "$siteprefix")
-            fi
-            export STOW_SITE_PREFIX
-
+        PERL_LIB="${PERL_LIB:-}"
+        PERL_CPAN_CONFIG="${PERL_CPAN_CONFIG:-}"
+        if "$STOW_PERL" -MCPAN -le 1 2>/dev/null; then
             # shellcheck disable=SC2016
-            PERL5LIB=$("$STOW_PERL" -le 'print $INC[0]')
-            PERL5LIB=$(normalize_path "$PERL5LIB")
-            export PERL5LIB
+            PERL_LIB="$("$STOW_PERL" -MCPAN -e 'use Config; print $Config{privlib};')"
+            PERL_LIB="$(resolve_path "$PERL_LIB")"
+            [[ -z "$PERL_LIB" ]] && PERL_LIB="${HOME:-}"
 
-            if [ ! -x "$(command -v gmake)" ]; then
-                _perl_bin="$(dirname "$STOW_PERL")"
-                export PERL_BIN="$_perl_bin"
+            # This is the default location where we can expect to find the config. If it
+            # exists then we have already been setup.
+            PERL_CPAN_CONFIG="$(resolve_path "$PERL_LIB/CPAN/Config.pm")"
+        fi
+        export PERL_LIB PERL_CPAN_CONFIG
 
-                while [ ! "$_perl_bin" == "/" ] && [ -d "$_perl_bin/../" ]; do
-                    _perl_bin=$(cd "$_perl_bin" && cd .. && pwd)
-                    if [ ! "$_perl_bin" == "/" ] && [ -d "$_perl_bin/c/bin" ]; then
-                        export PERL_C_BIN="$_perl_bin/c/bin"
-                        break
-                    fi
-                done
-            fi
+        if [ ! -d "${PMDIR:-}" ]; then
+            PMDIR="$(
+                "$STOW_PERL" -V |
+                    awk '/@INC:/ {p=1; next} (p==1) {print $1}' |
+                    sed 's/\\/\//g' |
+                    head -n 1
+            )"
+        fi
+        PMDIR=$(resolve_path "$PMDIR")
+        export PMDIR
+
+        # Only find a prefix if PMDIR does not exist on its own
+        STOW_SITE_PREFIX="${STOW_SITE_PREFIX:-}"
+        if [ ! -d "$PMDIR" ]; then
+            siteprefix=""
+            eval "$("$STOW_PERL" -V:siteprefix)"
+            STOW_SITE_PREFIX=$(normalize_path "$siteprefix")
+        fi
+        export STOW_SITE_PREFIX
+
+        # shellcheck disable=SC2016
+        PERL5LIB=$("$STOW_PERL" -le 'print $INC[0]')
+        PERL5LIB=$(normalize_path "$PERL5LIB")
+        export PERL5LIB
+
+        if [ ! -x "$(command -v gmake)" ]; then
+            _perl_bin="$(dirname "$STOW_PERL")"
+            export PERL_BIN="$_perl_bin"
+
+            while [ ! "$_perl_bin" == "/" ] && [ -d "$_perl_bin/../" ]; do
+                _perl_bin=$(cd "$_perl_bin" && cd .. && pwd)
+                if [ ! "$_perl_bin" == "/" ] && [ -d "$_perl_bin/c/bin" ]; then
+                    export PERL_C_BIN="$_perl_bin/c/bin"
+                    break
+                fi
+            done
         fi
     fi
 

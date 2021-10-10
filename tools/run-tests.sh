@@ -16,7 +16,7 @@
 # along with this program. If not, see https://www.gnu.org/licenses/.
 #
 
-function initialize_brewperl() {
+function initialize_environment() {
     STOW_ROOT="${STOW_ROOT:-$(pwd)}"
 
     if [ ! -f "$STOW_ROOT/Build.PL" ]; then
@@ -94,10 +94,10 @@ function run_prove() {
         if [ -n "${MSYSTEM:-}" ]; then
             # https://github.com/msys2/setup-msys2/blob/master/main.js
             # shellcheck disable=SC2028
-            echo 'STOW_CPAN_LOGS=C:\msys64\home\runneradmin\.cpan*\work\**\*.log' >>"$GITHUB_ENV"
+            echo 'STOW_CPAN_LOGS=C:\msys64\home\runneradmin\.cpanm\work\**\*.log' >>"$GITHUB_ENV"
         else
             # shellcheck disable=SC2016
-            echo "STOW_CPAN_LOGS=$HOME/.cpan*/work/**/*.log" >>"$GITHUB_ENV"
+            echo "STOW_CPAN_LOGS=$HOME/.cpanm/work/**/*.log" >>"$GITHUB_ENV"
         fi
     fi
 
@@ -106,6 +106,12 @@ function run_prove() {
         --timer --verbose --normalize --parse \
         t/ >"$test_results_path"
     echo "Test results: '$test_results_path'"
+
+    # If file is empty, tests failed so report an error
+    if [ ! -s "$test_results_path" ]; then
+        "❌ Tests failed. Test result file empty."
+        return 77
+    fi
 }
 
 function test_perl_version() {
@@ -189,7 +195,9 @@ function run_stow_tests() {
             test_perl_version "$input_perl_version"
         done
 
-        run_command_group make distclean
+        if [ -z "${GITHUB_ENV:-}" ]; then
+            run_command_group make distclean
+        fi
     else
         # Test a specific version requested via $PERL_VERSION environment
         # variable.  Make sure set -e doesn't cause us to bail on failure
@@ -203,7 +211,7 @@ function run_stow_tests() {
     echo "✔ Tests succeeded."
 }
 
-initialize_brewperl
+initialize_environment
 
 # Standard safety protocol but do this after we setup perlbrew otherwise
 # we get errors with unbound variables

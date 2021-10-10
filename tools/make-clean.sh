@@ -20,9 +20,9 @@ STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && cd ../ && pwd -P)"
 
 function remove_intermediate_files() {
     if [ "${1:-}" == "--all" ]; then
-        rm -rf "$STOW_ROOT/.tmp" >/dev/null 2>&1
-        rm -rf "$STOW_ROOT/.tmp/home" >/dev/null 2>&1
-        rm -rf "$STOW_ROOT/.tmp/temp" >/dev/null 2>&1
+        rm -rf "${STOW_LOCAL_BUILD_ROOT:?}" >/dev/null 2>&1
+        rm -rf "${STOW_LOCAL_BUILD_ROOT:?}/home" >/dev/null 2>&1
+        rm -rf "${STOW_LOCAL_BUILD_ROOT:?}/temp" >/dev/null 2>&1
     fi
 
     rm -rf "$STOW_ROOT/doc/doc!manual.t2d" >/dev/null 2>&1

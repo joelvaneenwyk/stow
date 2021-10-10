@@ -34,13 +34,13 @@ exit /b
     echo ::group::Initialize CPAN
     (
         echo yes && echo. && echo no && echo exit
-    ) | "%STOW_PERL%" -MCPAN -e "shell"
+    ) | "%STOW_PERL%" -Mlocal::lib="%STOW_PERL_LOCAL_LIB%" -MCPAN -e "shell"
     echo ::endgroup::
 
     call :RunTaskGroup "%STOW_PERL%" "%~dp0initialize-cpan-config.pl"
 
     :: Already installed as part of Strawberry Perl but install/update regardless.
-    "%STOW_PERL%" -MApp::cpanminus::fatscript -le 1 > nul 2>&1
+    "%STOW_PERL%" -Mlocal::lib="%STOW_PERL_LOCAL_LIB%" -MApp::cpanminus::fatscript -le 1 > nul 2>&1
     if not "!ERRORLEVEL!"=="0" (
         call :RunTaskGroup "%STOW_PERL%" -MCPAN -e "install App::cpanminus"
     )
@@ -61,9 +61,9 @@ exit /b
 
     :$UseCpanm
     call :RunTaskGroup "%STOW_PERL%" ^
-        -MApp::cpanminus::fatscript -le ^
+        -Mlocal::lib="%STOW_PERL_LOCAL_LIB%" -MApp::cpanminus::fatscript -le ^
         "my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;" -- ^
-        --installdeps --notest .
+        --local-lib "%STOW_PERL_LOCAL_LIB%" --installdeps --notest .
 
     :$InstallDone
     cd /d "%STARTING_DIR%"
@@ -88,6 +88,6 @@ exit /b
         set _module=%~1
         shift
         if "%_module%"=="" exit /b
-        call :RunTaskGroup "%STOW_PERL%" -MCPAN -e "CPAN::Shell->notest('install', '%_module%')"
+        call :RunTaskGroup "%STOW_PERL%" -Mlocal::lib="%STOW_PERL_LOCAL_LIB%" -MCPAN -e "CPAN::Shell->notest('install', '%_module%')"
     goto:$Install
 exit /b

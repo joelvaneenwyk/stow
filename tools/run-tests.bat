@@ -41,7 +41,7 @@ endlocal & exit /b
     set _cmd=!_cmd! -I "%STOW_ROOT_UNIX%/t/"
     set _cmd=!_cmd! -I "%STOW_ROOT_UNIX%/bin/"
     set _cmd=!_cmd! -I "%STOW_ROOT_UNIX%/lib/"
-    set _cmd=!_cmd! --verbose --timer --normalize --formatter "TAP::Formatter::JUnit"
+    set _cmd=!_cmd! --norc --verbose --timer --normalize --formatter "TAP::Formatter::JUnit"
     set _cmd=!_cmd! "%STOW_ROOT_UNIX%/t/"
 
     set _result_filename=%STOW_ROOT%\test_results_windows.xml
@@ -51,7 +51,6 @@ endlocal & exit /b
     echo STOW_CPAN_LOGS=%USER_PROFILE%\.cpan*\work\**\*.log >>"%GITHUB_ENV%"
 
     :$RunProve
-    cd /d "%STOW_ROOT%"
     if "%GITHUB_ACTIONS%"=="" (
         echo ##[cmd] !_cmd!
     ) else (

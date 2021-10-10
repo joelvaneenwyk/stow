@@ -99,8 +99,8 @@ exit /b
 
     :: This is where 'cpan' files live when run through MSYS2 so this will force Perl
     :: modules to be reinstalled.
-    rmdir /q /s "%STOW_BUILD_TOOLS_ROOT%\home\" > nul 2>&1
-    rmdir /q /s "%STOW_BUILD_TOOLS_ROOT%\temp\" > nul 2>&1
+    rmdir /q /s "%STOW_LOCAL_BUILD_ROOT%\home\" > nul 2>&1
+    rmdir /q /s "%STOW_LOCAL_BUILD_ROOT%\temp\" > nul 2>&1
 
     git -C "%STOW_ROOT%" checkout -- "%STOW_ROOT%\aclocal.m4" > nul 2>&1
 
