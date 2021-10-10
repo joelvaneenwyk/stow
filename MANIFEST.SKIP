@@ -94,6 +94,7 @@
 # Avoid test files and intermediate data
 tmp-testing-trees
 test_results.*$
+test$
 ^docker/
 ^.devcontainer/
 ^.github/
