@@ -88,6 +88,19 @@ function run_prove() {
     )
     test_results_path="$STOW_ROOT/$_result_filename"
 
+    if [ -n "${GITHUB_ENV:-}" ]; then
+        echo "STOW_TEST_RESULTS=$test_results_path" >>"$GITHUB_ENV"
+
+        if [ -n "${MSYSTEM:-}" ]; then
+            # https://github.com/msys2/setup-msys2/blob/master/main.js
+            # shellcheck disable=SC2028
+            echo 'STOW_CPAN_LOGS=C:\msys64\home\runneradmin\.cpan*\work\**\*.log' >>"$GITHUB_ENV"
+        else
+            # shellcheck disable=SC2016
+            echo "STOW_CPAN_LOGS=$HOME/.cpan*/work/**/*.log" >>"$GITHUB_ENV"
+        fi
+    fi
+
     prove -I t/ -I bin/ -I lib/ \
         --formatter "TAP::Formatter::JUnit" \
         --timer --verbose --normalize --parse \
@@ -96,19 +109,6 @@ function run_prove() {
     # Insert newline as the above XML output does not add trailing newline
     echo ""
     echo "Test results: '$test_results_path'"
-
-    if [ -n "${GITHUB_ENV:-}" ]; then
-        echo "STOW_TEST_RESULTS=$test_results_path" >>"$GITHUB_ENV"
-
-        if [ -n "${MSYSTEM:-}" ]; then
-            # https://github.com/msys2/setup-msys2/blob/master/main.js
-            # shellcheck disable=SC2028
-            echo 'STOW_CPAN_LOGS=C:\\msys64\home\runneradmin\.cpan*\work\**\*.log' >>"$GITHUB_ENV"
-        else
-            # shellcheck disable=SC2016
-            echo 'STOW_CPAN_LOGS=$HOME/.cpan*/work/**/*.log' >>"$GITHUB_ENV"
-        fi
-    fi
 }
 
 function test_perl_version() {
@@ -128,25 +128,30 @@ function test_perl_version() {
     # Remove all intermediate files before we start to ensure a clean test
     run_command_group "$STOW_ROOT/tools/make-clean.sh"
 
-    (
-        cd "$STOW_ROOT" || true
-
-        # Install stow
-        run_command_group autoreconf --install
-
+    _starting_directory="$(pwd)"
+    if cd "$STOW_ROOT"; then
         eval "$("$STOW_PERL" -V:siteprefix)"
         STOW_SITE_PREFIX=$(normalize_path "${siteprefix:-}")
+
+        # Run auto reconfigure ('autoreconf') to generate 'configure' script
+        run_command_group autoreconf --install
+
+        # Run 'configure' to generate Makefile
         run_command_group ./configure --prefix="$STOW_SITE_PREFIX"
 
         run_command_group make
         run_command_group make distcheck
-        run_command_group cover -test -report coveralls
+
         run_named_command_group "prove" run_prove
+
+        run_command_group cover -test -report coveralls
 
         #run_command_group "$STOW_PERL" Build.PL
         #run_command_group ./Build build
         #run_command_group ./Build distcheck
-    )
+
+        cd "$_starting_directory" || true
+    fi
 }
 
 function run_stow_tests() {

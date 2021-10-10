@@ -103,8 +103,13 @@ endlocal & exit /b
     for %%F in ("!STOW_PERL!") do set PERL_BIN_DIR=%%~dpF
     if exist "!PERL_BIN_DIR!" set PERL_BIN_DIR=%PERL_BIN_DIR:~0,-1%
 
+    for %%F in ("!PERL_BIN_DIR!\..\site\bin\cover.bat") do set PERL_SITE_BIN_DIR=%%~dpF
+    if not exist "!PERL_SITE_BIN_DIR!" set PERL_SITE_BIN_DIR=
+    if exist "!PERL_SITE_BIN_DIR!" set PERL_SITE_BIN_DIR=%PERL_SITE_BIN_DIR:~0,-1%
+
     for %%F in ("!PERL_BIN_DIR!\..\..\c\bin\gmake.exe") do set PERL_BIN_C_DIR=%%~dpF
     if not exist "!PERL_BIN_C_DIR!" set PERL_BIN_C_DIR=
+    if exist "!PERL_BIN_C_DIR!" set PERL_BIN_C_DIR=%PERL_BIN_C_DIR:~0,-1%
 
     if not exist "%BASH_EXE%" goto:$ValidatePerlShebang
         call :GetCygPath "!STOW_PERL!" "STOW_PERL_UNIX"
@@ -155,6 +160,7 @@ endlocal & exit /b
         set "STOW_PERL_UNIX=%STOW_PERL_UNIX%"
         set "PERL_BIN_DIR=%PERL_BIN_DIR%"
         set "PERL_BIN_C_DIR=%PERL_BIN_C_DIR%"
+        set "PERL_SITE_BIN_DIR=%PERL_SITE_BIN_DIR%"
         set "PERL_LIB=%PERL_LIB%"
         set "PERL_CPAN_CONFIG=%PERL_CPAN_CONFIG%"
         set "PERL5LIB=%PERL5LIB%"

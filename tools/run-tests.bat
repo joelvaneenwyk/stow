@@ -51,15 +51,29 @@ endlocal & exit /b
     )
 
     set _result_filename=%STOW_ROOT%\test_results_windows.xml
+
+    if "%GITHUB_ENV%"=="" goto:$RunProve
+    echo STOW_TEST_RESULTS=%_result_filename% >>"%GITHUB_ENV%"
+    echo STOW_CPAN_LOGS=%USER_PROFILE%\.cpan*\work\**\*.log >>"%GITHUB_ENV%"
+
+    :$RunProve
     call !_cmd! >"%_result_filename%"
-
-    if not "%GITHUB_ENV%"=="" (
-        echo "STOW_TEST_RESULTS=%_result_filename%" >>%GITHUB_ENV%
-        echo "STOW_CPAN_LOGS=%USER_PROFILE%\.cpan*\work\**\*.log" >>%GITHUB_ENV%
-    )
-
     echo Test results: '%_result_filename%'
     if not "!ERRORLEVEL!"=="0" (
         echo Tests failed with error code: '!ERRORLEVEL!'
     )
+
+
+    del "%STOW_ROOT%\Build" > nul 2>&1
+    del "%STOW_ROOT%\Build.bat" > nul 2>&1
+    del "%STOW_ROOT%\config.*" > nul 2>&1
+    del "%STOW_ROOT%\configure" > nul 2>&1
+    del "%STOW_ROOT%\configure~" > nul 2>&1
+    del "%STOW_ROOT%\configure.lineno" > nul 2>&1
+    del "%STOW_ROOT%\Makefile" > nul 2>&1
+    del "%STOW_ROOT%\Makefile.in" > nul 2>&1
+    rmdir /q /s "%STOW_ROOT%\tmp-testing-trees\" > nul 2>&1
+    rmdir /q /s "%STOW_ROOT%\cover_db\" > nul 2>&1
+    mkdir "%STOW_ROOT%\cover_db\"
+    call :Run "%PERL_SITE_BIN_DIR%\cover.bat" -test -report coveralls
 endlocal & exit /b
