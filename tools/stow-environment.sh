@@ -230,9 +230,9 @@ function initialize_perl() {
                 echo ""
                 echo "no"
                 echo "exit"
-            ) | run_command_group "$STOW_PERL" -MCPAN -Mlocal::lib="$STOW_PERL_LOCAL_LIB" -e "shell" || true
+            ) | run_command_group "$STOW_PERL" -MCPAN -e "shell" || true
 
-            run_command_group "$STOW_PERL" -Mlocal::lib="$STOW_PERL_LOCAL_LIB" "$STOW_ROOT/tools/initialize-cpan-config.pl" || true
+            run_command_group "$STOW_PERL" "$STOW_ROOT/tools/initialize-cpan-config.pl" || true
         fi
 
         # Depending on install order it is possible in an MSYS environment to get errors about
@@ -250,6 +250,12 @@ function initialize_perl() {
                 pl2bat "$(which pl2bat 2>/dev/null)" 2>/dev/null || true
             fi
         fi
+
+        if ! run_named_command_group "Install 'local::lib'" "$STOW_PERL" -MCPAN -e "CPAN::Shell->notest('install', 'local::lib')"; then
+            echo "❌ Failed to install 'local::lib' module."
+        fi
+
+        eval "$("$STOW_PERL" -I"$STOW_PERL_LOCAL_LIB" -Mlocal::lib="$STOW_PERL_LOCAL_LIB")"
 
         if ! "$STOW_PERL" -Mlocal::lib="$STOW_PERL_LOCAL_LIB" -MApp::cpanminus -le 1 2>/dev/null; then
             local _cpanm
@@ -564,8 +570,6 @@ function update_stow_environment() {
     if [ -z "$STOW_PERL" ] || ! _perl_version=$("$STOW_PERL" -e "print substr($^V, 1)"); then
         echo "Failed to find Perl install."
     else
-        eval "$("$STOW_PERL" -I"$STOW_PERL_LOCAL_LIB" -Mlocal::lib="$STOW_PERL_LOCAL_LIB")"
-
         STOW_VERSION="$("$STOW_PERL" "$STOW_ROOT/tools/get-version")"
         export STOW_VERSION
 

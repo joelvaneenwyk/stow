@@ -34,10 +34,12 @@ exit /b
     echo ::group::Initialize CPAN
     (
         echo yes && echo. && echo no && echo exit
-    ) | "%STOW_PERL%" -Mlocal::lib="%STOW_PERL_LOCAL_LIB%" -MCPAN -e "shell"
+    ) | "%STOW_PERL%" -MCPAN -e "shell"
     echo ::endgroup::
 
     call :RunTaskGroup "%STOW_PERL%" "%~dp0initialize-cpan-config.pl"
+
+    call :RunTaskGroup "%STOW_PERL%" -MCPAN -e "CPAN::Shell->notest('install', 'local::lib')"
 
     :: Already installed as part of Strawberry Perl but install/update regardless.
     "%STOW_PERL%" -Mlocal::lib="%STOW_PERL_LOCAL_LIB%" -MApp::cpanminus::fatscript -le 1 > nul 2>&1
@@ -52,11 +54,11 @@ exit /b
     "%STOW_PERL%" -MApp::cpanminus::fatscript -le 1 > nul 2>&1
     if "!ERRORLEVEL!"=="0" goto:$UseCpanm
     call :InstallPerlModules ^
-        Carp  Module::Build IO::Scalar ^
-        Devel::Cover::Report::Coveralls ^
-        Test::Output Test::More Test::Exception ^
-        ExtUtils::PL2Bat Inline::C Win32::Mutex ^
-        TAP::Formatter::JUnit
+        "Carp" "Module::Build" "IO::Scalar" ^
+        "Devel::Cover::Report::Coveralls" ^
+        "Test::Output" "Test::More" "Test::Exception" ^
+        "ExtUtils::PL2Bat" "Inline::C" "Win32::Mutex" ^
+        "TAP::Formatter::JUnit"
     goto:$InstallDone
 
     :$UseCpanm
