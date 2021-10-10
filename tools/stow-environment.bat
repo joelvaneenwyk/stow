@@ -101,6 +101,8 @@ endlocal & exit /b
     )
 
     for %%F in ("!STOW_PERL!") do set PERL_BIN_DIR=%%~dpF
+    if exist "!PERL_BIN_DIR!" set PERL_BIN_DIR=%PERL_BIN_DIR:~0,-1%
+
     for %%F in ("!PERL_BIN_DIR!\..\..\c\bin\gmake.exe") do set PERL_BIN_C_DIR=%%~dpF
     if not exist "!PERL_BIN_C_DIR!" set PERL_BIN_C_DIR=
 
@@ -132,8 +134,9 @@ endlocal & exit /b
         echo Perl C Bin: '!PERL_BIN_C_DIR!'
         echo Perl (MSYS): '!STOW_PERL_UNIX!'
         echo Perl CPAN Config: '%PERL_CPAN_CONFIG%'
-        echo Stow Root (MSYS): '!STOW_ROOT_MSYS!'
-        echo MSYS2: '!WIN_UNIX_DIR!' '!WIN_UNIX_DIR_UNIX!'
+        echo MSYS2: '!WIN_UNIX_DIR!'
+        echo MSYS2 (unixy): '!WIN_UNIX_DIR_UNIX!'
+        echo Stow Root (unixy): '!STOW_ROOT_MSYS!'
         echo Stow v!STOW_VERSION!
 
     if not exist "!WIN_UNIX_DIR!\post-install.bat" goto:$SkipPostInstall
@@ -168,7 +171,7 @@ endlocal & exit /b
     )
 
     if not exist "%STOW_PERL%" (
-        echo ERROR: Perl not found. 
+        echo ERROR: Perl not found.
         exit /b 55
     )
 exit /b 0

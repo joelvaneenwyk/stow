@@ -96,6 +96,19 @@ function run_prove() {
     # Insert newline as the above XML output does not add trailing newline
     echo ""
     echo "Test results: '$test_results_path'"
+
+    if [ -n "${GITHUB_ENV:-}" ]; then
+        echo "STOW_TEST_RESULTS=$test_results_path" >>"$GITHUB_ENV"
+
+        if [ -n "${MSYSTEM:-}" ]; then
+            # https://github.com/msys2/setup-msys2/blob/master/main.js
+            # shellcheck disable=SC2028
+            echo 'STOW_CPAN_LOGS=C:\\msys64\home\runneradmin\.cpan*\work\**\*.log' >>"$GITHUB_ENV"
+        else
+            # shellcheck disable=SC2016
+            echo 'STOW_CPAN_LOGS=$HOME/.cpan*/work/**/*.log' >>"$GITHUB_ENV"
+        fi
+    fi
 }
 
 function test_perl_version() {
@@ -127,7 +140,7 @@ function test_perl_version() {
 
         run_command_group make
         run_command_group make distcheck
-        run_command_group cover -test
+        run_command_group cover -test -report coveralls
         run_named_command_group "prove" run_prove
 
         #run_command_group "$STOW_PERL" Build.PL

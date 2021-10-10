@@ -36,5 +36,30 @@ endlocal & exit /b
     setlocal EnableExtensions EnableDelayedExpansion
     set _root=%~dp1
     call "%_root:~0,-1%\tools\stow-environment.bat"
-    call :Run prove -I "%STOW_ROOT_UNIX%/t/" -I "%STOW_ROOT_UNIX%/bin/" -I "%STOW_ROOT_UNIX%/lib/" --timer --formatter "TAP::Formatter::JUnit" "%STOW_ROOT_UNIX%/t/"
+
+    set _cmd="%PERL_BIN_DIR%\prove.bat"
+    set _cmd=!_cmd! -I "%STOW_ROOT_UNIX%/t/" -I
+    set _cmd=!_cmd! -I "%STOW_ROOT_UNIX%/bin/" -I
+    set _cmd=!_cmd! -I "%STOW_ROOT_UNIX%/lib/" -I
+    set _cmd=!_cmd! --verbose --timer --normalize --formatter "TAP::Formatter::JUnit"
+    set _cmd=!_cmd! "%STOW_ROOT_UNIX%/t/"
+
+    if "%GITHUB_ACTIONS%"=="" (
+        echo ##[cmd] !_cmd!
+    ) else (
+        echo [command]!_cmd!
+    )
+
+    set _result_filename=%STOW_ROOT%\test_results_windows.xml
+    call !_cmd! >"%_result_filename%"
+
+    if not "%GITHUB_ENV%"=="" (
+        echo "STOW_TEST_RESULTS=%_result_filename%" >>%GITHUB_ENV%
+        echo "STOW_CPAN_LOGS=%USER_PROFILE%\.cpan*\work\**\*.log" >>%GITHUB_ENV%
+    )
+
+    echo Test results: '%_result_filename%'
+    if not "!ERRORLEVEL!"=="0" (
+        echo Tests failed with error code: '!ERRORLEVEL!'
+    )
 endlocal & exit /b
