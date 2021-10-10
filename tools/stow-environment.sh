@@ -582,6 +582,7 @@ function update_stow_environment() {
     STOW_PERL_LOCAL_LIB="${STOW_LOCAL_BUILD_ROOT}/perllib/${os_name}"
     mkdir -p "$STOW_PERL_LOCAL_LIB"
     export STOW_PERL_LOCAL_LIB
+    export PATH="$STOW_PERL_LOCAL_LIB/bin:$PATH"
 
     export PERL_LOCAL_LIB_ROOT="$STOW_PERL_LOCAL_LIB"
 

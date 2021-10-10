@@ -85,6 +85,8 @@ endlocal & exit /b
     set BASH_EXE=!WIN_UNIX_DIR!\usr\bin\bash.exe
     set BASH="%BASH_EXE%" --noprofile --norc -c
 
+    if exist "!STOW_PERL!" goto:$PerlValidate
+
     :: Print Perl version number
     "C:\Windows\System32\WHERE.exe" /Q perl
     if not !ERRORLEVEL!==0 goto:$PerlValidate
@@ -103,11 +105,12 @@ endlocal & exit /b
     set STOW_PERL_LOCAL_LIB=!STOW_LOCAL_BUILD_ROOT!\perllib\windows
     if not exist "!STOW_LOCAL_BUILD_ROOT!\perllib" mkdir "!STOW_LOCAL_BUILD_ROOT!\perllib"
     if not exist "!STOW_PERL_LOCAL_LIB!" mkdir "!STOW_PERL_LOCAL_LIB!"
+    set STOW_PERL_LOCAL_LIB_UNIX=!STOW_PERL_LOCAL_LIB:\=/!
 
-    set PERL5LIB=!STOW_PERL_LOCAL_LIB!\lib
+    set PERL5LIB=!STOW_PERL_LOCAL_LIB_UNIX!/lib
 
-    set PERL_LOCAL_LIB_ROOT=%STOW_PERL_LOCAL_LIB%
-    "!STOW_PERL!" -I"!STOW_PERL_LOCAL_LIB!" -Mlocal::lib="!STOW_PERL_LOCAL_LIB!" >"!STOW_PERL_LOCAL_LIB!\init.bat"
+    set PERL_LOCAL_LIB_ROOT=%STOW_PERL_LOCAL_LIB_UNIX%
+    "!STOW_PERL!" -I"!STOW_PERL_LOCAL_LIB_UNIX!" -Mlocal::lib="!STOW_PERL_LOCAL_LIB_UNIX!" >"!STOW_PERL_LOCAL_LIB!\init.bat"
 
     for %%F in ("!STOW_PERL!") do set PERL_BIN_DIR=%%~dpF
     if exist "!PERL_BIN_DIR!" set PERL_BIN_DIR=%PERL_BIN_DIR:~0,-1%

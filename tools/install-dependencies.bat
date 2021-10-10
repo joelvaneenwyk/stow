@@ -44,6 +44,7 @@ exit /b
         "YAML" "ExtUtils::MakeMaker" "ExtUtils::Config" ^
         "App::cpanminus" ^
         "local::lib"
+    if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
 
     :: Install dependencies. Note that 'Inline::C' requires 'make' and 'gcc' to be installed. It
     :: is recommended to install MSYS2 packages for copmiling (e.g. mingw-w64-x86_64-make) but
@@ -54,7 +55,7 @@ exit /b
         "Test::Output" "Test::More" "Test::Exception" ^
         "ExtUtils::PL2Bat" "Inline::C" "Win32::Mutex" ^
         "TAP::Formatter::JUnit"
-    goto:$InstallDone
+    if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
 
     :$InstallDone
     cd /d "%STARTING_DIR%"
