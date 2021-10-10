@@ -87,6 +87,7 @@
 ^doc/stow.cp$
 ^doc/stow.toc$
 ^doc/stow.dvi$
+^doc/texi2dvi.sh$
 
 \btools/texinfo/\b
 

@@ -49,20 +49,21 @@ function run_tests() {
         mkdir -p "$STOW_ROOT/doc/manual.t2d/version_test"
         cd "$STOW_ROOT/doc/manual.t2d/version_test"
         echo '\input texinfo.tex @bye' >txiversion.tex
-        export TEXINPUTS=".:$STOW_ROOT/doc/:doc/::"
-        "$TEX" txiversion.tex
+        TEXINPUTS=".:$STOW_ROOT/doc/:doc/::" "$TEX" txiversion.tex
     )
 
     STOW_TEXI2DVI="$STOW_ROOT/doc/texi2dvi.sh"
     #STOW_TEXI2DVI=texi2dvi
 
-    cd "$STOW_ROOT/doc" || true
-    export PATH=".:$PATH"
-    export LOCAL='.'
-    TEXINPUTS='$LOCAL:doc/::' "$STOW_TEXI2DVI" --pdf \
-        -I '$LOCAL/ding' \
-        --verbose --build=local \
-        -o "manual.pdf" "stow.texi"
+    (
+        cd "$STOW_ROOT/doc" || true
+        # shellcheck disable=SC2016
+        PATH=".:$PATH" LOCAL='.' TEXINPUTS='$LOCAL:doc/::' \
+            "$STOW_TEXI2DVI" --pdf \
+            -I '$LOCAL/ding' \
+            --verbose --build=local \
+            -o "manual.pdf" "stow.texi"
+    )
 
     _log="$STOW_ROOT/texi2dvi_$(uname -s).log"
     (
@@ -79,6 +80,8 @@ function run_tests() {
 
         if (
             remove_intermediate_doc_files
+
+            # shellcheck disable=SC2030,SC2031
             export TEXINPUTS=".:$STOW_ROOT/automake:/usr/share/automake-1.16:$STOW_ROOT/doc:"
 
             #export MAKEINFO='sh "$STOW_ROOT/automake/missing" makeinfo -I . -I ./doc  -I doc -I ./doc -I ../'
@@ -107,6 +110,8 @@ function run_tests() {
             rm -f "$STOW_ROOT/doc/manual.pdf" "$STOW_ROOT/doc/manual_$(uname -s).pdf"
 
             cd "$STOW_ROOT" || true
+
+            # shellcheck disable=SC2030,SC2031
             export TEXINPUTS="$STOW_ROOT/doc;./doc;../;$TEXINPUTS"
             export MAKEINFO='sh automake/missing makeinfo -I . -I ./doc  -I doc -I ./doc -I ../'
             texi2dvi \
@@ -117,7 +122,11 @@ function run_tests() {
         )
 
         echo "$_log"
+
+        # shellcheck disable=SC2031
         echo "TeX: $TEX"
+
+        # shellcheck disable=SC2031
         echo "PDFTEX: $PDFTEX"
     ) 2>&1 | tee "$_log"
 
