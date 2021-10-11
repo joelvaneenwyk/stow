@@ -37,7 +37,8 @@ endlocal & exit /b
     set _root=%~dp1
     call "%_root:~0,-1%\tools\stow-environment.bat"
 
-    set _cmd="%PERL_BIN_DIR%\prove.bat"
+    set _cmd="%STOW_PERL%" -MApp::Prove
+    set _cmd=!_cmd! -le "my $c = App::Prove->new; $c->process_args(@ARGV); $c->run" --
     set _cmd=!_cmd! -I "%STOW_ROOT_UNIX%/t/"
     set _cmd=!_cmd! -I "%STOW_ROOT_UNIX%/bin/"
     set _cmd=!_cmd! -I "%STOW_ROOT_UNIX%/lib/"
@@ -74,5 +75,9 @@ endlocal & exit /b
     rmdir /q /s "%STOW_ROOT%\tmp-testing-trees\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\cover_db\" > nul 2>&1
     mkdir "%STOW_ROOT%\cover_db\"
-    call :Run "%PERL_SITE_BIN_DIR%\cover.bat" -test -report coveralls
+    call :Run "%STOW_PERL_LOCAL_LIB%\bin\cover.bat" -test -report coveralls
+    if not "!ERRORLEVEL!"=="0" (
+        echo Cover failed with error code: '!ERRORLEVEL!'
+        endlocal & exit /b !ERRORLEVEL!
+    )
 endlocal & exit /b 0

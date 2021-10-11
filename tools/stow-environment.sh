@@ -300,8 +300,8 @@ function install_perl_dependencies() {
     # in fact installed.
     modules+=(
         Carp Module::Build IO::Scalar
-        Test::More Test::Exception Test::Output
-        Devel::Cover::Report::Coveralls
+        Test::Harness Test::More Test::Exception Test::Output
+        Devel::Cover Devel::Cover::Report::Coveralls
         TAP::Formatter::JUnit
     )
 
@@ -573,9 +573,12 @@ function update_stow_environment() {
     export PERL_MM_OPT=""
     export PERL_SITE_BIN_DIR=""
 
-    os_name="$(uname -o | sed 's#/#_#g' | awk '{print tolower($0)}')"
-    if grep -qEi "(Microsoft|WSL)" /proc/version &>/dev/null; then
-        os_name="wsl_$os_name"
+    os_name="$(uname -o | sed 's#/#_#g' | sed 's# #_#g' | awk '{print tolower($0)}')"
+
+    if [ -f "/.dockerenv" ]; then
+        os_name="docker_${os_name}"
+    elif grep -qEi "(Microsoft|WSL)" /proc/version &>/dev/null; then
+        os_name="wsl_${os_name}"
     elif [ "$os_name" = "msys" ]; then
         os_name="$(echo "${os_name}_${MSYSTEM}" | awk '{print tolower($0)}')"
     fi

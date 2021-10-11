@@ -19,7 +19,7 @@
 setlocal EnableExtensions EnableDelayedExpansion
 
 call :RunCommand powershell -NoLogo -NoProfile -Command "Set-ExecutionPolicy RemoteSigned -scope CurrentUser;"
-echo call :RunCommand powershell -NoLogo -NoProfile -File "%~dp0install-dependencies.ps1"
+call :RunCommand powershell -NoLogo -NoProfile -File "%~dp0install-dependencies.ps1"
 
 call :InstallPerlDependencies "%~dp0..\"
 
@@ -51,14 +51,13 @@ exit /b
     :: many/most Perl distributions already come with the required tools for compiling.
     call :InstallPerlModules ^
         "Carp" "Module::Build" "IO::Scalar" ^
-        "Devel::Cover::Report::Coveralls" ^
-        "Test::Output" "Test::More" "Test::Exception" ^
+        "Devel::Cover" "Devel::Cover::Report::Coveralls" ^
+        "Test::Harness" "Test::Output" "Test::More" "Test::Exception" ^
         "ExtUtils::PL2Bat" "Inline::C" "Win32::Mutex" ^
         "TAP::Formatter::JUnit"
     if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
 
     :$InstallDone
-    cd /d "%STARTING_DIR%"
 exit /b
 
 :RunTaskGroup

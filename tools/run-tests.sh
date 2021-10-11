@@ -101,7 +101,9 @@ function run_prove() {
         fi
     fi
 
-    prove -I t/ -I bin/ -I lib/ \
+    # shellcheck disable=SC2016
+    run_command "$STOW_PERL" -MApp::Prove \
+        -le 'my $c = App::Prove->new; $c->process_args(@ARGV); $c->run;' -- \
         --formatter "TAP::Formatter::JUnit" \
         --timer --verbose --normalize --parse \
         t/ >"$test_results_path"
@@ -147,7 +149,17 @@ function test_perl_version() {
 
         run_named_command_group "prove" run_prove
 
-        run_command_group cover -test -report coveralls
+        _cover="$(command -v cover)"
+
+        if [ ! -x "$_cover" ] && [ -x "$STOW_PERL_LOCAL_LIB/bin/cover" ]; then
+            _cover="$STOW_PERL_LOCAL_LIB/bin/cover"
+        fi
+
+        if [ -x "$_cover" ]; then
+            run_command_group "$_cover" -test -report coveralls
+        else
+            echo "Failed to run cover. Missing binary: '$_cover'"
+        fi
 
         #run_command_group "$STOW_PERL" Build.PL
         #run_command_group ./Build build
