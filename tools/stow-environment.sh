@@ -98,17 +98,27 @@ function use_sudo {
 }
 
 function install_perl_modules() {
-    if "$STOW_PERL" -MApp::cpanminus::fatscript -le 1 2>/dev/null; then
-        cpan_args=()
+    global_cpan_args=()
 
-        if "$STOW_PERL" -Mlocal::lib -le 1 2>/dev/null; then
-            cpan_args+=(-Mlocal::lib="$STOW_PERL_LOCAL_LIB")
-        fi
+    # Since we call CPAN manually it is not always set, but there are some libraries
+    # like IO::Socket::SSL use this to determine whether or not to prompt for next
+    # steps e.g., see https://github.com/gbarr/perl-libnet/blob/master/Makefile.PL
+    export PERL5_CPAN_IS_RUNNING=1
+    export NO_NETWORK_TESTING=n
 
+    if "$STOW_PERL" -Mlocal::lib -le 1 2>/dev/null; then
+        global_cpan_args+=(-Mlocal::lib="$STOW_PERL_LOCAL_LIB")
+    fi
+
+    if "$STOW_PERL" "${global_cpan_args[@]}" -MApp::cpanminus::fatscript -le 1 2>/dev/null; then
         # shellcheck disable=SC2016
-        run_named_command_group "Install Module(s): '$*'" "$STOW_PERL" "${cpan_args[@]}" -MApp::cpanminus::fatscript -le \
+        if ! run_named_command_group "Install Module(s): '$*'" "$STOW_PERL" "${global_cpan_args[@]}" -MApp::cpanminus::fatscript -le \
             'my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;' -- \
-            --skip-installed --skip-satisfied --local-lib "$STOW_PERL_LOCAL_LIB" --notest "$@"
+            --skip-installed --skip-satisfied --local-lib "$STOW_PERL_LOCAL_LIB" --notest "$@"; then
+            echo "❌ Failed to install modules with CPANM."
+            unset PERL5_CPAN_IS_RUNNING
+            return 99
+        fi
     else
         for package in "$@"; do
             cpan_args=()
@@ -117,11 +127,14 @@ function install_perl_modules() {
                 cpan_args+=(-Mlocal::lib="$STOW_PERL_LOCAL_LIB")
             fi
 
-            if ! "$STOW_PERL" "${cpan_args[@]}" -M"$package" -le 1 2>/dev/null; then
-                if ! run_named_command_group "Install '$package'" "$STOW_PERL" -MCPAN "${cpan_args[@]}" -e "CPAN::Shell->notest('install', '$package')"; then
-                    echo "❌ Failed to install '$package' module."
-                    return $?
-                fi
+            if "$STOW_PERL" "${cpan_args[@]}" -M"$package" -le 1 2>/dev/null; then
+                continue
+            fi
+
+            if ! run_named_command_group "Install '$package'" "$STOW_PERL" -MCPAN "${cpan_args[@]}" -e "CPAN::Shell->notest('install', '$package')"; then
+                echo "❌ Failed to install '$package' module with CPAN."
+                unset PERL5_CPAN_IS_RUNNING
+                return 88
             fi
         done
     fi
@@ -177,7 +190,7 @@ function install_system_dependencies() {
     if [ -x "$(command -v apt-get)" ]; then
         packages+=(
             sudo git bzip2 gawk curl patch
-            perl cpanminus libssl-dev openssl libz-dev
+            perl libssl-dev openssl libz-dev
             build-essential make autotools-dev automake autoconf
             texlive texinfo
         )
@@ -237,62 +250,61 @@ function initialize_perl() {
     # updating and installing modules.
     update_stow_environment
 
-    if [ -x "$STOW_PERL" ]; then
-        if "$STOW_PERL" -MCPAN -le 1 2>/dev/null; then
-            (
-                echo "yes"
-                echo ""
-                echo "no"
-                echo "exit"
-            ) | run_command_group "$STOW_PERL" -MCPAN -e "shell" || true
-
-            run_command_group "$STOW_PERL" "$STOW_ROOT/tools/initialize-cpan-config.pl" || true
-        fi
-
-        # Depending on install order it is possible in an MSYS environment to get errors about
-        # the 'pl2bat' file being missing. Workaround here is to ensure ExtUtils::MakeMaker is
-        # installed and then calling 'pl2bat' to generate it. It should be located under bin
-        # folder at '/mingw64/bin/core_perl/pl2bat.bat'
-        if [ -n "${MSYSTEM:-}" ]; then
-            if [ ! "${MSYSTEM:-}" = "MSYS" ]; then
-                export PATH="$PATH:$MSYSTEM_PREFIX/bin:$MSYSTEM_PREFIX/bin/core_perl"
-            fi
-
-            # We intentionally use 'which' here as we are on Windows
-            # shellcheck disable=SC2230
-            if [ -x "$(command -v pl2bat)" ]; then
-                pl2bat "$(which pl2bat 2>/dev/null)" 2>/dev/null || true
-            fi
-        fi
-
-        if ! "$STOW_PERL" -I "$STOW_PERL_LOCAL_LIB" -Mlocal::lib -le 1 2>/dev/null; then
-            install_perl_modules 'YAML' 'ExtUtils::MakeMaker' 'ExtUtils::Config' 'local::lib'
-        fi
-
-        _perl_local_setup="$("$STOW_PERL" -I "$STOW_PERL_LOCAL_LIB" -Mlocal::lib="$STOW_PERL_LOCAL_LIB")"
-        echo "$_perl_local_setup"
-        eval "$_perl_local_setup"
-
-        if ! "$STOW_PERL" -Mlocal::lib="$STOW_PERL_LOCAL_LIB" -MApp::cpanminus -le 1 2>/dev/null; then
-            local _cpanm
-            _cpanm="$STOW_PERL_LOCAL_LIB/cpanm"
-
-            if [ -x "$(command -v curl)" ]; then
-                curl -L --silent "https://cpanmin.us/" -o "$_cpanm"
-            fi
-
-            chmod +x "$_cpanm"
-            run_command "$STOW_PERL" "$_cpanm" --local-lib "$STOW_PERL_LOCAL_LIB" --notest 'App::cpanminus' || true
-
-            # Use 'cpan' to install as a last resort
-            if ! "$STOW_PERL" -Mlocal::lib="$STOW_PERL_LOCAL_LIB" -MApp::cpanminus -le 1 2>/dev/null; then
-                install_perl_modules "App::cpanminus"
-            fi
-        fi
-
-        # Install this to silence warning when doing initial configure
-        install_perl_modules 'Test::Output'
+    if [ ! -x "$STOW_PERL" ]; then
+        echo "Perl install not found."
+        return 2
     fi
+
+    if "$STOW_PERL" -MCPAN -le 1 2>/dev/null; then
+        (
+            echo "yes"
+            echo ""
+            echo "no"
+            echo "exit"
+        ) | run_command_group "$STOW_PERL" -MCPAN -e "shell" || true
+
+        run_command_group "$STOW_PERL" "$STOW_ROOT/tools/initialize-cpan-config.pl" || true
+    fi
+
+    # Depending on install order it is possible in an MSYS environment to get errors about
+    # the 'pl2bat' file being missing. Workaround here is to ensure ExtUtils::MakeMaker is
+    # installed and then calling 'pl2bat' to generate it. It should be located under bin
+    # folder at '/mingw64/bin/core_perl/pl2bat.bat'
+    if [ -n "${MSYSTEM:-}" ]; then
+        if [ ! "${MSYSTEM:-}" = "MSYS" ]; then
+            export PATH="$PATH:$MSYSTEM_PREFIX/bin:$MSYSTEM_PREFIX/bin/core_perl"
+        fi
+
+        # We intentionally use 'which' here as we are on Windows
+        # shellcheck disable=SC2230
+        if [ -x "$(command -v pl2bat)" ]; then
+            pl2bat "$(which pl2bat 2>/dev/null)" 2>/dev/null || true
+        fi
+    fi
+
+    if ! "$STOW_PERL" -I "$STOW_PERL_LOCAL_LIB" -Mlocal::lib -le 1 2>/dev/null; then
+        install_perl_modules 'YAML' 'ExtUtils::MakeMaker' 'ExtUtils::Config' 'local::lib'
+    fi
+
+    _perl_local_setup="$("$STOW_PERL" -I "$STOW_PERL_LOCAL_LIB" -Mlocal::lib="$STOW_PERL_LOCAL_LIB")"
+    echo "$_perl_local_setup"
+    eval "$_perl_local_setup"
+
+    if ! "$STOW_PERL" -Mlocal::lib="$STOW_PERL_LOCAL_LIB" -MApp::cpanminus -le 1 2>/dev/null; then
+        local _cpanm
+        _cpanm="$STOW_PERL_LOCAL_LIB/cpanm"
+
+        if [ -x "$(command -v curl)" ]; then
+            curl -L --silent "https://cpanmin.us/" -o "$_cpanm"
+        fi
+        chmod +x "$_cpanm"
+
+        run_command "$STOW_PERL" -Mlocal::lib="$STOW_PERL_LOCAL_LIB" "$_cpanm" \
+            --local-lib "$STOW_PERL_LOCAL_LIB" --notest 'App::cpanminus'
+    fi
+
+    # Install this to silence warning when doing initial configure
+    install_perl_modules 'App::cpanminus' 'Test::Output'
 }
 
 function install_perl_dependencies() {

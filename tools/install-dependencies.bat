@@ -28,16 +28,22 @@ exit /b
 :InstallPerlDependencies
     setlocal EnableExtensions EnableDelayedExpansion
 
+    rmdir /q /s "%USERPROFILE%\.cpan\CPAN" > nul 2>&1
+    rmdir /q /s "%USERPROFILE%\.cpan\prefs" > nul 2>&1
+    rmdir /q /s "%USERPROFILE%\.cpan-w64\CPAN" > nul 2>&1
+    rmdir /q /s "%USERPROFILE%\.cpan-w64\prefs" > nul 2>&1
+
     set _root=%~dp1
     call "%_root:~0,-1%\tools\stow-environment.bat" --refresh
+    if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
 
     echo ::group::Initialize CPAN
     (
         echo yes && echo. && echo no && echo exit
-    ) | "%STOW_PERL%" -I "%STOW_PERL_LOCAL_LIB%" -MCPAN -e "shell"
+    ) | "%STOW_PERL%" -I "%STOW_PERL_LOCAL_LIB_UNIX%" -MCPAN -e "shell"
     echo ::endgroup::
 
-    call :RunTaskGroup "%STOW_PERL%" -I "%STOW_PERL_LOCAL_LIB%" "%~dp0initialize-cpan-config.pl"
+    call :RunTaskGroup "%STOW_PERL%" -I "%STOW_PERL_LOCAL_LIB_UNIX%" "%~dp0initialize-cpan-config.pl"
 
     :: First install 'cpanminus' and 'local::lib' before installing remaining libraries
     call :InstallPerlModules ^
@@ -51,7 +57,7 @@ exit /b
     :: many/most Perl distributions already come with the required tools for compiling.
     call :InstallPerlModules ^
         "YAML" "ExtUtils::Config" ^
-        "IO::Socket::SSL" "Net::SSLeay" ^
+        "LWP::Protocol::https" "IO::Socket::SSL" "Net::SSLeay" ^
         "Carp" "Module::Build" "Module::Build::Tiny" "IO::Scalar" ^
         "Devel::Cover" "Devel::Cover::Report::Coveralls" ^
         "Test::Harness" "Test::Output" "Test::More" "Test::Exception" ^
@@ -80,10 +86,17 @@ exit /b
 :InstallPerlModules
     cd /d "!STOW_ROOT!"
 
-    set _cmd_base="%STOW_PERL%" -I "%STOW_PERL_LOCAL_LIB%" -MCPAN
+    set _cmd_base="%STOW_PERL%" -I "%STOW_PERL_LOCAL_LIB_UNIX%" -MCPAN
+    set _cmd_return=0
 
     "%STOW_PERL%" -MApp::cpanminus::fatscript -le 1 > nul 2>&1
     if "!ERRORLEVEL!"=="0" goto:$UseCpanm
+
+    :: Since we call CPAN manually it is not always set, but there are some libraries
+    :: like IO::Socket::SSL use this to determine whether or not to prompt for next
+    :: steps e.g., see https://github.com/gbarr/perl-libnet/blob/master/Makefile.PL
+    set PERL5_CPAN_IS_RUNNING=1
+    set NO_NETWORK_TESTING=n
 
     :$Install
         set _module=%~1
@@ -93,14 +106,15 @@ exit /b
         set _cmd=!_cmd_base!
 
         "%STOW_PERL%" -Mlocal::lib -le 1 > nul 2>&1
-        if "!ERRORLEVEL!"=="0" set _cmd=!_cmd! -Mlocal::lib="%STOW_PERL_LOCAL_LIB%"
+        if "!ERRORLEVEL!"=="0" set _cmd=!_cmd! -Mlocal::lib="%STOW_PERL_LOCAL_LIB_UNIX%"
 
         set _cmd=!_cmd_base! -e "CPAN::Shell->notest('install', '!_module!')"
         echo ::group::Install '!_module!'
         echo [command]!_cmd!
         !_cmd!
+        set _cmd_return=!ERRORLEVEL!
         echo ::endgroup::
-        if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
+        if not "!_cmd_return!"=="0" goto:$Done
         goto:$Install
 
     :$UseCpanm
@@ -111,16 +125,18 @@ exit /b
             if not "%~1"=="" goto:$GetModulesLoop
 
         "%STOW_PERL%" -Mlocal::lib -le 1 > nul 2>&1
-        if "!ERRORLEVEL!"=="0" set _cmd_base=!_cmd_base! -Mlocal::lib="%STOW_PERL_LOCAL_LIB%"
+        if "!ERRORLEVEL!"=="0" set _cmd_base=!_cmd_base! -Mlocal::lib="%STOW_PERL_LOCAL_LIB_UNIX%"
 
         set _cmd=!_cmd_base! -MApp::cpanminus::fatscript -le
         set _cmd=!_cmd! "my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;" --
-        set _cmd=!_cmd! --skip-installed --skip-satisfied --local-lib "%STOW_PERL_LOCAL_LIB%" --notest
+        set _cmd=!_cmd! --skip-installed --skip-satisfied --local-lib "%STOW_PERL_LOCAL_LIB_UNIX%" --notest
         set _cmd=!_cmd! !_modules!
 
         echo ::group::Install Module(s)
         echo [command]!_cmd!
         !_cmd!
+        set _cmd_return=!ERRORLEVEL!
         echo ::endgroup::
     :$Done
-exit /b
+    set PERL5_CPAN_IS_RUNNING=
+exit /b !_cmd_return!

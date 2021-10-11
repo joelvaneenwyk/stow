@@ -95,14 +95,16 @@ endlocal & exit /b
         goto:$PerlValidate
     )
     :$PerlValidate
-    if not exist "!STOW_PERL!" set STOW_PERL=perl
-    "!STOW_PERL!" -e "print 'Perl v' . substr($^V, 1) . ""\n"""
+
+    for /f "tokens=* usebackq" %%a in (`%STOW_PERL% -e "print substr($^V, 1)"`) do (
+        set "STOW_PERL_VERSION=%%a"
+    )
     if errorlevel 1 (
         echo ERROR: Perl executable invalid or missing: '!STOW_PERL!'
         goto:$InitializeEnvironment
     )
 
-    set STOW_PERL_LOCAL_LIB=!STOW_LOCAL_BUILD_ROOT!\perllib\windows
+    set STOW_PERL_LOCAL_LIB=!STOW_LOCAL_BUILD_ROOT!\perllib\windows\%STOW_PERL_VERSION%
     if not exist "!STOW_LOCAL_BUILD_ROOT!\perllib" mkdir "!STOW_LOCAL_BUILD_ROOT!\perllib"
     if not exist "!STOW_PERL_LOCAL_LIB!" mkdir "!STOW_PERL_LOCAL_LIB!"
     set STOW_PERL_LOCAL_LIB_UNIX=!STOW_PERL_LOCAL_LIB:\=/!
@@ -110,7 +112,19 @@ endlocal & exit /b
     set PERL5LIB=!STOW_PERL_LOCAL_LIB_UNIX!/lib
 
     set PERL_LOCAL_LIB_ROOT=%STOW_PERL_LOCAL_LIB_UNIX%
-    "!STOW_PERL!" -I"!STOW_PERL_LOCAL_LIB_UNIX!" -Mlocal::lib="!STOW_PERL_LOCAL_LIB_UNIX!" >"!STOW_PERL_LOCAL_LIB!\init.bat"
+
+    set STOW_PERL_ARGS=-I"!STOW_PERL_LOCAL_LIB_UNIX!"
+    set STOW_PERL_INIT=!STOW_PERL_LOCAL_LIB!\init.bat
+
+    if exist "!STOW_PERL_INIT!" del "!STOW_PERL_INIT!"
+    "%STOW_PERL%" -Mlocal::lib -le 1 > nul 2>&1
+    if "!ERRORLEVEL!"=="0" (
+        set STOW_PERL_ARGS=!STOW_PERL_ARGS! -Mlocal::lib="!STOW_PERL_LOCAL_LIB_UNIX!"
+        "!STOW_PERL!" !STOW_PERL_ARGS! >"!STOW_PERL_INIT!"
+    )
+
+    if exist "!STOW_PERL_INIT!" echo Generated local lib script: '!STOW_PERL_INIT!'
+    if exist "!STOW_PERL_INIT!" call "!STOW_PERL_INIT!"
 
     for %%F in ("!STOW_PERL!") do set PERL_BIN_DIR=%%~dpF
     if exist "!PERL_BIN_DIR!" set PERL_BIN_DIR=%PERL_BIN_DIR:~0,-1%
@@ -133,19 +147,24 @@ endlocal & exit /b
     :$ValidatePerlShebang
     if "!STOW_PERL_UNIX!"=="" set STOW_PERL_UNIX=/bin/perl
 
-    for /f %%a in ('!STOW_PERL! -MCPAN -e "use Config; print $Config{privlib};"') do (
+    echo ##[cmd] !STOW_PERL! !STOW_PERL_ARGS! -MCPAN -e "use Config; print $Config{privlib};"
+    for /f %%a in ('!STOW_PERL! !STOW_PERL_ARGS! -MCPAN -e "use Config; print $Config{privlib};"') do (
         set "PERL_LIB=%%a"
     )
+    if not exist "%PERL_LIB%" exit /b 2
     set PERL_CPAN_CONFIG=%PERL_LIB%\CPAN\Config.pm
 
+    echo ##[cmd] !STOW_PERL! !STOW_PERL_ARGS! "%STOW_ROOT%\tools\get-version"
     :: Get Stow version number
-    for /f "tokens=*" %%a in ('"!STOW_PERL! "%STOW_ROOT%\tools\get-version""') do (
+    for /f "tokens=*" %%a in ('"!STOW_PERL! !STOW_PERL_ARGS! "%STOW_ROOT%\tools\get-version""') do (
         set "STOW_VERSION=%%a"
     )
 
     call :GetCygPath "!STOW_ROOT!" "STOW_ROOT_MSYS"
 
     :$InitializeEnvironment
+        echo ------------------
+        echo Perl v%STOW_PERL_VERSION%
         echo Perl: '!STOW_PERL!'
         echo Perl Bin: '!PERL_BIN_DIR!'
         echo Perl C Bin: '!PERL_BIN_C_DIR!'
@@ -162,7 +181,7 @@ endlocal & exit /b
         echo Executed post install script.
 
     :$SkipPostInstall
-    echo ----------------------------------------
+    echo ------------------
     endlocal & (
         set "STOW_ROOT=%STOW_ROOT%"
         set "STOW_ROOT_UNIX=%STOW_ROOT_UNIX%"
@@ -171,6 +190,7 @@ endlocal & exit /b
         set "STOW_PERL=%STOW_PERL%"
         set "STOW_PERL_UNIX=%STOW_PERL_UNIX%"
         set "STOW_PERL_LOCAL_LIB=%STOW_PERL_LOCAL_LIB%"
+        set "STOW_PERL_LOCAL_LIB_UNIX=%STOW_PERL_LOCAL_LIB_UNIX%"
         set "PERL_BIN_DIR=%PERL_BIN_DIR%"
         set "PERL_BIN_C_DIR=%PERL_BIN_C_DIR%"
         set "PERL_SITE_BIN_DIR=%PERL_SITE_BIN_DIR%"
