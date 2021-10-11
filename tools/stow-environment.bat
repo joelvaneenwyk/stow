@@ -37,6 +37,14 @@ exit /b
     call %*
 endlocal & exit /b
 
+:RunTaskGroup
+    for /F "tokens=*" %%i in ('echo %*') do set _cmd=%%i
+    echo ::group::%_cmd%
+    echo [command]%_cmd%
+    %*
+    echo ::endgroup::
+exit /b
+
 :SetupStowEnvironment
     setlocal EnableExtensions EnableDelayedExpansion
 
@@ -110,32 +118,26 @@ endlocal & exit /b
     set STOW_PERL_LOCAL_LIB_UNIX=!STOW_PERL_LOCAL_LIB:\=/!
 
     set PERL5LIB=!STOW_PERL_LOCAL_LIB_UNIX!/lib
-
     set PERL_LOCAL_LIB_ROOT=%STOW_PERL_LOCAL_LIB_UNIX%
+    set STOW_PERL_ARGS=-I "!STOW_PERL_LOCAL_LIB_UNIX!/lib/perl5"
 
-    set STOW_PERL_ARGS=-I"!STOW_PERL_LOCAL_LIB_UNIX!"
     set STOW_PERL_INIT=!STOW_PERL_LOCAL_LIB!\init.bat
-
     if exist "!STOW_PERL_INIT!" del "!STOW_PERL_INIT!"
-    "%STOW_PERL%" -Mlocal::lib -le 1 > nul 2>&1
+    "%STOW_PERL%" !STOW_PERL_ARGS! -Mlocal::lib -le 1 > nul 2>&1
     if "!ERRORLEVEL!"=="0" (
         set STOW_PERL_ARGS=!STOW_PERL_ARGS! -Mlocal::lib="!STOW_PERL_LOCAL_LIB_UNIX!"
         "!STOW_PERL!" !STOW_PERL_ARGS! >"!STOW_PERL_INIT!"
     )
 
-    if exist "!STOW_PERL_INIT!" echo Generated local lib script: '!STOW_PERL_INIT!'
-    if exist "!STOW_PERL_INIT!" call "!STOW_PERL_INIT!"
-
     for %%F in ("!STOW_PERL!") do set PERL_BIN_DIR=%%~dpF
     if exist "!PERL_BIN_DIR!" set PERL_BIN_DIR=%PERL_BIN_DIR:~0,-1%
 
-    for %%F in ("!PERL_BIN_DIR!\..\site\bin\cover.bat") do set PERL_SITE_BIN_DIR=%%~dpF
-    if not exist "!PERL_SITE_BIN_DIR!" set PERL_SITE_BIN_DIR=
-    if exist "!PERL_SITE_BIN_DIR!" set PERL_SITE_BIN_DIR=%PERL_SITE_BIN_DIR:~0,-1%
+    for %%F in ("!PERL_BIN_DIR!\..\..\DISTRIBUTIONS.txt") do set STOW_PERL_ROOT=%%~dpF
+    if not exist "!STOW_PERL_ROOT!" set STOW_PERL_ROOT=
+    if exist "!STOW_PERL_ROOT!" set STOW_PERL_ROOT=%STOW_PERL_ROOT:~0,-1%
 
-    for %%F in ("!PERL_BIN_DIR!\..\..\c\bin\gmake.exe") do set PERL_BIN_C_DIR=%%~dpF
-    if not exist "!PERL_BIN_C_DIR!" set PERL_BIN_C_DIR=
-    if exist "!PERL_BIN_C_DIR!" set PERL_BIN_C_DIR=%PERL_BIN_C_DIR:~0,-1%
+    set PERL_SITE_BIN_DIR=!STOW_PERL_ROOT!\perl\site\bin
+    set PERL_BIN_C_DIR=!STOW_PERL_ROOT!\c\bin
 
     if not exist "%BASH_EXE%" goto:$ValidatePerlShebang
         call :GetCygPath "!STOW_PERL!" "STOW_PERL_UNIX"
@@ -146,6 +148,14 @@ endlocal & exit /b
         )
     :$ValidatePerlShebang
     if "!STOW_PERL_UNIX!"=="" set STOW_PERL_UNIX=/bin/perl
+
+    echo ::group::Initialize CPAN
+    (
+        echo yes && echo. && echo no && echo exit
+    ) | !STOW_PERL! !STOW_PERL_ARGS! -MCPAN -e "shell"
+    echo ::endgroup::
+
+    call :RunTaskGroup !STOW_PERL! !STOW_PERL_ARGS! "%~dp0initialize-cpan-config.pl"
 
     echo ##[cmd] !STOW_PERL! !STOW_PERL_ARGS! -MCPAN -e "use Config; print $Config{privlib};"
     for /f %%a in ('!STOW_PERL! !STOW_PERL_ARGS! -MCPAN -e "use Config; print $Config{privlib};"') do (
@@ -170,6 +180,7 @@ endlocal & exit /b
         echo Perl C Bin: '!PERL_BIN_C_DIR!'
         echo Perl (MSYS): '!STOW_PERL_UNIX!'
         echo Perl CPAN Config: '%PERL_CPAN_CONFIG%'
+        if exist "!STOW_PERL_INIT!" echo Perl Init: '!STOW_PERL_INIT!'
         echo MSYS2: '!WIN_UNIX_DIR!'
         echo MSYS2 (unixy): '!WIN_UNIX_DIR_UNIX!'
         echo Stow Root (unixy): '!STOW_ROOT_MSYS!'
@@ -188,7 +199,9 @@ endlocal & exit /b
         set "STOW_LOCAL_BUILD_ROOT=%STOW_LOCAL_BUILD_ROOT%"
         set "STOW_VERSION=%STOW_VERSION%"
         set "STOW_PERL=%STOW_PERL%"
+        set "STOW_PERL_INIT=%STOW_PERL_INIT%"
         set "STOW_PERL_UNIX=%STOW_PERL_UNIX%"
+        set "STOW_PERL_ARGS=%STOW_PERL_ARGS%"
         set "STOW_PERL_LOCAL_LIB=%STOW_PERL_LOCAL_LIB%"
         set "STOW_PERL_LOCAL_LIB_UNIX=%STOW_PERL_LOCAL_LIB_UNIX%"
         set "PERL_BIN_DIR=%PERL_BIN_DIR%"
@@ -209,7 +222,7 @@ endlocal & exit /b
         set "TEX=%TEX%"
     )
 
-    call "%STOW_PERL_LOCAL_LIB%\init.bat"
+    if exist "%STOW_PERL_INIT%" call "%STOW_PERL_INIT%"
 
     :: Convert to forward slash otherwise it fails on older versions of Perl e.g, 5.14
     set PERL_MB_OPT=%PERL_MB_OPT:\=/%

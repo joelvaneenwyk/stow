@@ -92,14 +92,14 @@ endlocal & exit /b
 
     :: Make sure that 'stow' was successfully compiled by printing out the version.
     cd /d "%STOW_ROOT%"
-    call :Run "%STOW_PERL%" -I "%STOW_ROOT%\lib" "%STOW_ROOT%\bin\stow" --version
+    call :Run "%STOW_PERL%" %STOW_PERL_ARGS% -I "%STOW_ROOT%\lib" "%STOW_ROOT%\bin\stow" --version
     if not "!ERRORLEVEL!"=="0" exit /b
 
     call :CreateVersionTexi
 
     :: Exeute 'Build.PL' to generate build scripts: 'Build' and 'Build.bat'
     cd /d "%STOW_ROOT%"
-    call :Run "%STOW_PERL%" -I "%STOW_ROOT%\lib" -I "%STOW_ROOT%\bin" "%STOW_ROOT%\Build.PL"
+    call :Run "%STOW_PERL%" %STOW_PERL_ARGS% -I "%STOW_ROOT%\lib" -I "%STOW_ROOT%\bin" "%STOW_ROOT%\Build.PL"
     if not "!ERRORLEVEL!"=="0" exit /b
 
     :: Generate documentation using 'bash' and associated unix tools which
@@ -168,9 +168,6 @@ endlocal & exit /b
     call :Run %BASH% "source ./tools/stow-environment.sh && install_system_dependencies"
     if not "!ERRORLEVEL!"=="0" exit /b
 
-    call :Run %BASH% "source ./tools/stow-environment.sh && make_docs"
-    if not "!ERRORLEVEL!"=="0" exit /b
-
     call :Run %BASH% "autoreconf --install --verbose"
     if not "!ERRORLEVEL!"=="0" exit /b
 
@@ -180,11 +177,12 @@ endlocal & exit /b
     call :Run %BASH% "make doc/manual.pdf"
     if not "!ERRORLEVEL!"=="0" exit /b
 
+    call :Run %BASH% "make doc/manual-single.html"
+    if not "!ERRORLEVEL!"=="0" exit /b
+
     call :Run %BASH% "make bin/stow bin/chkstow lib/Stow.pm lib/Stow/Util.pm"
     if not "!ERRORLEVEL!"=="0" exit /b
 
-    call :Run %BASH% "make doc/manual-single.html"
-    if not "!ERRORLEVEL!"=="0" exit /b
     echo ----------------------------------------
 exit /b
 

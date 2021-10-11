@@ -92,6 +92,10 @@ function test_perl_version() {
     # that has not been done yet.
     install_perl_dependencies
 
+    test_results_path="$STOW_ROOT/$(
+        echo "test_results_${RUNNER_OS:-$(uname)}_${MSYSTEM:-default}.xml" | awk '{print tolower($0)}'
+    )"
+
     # Print first non-blank line of Perl version as it includes details of where it
     # was built e.g., 'x86_64-msys-thread-multi'
     "$STOW_PERL" --version | sed -e '/^[ \t]*$/d' -e 's/^[ \t]*//' | head -n 1
@@ -110,11 +114,6 @@ function test_perl_version() {
         run_command_group make
         run_command_group make distcheck
 
-        _result_filename=$(
-            echo "test_results_${RUNNER_OS:-$(uname)}_${MSYSTEM:-default}.xml" | awk '{print tolower($0)}'
-        )
-        test_results_path="$STOW_ROOT/$_result_filename"
-
         if [ -n "${GITHUB_ENV:-}" ]; then
             echo "STOW_TEST_RESULTS=$test_results_path" >>"$GITHUB_ENV"
 
@@ -128,7 +127,7 @@ function test_perl_version() {
             fi
         fi
 
-        _perl_args=(-I "$STOW_PERL_LOCAL_LIB")
+        _perl_args=(-I "$STOW_PERL_LOCAL_LIB/lib/perl5")
 
         if "$STOW_PERL" "${_perl_args[@]}" -Mlocal::lib -le 1 2>/dev/null; then
             _perl_args+=(-Mlocal::lib="$STOW_PERL_LOCAL_LIB")

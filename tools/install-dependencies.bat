@@ -37,19 +37,9 @@ exit /b
     call "%_root:~0,-1%\tools\stow-environment.bat" --refresh
     if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
 
-    echo ::group::Initialize CPAN
-    (
-        echo yes && echo. && echo no && echo exit
-    ) | "%STOW_PERL%" -I "%STOW_PERL_LOCAL_LIB_UNIX%" -MCPAN -e "shell"
-    echo ::endgroup::
-
-    call :RunTaskGroup "%STOW_PERL%" -I "%STOW_PERL_LOCAL_LIB_UNIX%" "%~dp0initialize-cpan-config.pl"
-
     :: First install 'local::lib' and then remaining libraries so that they can all be
     :: stored in the local modules path.
-    call :InstallPerlModules "YAML" "local::lib"
-    call :InstallPerlModules "App::cpanminus"
-
+    call :InstallPerlModules "local::lib" "App::cpanminus"
     if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
 
     :: Install dependencies. Note that 'Inline::C' requires 'make' and 'gcc' to be installed. It
@@ -86,7 +76,7 @@ exit /b
 :InstallPerlModules
     cd /d "!STOW_ROOT!"
 
-    set _cmd_base="%STOW_PERL%" -I "%STOW_PERL_LOCAL_LIB_UNIX%"
+    set _cmd_base="%STOW_PERL%" -I "%STOW_PERL_LOCAL_LIB_UNIX%/lib/perl5"
     set _cmd_return=0
 
     :: Since we call CPAN manually it is not always set, but there are some libraries
@@ -96,25 +86,30 @@ exit /b
     set NO_NETWORK_TESTING=1
 
     :$Install
+        if "%~1"=="" goto:$Done
+
         set _cmd=%_cmd_base%
         !_cmd! -Mlocal::lib -le 1 > nul 2>&1
-        if "!ERRORLEVEL!"=="0" set _cmd=!_cmd! -Mlocal::lib="%STOW_PERL_LOCAL_LIB_UNIX%"
+        if "!ERRORLEVEL!"=="0" (
+            set _cmd=!_cmd! -Mlocal::lib="%STOW_PERL_LOCAL_LIB_UNIX%"
+            if not exist "%STOW_PERL_INIT%" !_cmd! >"%STOW_PERL_INIT%"
+        )
+        if exist "%STOW_PERL_INIT%" call "%STOW_PERL_INIT%"
 
-        set _cpanm=
+        set _cpanm=0
         !_cmd! -MApp::cpanminus::fatscript -le 1 > nul 2>&1
         if "!ERRORLEVEL!"=="0" set _cpanm=1
 
         set _modules=
-        if "%~1"=="" goto:$Done
         :$GetModulesLoop
             set _modules=!_modules! %~1
             shift
-            if "!_cpanm!"=="" goto:$UseCpan
+            if "!_cpanm!"=="0" goto:$UseCpan
         if not "%~1"=="" goto:$GetModulesLoop
         goto:$UseCpanm
 
         :$UseCpan
-            set _cmd=!_cmd! -MCPAN -e "CPAN::Shell->notest('install', '!_module!')"
+            set _cmd=!_cmd! -MCPAN -e "CPAN::Shell->notest('install', '!_modules!')"
             goto:$RunCommand
 
         :$UseCpanm
@@ -130,9 +125,8 @@ exit /b
             !_cmd!
             set _cmd_return=!ERRORLEVEL!
             echo ::endgroup::
-            if not "!_cmd_return!"=="0" goto:$Done
 
-        goto:$Install
+    if "!_cmd_return!"=="0" goto:$Install
     :$Done
 
     set PERL5_CPAN_IS_RUNNING=
