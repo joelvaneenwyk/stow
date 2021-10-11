@@ -86,56 +86,54 @@ exit /b
 :InstallPerlModules
     cd /d "!STOW_ROOT!"
 
-    set _cmd_local_lib=
     set _cmd_base="%STOW_PERL%" -I "%STOW_PERL_LOCAL_LIB_UNIX%"
     set _cmd_return=0
-
-    !_cmd_base! -Mlocal::lib -le 1 > nul 2>&1
-    if "!ERRORLEVEL!"=="0" set _cmd_local_lib=-Mlocal::lib="%STOW_PERL_LOCAL_LIB_UNIX%"
-
-    !_cmd_base! !_cmd_local_lib! -MApp::cpanminus::fatscript -le 1 > nul 2>&1
-    if "!ERRORLEVEL!"=="0" goto:$UseCpanm
 
     :: Since we call CPAN manually it is not always set, but there are some libraries
     :: like IO::Socket::SSL use this to determine whether or not to prompt for next
     :: steps e.g., see https://github.com/gbarr/perl-libnet/blob/master/Makefile.PL
     set PERL5_CPAN_IS_RUNNING=1
-    set NO_NETWORK_TESTING=n
+    set NO_NETWORK_TESTING=1
 
     :$Install
-        set _module=%~1
-        shift
-        if "%_module%"=="" goto:$Done
+        set _cmd=%_cmd_base%
+        !_cmd! -Mlocal::lib -le 1 > nul 2>&1
+        if "!ERRORLEVEL!"=="0" set _cmd=!_cmd! -Mlocal::lib="%STOW_PERL_LOCAL_LIB_UNIX%"
 
-        !_cmd_base! -Mlocal::lib -le 1 > nul 2>&1
-        if "!ERRORLEVEL!"=="0" set _cmd_local_lib=-Mlocal::lib="%STOW_PERL_LOCAL_LIB_UNIX%"
+        set _cpanm=
+        !_cmd! -MApp::cpanminus::fatscript -le 1 > nul 2>&1
+        if "!ERRORLEVEL!"=="0" set _cpanm=1
 
-        set _cmd=!_cmd_base! !_cmd_local_lib! -MCPAN -e "CPAN::Shell->notest('install', '!_module!')"
-        echo ::group::Install '!_module!'
-        echo [command]!_cmd!
-        !_cmd!
-        set _cmd_return=!ERRORLEVEL!
-        echo ::endgroup::
-        if not "!_cmd_return!"=="0" goto:$Done
-        goto:$Install
-
-    :$UseCpanm
         set _modules=
+        if "%~1"=="" goto:$Done
         :$GetModulesLoop
             set _modules=!_modules! %~1
             shift
+            if "!_cpanm!"=="" goto:$UseCpan
         if not "%~1"=="" goto:$GetModulesLoop
+        goto:$UseCpanm
 
-        set _cmd=!_cmd_base! !_cmd_local_lib! -MApp::cpanminus::fatscript -le
-        set _cmd=!_cmd! "my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;" --
-        set _cmd=!_cmd! --skip-installed --skip-satisfied --local-lib "%STOW_PERL_LOCAL_LIB_UNIX%" --notest
-        set _cmd=!_cmd! !_modules!
+        :$UseCpan
+            set _cmd=!_cmd! -MCPAN -e "CPAN::Shell->notest('install', '!_module!')"
+            goto:$RunCommand
 
-        echo ::group::Install Module(s)
-        echo [command]!_cmd!
-        !_cmd!
-        set _cmd_return=!ERRORLEVEL!
-        echo ::endgroup::
+        :$UseCpanm
+            set _cmd=!_cmd! -MApp::cpanminus::fatscript -le
+            set _cmd=!_cmd! "my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;" --
+            set _cmd=!_cmd! --skip-installed --skip-satisfied --local-lib "%STOW_PERL_LOCAL_LIB_UNIX%" --notest
+            set _cmd=!_cmd! !_modules!
+            goto:$RunCommand
+
+        :$RunCommand
+            echo ::group::Install Module(s)
+            echo [command]!_cmd!
+            !_cmd!
+            set _cmd_return=!ERRORLEVEL!
+            echo ::endgroup::
+            if not "!_cmd_return!"=="0" goto:$Done
+
+        goto:$Install
     :$Done
+
     set PERL5_CPAN_IS_RUNNING=
 exit /b !_cmd_return!

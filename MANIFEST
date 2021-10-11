@@ -72,8 +72,6 @@ tools/stow-environment.sh
 tools/stow-environment.bat
 setup.sh
 setup.bat
-test.sh
-test.bat
 shell.bat
 THANKS
 TODO

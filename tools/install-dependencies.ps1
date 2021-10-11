@@ -14,15 +14,9 @@ General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program. If not, see https://www.gnu.org/licenses/.
 
-.NOTES
-    ===========================================================================
-    Created on:   September 2021
-    Created by:   Joel Van Eenwyk
-    Filename:     install-dependencies.ps1
-    ===========================================================================
-
 .DESCRIPTION
-    Install dependencies needed for building GNU tools.
+    Install dependencies needed for building GNU projects generally but is specifically designed
+    to setup a development environment for GNU Stow.
 #>
 
 using namespace System.Net.Http;

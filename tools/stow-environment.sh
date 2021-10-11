@@ -98,43 +98,72 @@ function use_sudo {
 }
 
 function install_perl_modules() {
-    global_cpan_args=(-I "$STOW_PERL_LOCAL_LIB")
-
     # Since we call CPAN manually it is not always set, but there are some libraries
     # like IO::Socket::SSL use this to determine whether or not to prompt for next
     # steps e.g., see https://github.com/gbarr/perl-libnet/blob/master/Makefile.PL
     export PERL5_CPAN_IS_RUNNING=1
-    export NO_NETWORK_TESTING=n
+    export NO_NETWORK_TESTING=1
+    export LOCALTESTS_ONLY=1
 
-    if "$STOW_PERL" "${global_cpan_args[@]}" -Mlocal::lib -le 1 2>/dev/null; then
-        global_cpan_args+=(-Mlocal::lib="$STOW_PERL_LOCAL_LIB")
-    fi
+    _return_value=0
+    _use_local_lib=0
 
-    if "$STOW_PERL" "${global_cpan_args[@]}" -MApp::cpanminus::fatscript -le 1 2>/dev/null; then
-        # shellcheck disable=SC2016
-        if ! run_named_command_group "Install Module(s): '$*'" \
-            "$STOW_PERL" "${global_cpan_args[@]}" -MApp::cpanminus::fatscript \
-            -le 'my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;' -- \
-            --local-lib "$STOW_PERL_LOCAL_LIB" --notest "$@"; then
-            echo "❌ Failed to install modules with CPANM."
-            unset PERL5_CPAN_IS_RUNNING
-            return 99
+    _perl_args=("$STOW_PERL" -I "$STOW_PERL_LOCAL_LIB/lib/perl5")
+
+    while [ -n "${1:-}" ]; do
+        package=$1
+        shift
+
+        if [ "$_use_local_lib" = "0" ] && "${_perl_args[@]}" -Mlocal::lib -le 1 2>/dev/null; then
+            _use_local_lib=1
+            _perl_args+=(-Mlocal::lib="$STOW_PERL_LOCAL_LIB")
+            _perl_local_setup="$("${_perl_args[@]}")"
+            echo "$_perl_local_setup"
+            eval "$_perl_local_setup"
         fi
-    else
-        for package in "$@"; do
-            if "$STOW_PERL" "${global_cpan_args[@]}" -M"$package" -le 1 2>/dev/null; then
-                continue
+
+        if run_command "${_perl_args[@]}" -MApp::cpanminus::fatscript -le 1; then
+            # shellcheck disable=SC2016
+            if ! run_named_command_group "Install Module(s): '$*'" \
+                "${_perl_args[@]}" -MApp::cpanminus::fatscript \
+                -le 'my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;' -- \
+                --local-lib "$STOW_PERL_LOCAL_LIB" --notest "$@"; then
+                echo "❌ Failed to install modules with CPANM."
+                _return_value=99
             fi
 
-            if ! run_named_command_group "Install '$package'" "$STOW_PERL" "${global_cpan_args[@]}" -MCPAN -e "CPAN::Shell->notest('install', '$package')"; then
+            break
+        elif [ "$package" = "App::cpanminus" ]; then
+            _cpanm="$STOW_PERL_LOCAL_LIB/cpanm"
+
+            if [ ! -f "$_cpanm" ]; then
+                if [ -x "$(command -v wget)" ] && wget -O "$_cpanm" "https://cpanmin.us/"; then
+                    echo "[wget] Downloaded 'cpanm' installer: '$_cpanm'"
+                elif [ -x "$(command -v curl)" ] && curl -SLf -o "$_cpanm" "https://cpanmin.us/"; then
+                    echo "[curl] Downloaded 'cpanm' installer: '$_cpanm'"
+                fi
+            fi
+
+            if [ -f "$_cpanm" ]; then
+                chmod +x "$_cpanm"
+                run_command "${_perl_args[@]}" "$_cpanm" \
+                    --local-lib "$STOW_PERL_LOCAL_LIB" --notest 'App::cpanminus'
+            fi
+        fi
+
+        if ! "$STOW_PERL" "${_perl_args[@]}" -M"$package" -le 1 2>/dev/null; then
+            if ! run_named_command_group "Install '$package'" \
+                "${_perl_args[@]}" -MCPAN -e "CPAN::Shell->notest('install', '$package')"; then
                 echo "❌ Failed to install '$package' module with CPAN."
-                unset PERL5_CPAN_IS_RUNNING
-                return 88
+                _return_value=88
+                break
             fi
-        done
-    fi
+        fi
+    done
 
-    return $?
+    unset PERL5_CPAN_IS_RUNNING NO_NETWORK_TESTING LOCALTESTS_ONLY
+
+    return $_return_value
 }
 
 # Install everything needed to run 'autoreconf' along with 'make' so
@@ -184,7 +213,7 @@ function install_system_dependencies() {
 
     if [ -x "$(command -v apt-get)" ]; then
         packages+=(
-            sudo git bzip2 gawk curl patch
+            sudo git bzip2 gawk wget curl patch
             perl libssl-dev openssl libz-dev
             build-essential make autotools-dev automake autoconf
             texlive texinfo
@@ -276,30 +305,6 @@ function initialize_perl() {
             pl2bat "$(which pl2bat 2>/dev/null)" 2>/dev/null || true
         fi
     fi
-
-    if ! "$STOW_PERL" -I "$STOW_PERL_LOCAL_LIB" -Mlocal::lib -le 1 2>/dev/null; then
-        install_perl_modules 'YAML' 'local::lib'
-    fi
-
-    _perl_local_setup="$("$STOW_PERL" -I "$STOW_PERL_LOCAL_LIB" -Mlocal::lib="$STOW_PERL_LOCAL_LIB")"
-    echo "$_perl_local_setup"
-    eval "$_perl_local_setup"
-
-    if ! "$STOW_PERL" -Mlocal::lib="$STOW_PERL_LOCAL_LIB" -MApp::cpanminus -le 1 2>/dev/null; then
-        local _cpanm
-        _cpanm="$STOW_PERL_LOCAL_LIB/cpanm"
-
-        if [ -x "$(command -v curl)" ]; then
-            curl -L --silent "https://cpanmin.us/" -o "$_cpanm"
-        fi
-        chmod +x "$_cpanm"
-
-        run_command "$STOW_PERL" -Mlocal::lib="$STOW_PERL_LOCAL_LIB" "$_cpanm" \
-            --local-lib "$STOW_PERL_LOCAL_LIB" --notest 'App::cpanminus'
-    fi
-
-    # Install this to silence warning when doing initial configure
-    install_perl_modules 'App::cpanminus' 'Test::Output'
 }
 
 function install_perl_dependencies() {
@@ -312,9 +317,9 @@ function install_perl_dependencies() {
     # seemingly obscure issues you could run into e.g., missing 'cc1' or 'poll.h' even when they are
     # in fact installed.
     modules+=(
-        YAML ExtUtils::Config Module::Build::Tiny
+        local::lib App::cpanminus
+        YAML Carp IO::Scalar Module::Build Module::Build::Tiny
         IO::Socket::SSL Net::SSLeay
-        Carp Module::Build IO::Scalar
         Test::Harness Test::More Test::Exception Test::Output
         Devel::Cover Devel::Cover::Report::Coveralls
         TAP::Formatter::JUnit
