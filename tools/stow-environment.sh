@@ -99,8 +99,14 @@ function use_sudo {
 
 function install_perl_modules() {
     if "$STOW_PERL" -MApp::cpanminus::fatscript -le 1 2>/dev/null; then
+        cpan_args=()
+
+        if "$STOW_PERL" -Mlocal::lib -le 1 2>/dev/null; then
+            cpan_args+=(-Mlocal::lib="$STOW_PERL_LOCAL_LIB")
+        fi
+
         # shellcheck disable=SC2016
-        run_named_command_group "Install Module(s): '$*'" "$STOW_PERL" -MApp::cpanminus::fatscript -le \
+        run_named_command_group "Install Module(s): '$*'" "$STOW_PERL" "${cpan_args[@]}" -MApp::cpanminus::fatscript -le \
             'my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;' -- \
             --skip-installed --skip-satisfied --local-lib "$STOW_PERL_LOCAL_LIB" --notest "$@"
     else
@@ -171,7 +177,7 @@ function install_system_dependencies() {
     if [ -x "$(command -v apt-get)" ]; then
         packages+=(
             sudo git bzip2 gawk curl patch
-            perl cpanminus libssl-dev
+            perl cpanminus libssl-dev openssl libz-dev
             build-essential make autotools-dev automake autoconf
             texlive texinfo
         )
@@ -299,6 +305,8 @@ function install_perl_dependencies() {
     # seemingly obscure issues you could run into e.g., missing 'cc1' or 'poll.h' even when they are
     # in fact installed.
     modules+=(
+        YAML ExtUtils::Config Module::Build::Tiny
+        IO::Socket::SSL Net::SSLeay
         Carp Module::Build IO::Scalar
         Test::Harness Test::More Test::Exception Test::Output
         Devel::Cover Devel::Cover::Report::Coveralls
@@ -309,9 +317,12 @@ function install_perl_dependencies() {
         modules+=(ExtUtils::PL2Bat Inline::C Win32::Mutex)
     fi
 
-    install_perl_modules "${modules[@]}"
-
-    echo "Installed required Perl dependencies."
+    if install_perl_modules "${modules[@]}"; then
+        echo "Installed required Perl dependencies."
+    else
+        echo "Failed to install Perl modules."
+        return 88
+    fi
 }
 
 function install_dependencies() {

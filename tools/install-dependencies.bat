@@ -50,11 +50,14 @@ exit /b
     :: is recommended to install MSYS2 packages for copmiling (e.g. mingw-w64-x86_64-make) but
     :: many/most Perl distributions already come with the required tools for compiling.
     call :InstallPerlModules ^
-        "Carp" "Module::Build" "IO::Scalar" ^
+        "YAML" "ExtUtils::Config" ^
+        "IO::Socket::SSL" "Net::SSLeay" ^
+        "Carp" "Module::Build" "Module::Build::Tiny" "IO::Scalar" ^
         "Devel::Cover" "Devel::Cover::Report::Coveralls" ^
         "Test::Harness" "Test::Output" "Test::More" "Test::Exception" ^
         "ExtUtils::PL2Bat" "Inline::C" "Win32::Mutex" ^
         "TAP::Formatter::JUnit"
+
     if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
 
     :$InstallDone
