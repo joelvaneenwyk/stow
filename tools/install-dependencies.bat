@@ -45,11 +45,11 @@ exit /b
 
     call :RunTaskGroup "%STOW_PERL%" -I "%STOW_PERL_LOCAL_LIB_UNIX%" "%~dp0initialize-cpan-config.pl"
 
-    :: First install 'cpanminus' and 'local::lib' before installing remaining libraries
-    call :InstallPerlModules ^
-        "YAML" "ExtUtils::MakeMaker" "ExtUtils::Config" ^
-        "App::cpanminus" ^
-        "local::lib"
+    :: First install 'local::lib' and then remaining libraries so that they can all be
+    :: stored in the local modules path.
+    call :InstallPerlModules "YAML" "local::lib"
+    call :InstallPerlModules "App::cpanminus"
+
     if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
 
     :: Install dependencies. Note that 'Inline::C' requires 'make' and 'gcc' to be installed. It
@@ -86,10 +86,14 @@ exit /b
 :InstallPerlModules
     cd /d "!STOW_ROOT!"
 
-    set _cmd_base="%STOW_PERL%" -I "%STOW_PERL_LOCAL_LIB_UNIX%" -MCPAN
+    set _cmd_local_lib=
+    set _cmd_base="%STOW_PERL%" -I "%STOW_PERL_LOCAL_LIB_UNIX%"
     set _cmd_return=0
 
-    "%STOW_PERL%" -MApp::cpanminus::fatscript -le 1 > nul 2>&1
+    !_cmd_base! -Mlocal::lib -le 1 > nul 2>&1
+    if "!ERRORLEVEL!"=="0" set _cmd_local_lib=-Mlocal::lib="%STOW_PERL_LOCAL_LIB_UNIX%"
+
+    !_cmd_base! !_cmd_local_lib! -MApp::cpanminus::fatscript -le 1 > nul 2>&1
     if "!ERRORLEVEL!"=="0" goto:$UseCpanm
 
     :: Since we call CPAN manually it is not always set, but there are some libraries
@@ -103,12 +107,10 @@ exit /b
         shift
         if "%_module%"=="" goto:$Done
 
-        set _cmd=!_cmd_base!
+        !_cmd_base! -Mlocal::lib -le 1 > nul 2>&1
+        if "!ERRORLEVEL!"=="0" set _cmd_local_lib=-Mlocal::lib="%STOW_PERL_LOCAL_LIB_UNIX%"
 
-        "%STOW_PERL%" -Mlocal::lib -le 1 > nul 2>&1
-        if "!ERRORLEVEL!"=="0" set _cmd=!_cmd! -Mlocal::lib="%STOW_PERL_LOCAL_LIB_UNIX%"
-
-        set _cmd=!_cmd_base! -e "CPAN::Shell->notest('install', '!_module!')"
+        set _cmd=!_cmd_base! !_cmd_local_lib! -MCPAN -e "CPAN::Shell->notest('install', '!_module!')"
         echo ::group::Install '!_module!'
         echo [command]!_cmd!
         !_cmd!
@@ -122,12 +124,9 @@ exit /b
         :$GetModulesLoop
             set _modules=!_modules! %~1
             shift
-            if not "%~1"=="" goto:$GetModulesLoop
+        if not "%~1"=="" goto:$GetModulesLoop
 
-        "%STOW_PERL%" -Mlocal::lib -le 1 > nul 2>&1
-        if "!ERRORLEVEL!"=="0" set _cmd_base=!_cmd_base! -Mlocal::lib="%STOW_PERL_LOCAL_LIB_UNIX%"
-
-        set _cmd=!_cmd_base! -MApp::cpanminus::fatscript -le
+        set _cmd=!_cmd_base! !_cmd_local_lib! -MApp::cpanminus::fatscript -le
         set _cmd=!_cmd! "my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;" --
         set _cmd=!_cmd! --skip-installed --skip-satisfied --local-lib "%STOW_PERL_LOCAL_LIB_UNIX%" --notest
         set _cmd=!_cmd! !_modules!

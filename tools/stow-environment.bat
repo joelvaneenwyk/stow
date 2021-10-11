@@ -211,6 +211,11 @@ endlocal & exit /b
 
     call "%STOW_PERL_LOCAL_LIB%\init.bat"
 
+    :: Convert to forward slash otherwise it fails on older versions of Perl e.g, 5.14
+    set PERL_MB_OPT=%PERL_MB_OPT:\=/%
+    set PERL_MM_OPT=%PERL_MM_OPT:\=/%
+    set PERL5LIB=%PERL5LIB:\=/%
+
     if not exist "%STOW_PERL%" (
         echo ERROR: Perl not found.
         exit /b 55

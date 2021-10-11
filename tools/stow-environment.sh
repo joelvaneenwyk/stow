@@ -98,7 +98,7 @@ function use_sudo {
 }
 
 function install_perl_modules() {
-    global_cpan_args=()
+    global_cpan_args=(-I "$STOW_PERL_LOCAL_LIB")
 
     # Since we call CPAN manually it is not always set, but there are some libraries
     # like IO::Socket::SSL use this to determine whether or not to prompt for next
@@ -106,32 +106,27 @@ function install_perl_modules() {
     export PERL5_CPAN_IS_RUNNING=1
     export NO_NETWORK_TESTING=n
 
-    if "$STOW_PERL" -Mlocal::lib -le 1 2>/dev/null; then
+    if "$STOW_PERL" "${global_cpan_args[@]}" -Mlocal::lib -le 1 2>/dev/null; then
         global_cpan_args+=(-Mlocal::lib="$STOW_PERL_LOCAL_LIB")
     fi
 
     if "$STOW_PERL" "${global_cpan_args[@]}" -MApp::cpanminus::fatscript -le 1 2>/dev/null; then
         # shellcheck disable=SC2016
-        if ! run_named_command_group "Install Module(s): '$*'" "$STOW_PERL" "${global_cpan_args[@]}" -MApp::cpanminus::fatscript -le \
-            'my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;' -- \
-            --skip-installed --skip-satisfied --local-lib "$STOW_PERL_LOCAL_LIB" --notest "$@"; then
+        if ! run_named_command_group "Install Module(s): '$*'" \
+            "$STOW_PERL" "${global_cpan_args[@]}" -MApp::cpanminus::fatscript \
+            -le 'my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;' -- \
+            --local-lib "$STOW_PERL_LOCAL_LIB" --notest "$@"; then
             echo "❌ Failed to install modules with CPANM."
             unset PERL5_CPAN_IS_RUNNING
             return 99
         fi
     else
         for package in "$@"; do
-            cpan_args=()
-
-            if "$STOW_PERL" -Mlocal::lib -le 1 2>/dev/null; then
-                cpan_args+=(-Mlocal::lib="$STOW_PERL_LOCAL_LIB")
-            fi
-
-            if "$STOW_PERL" "${cpan_args[@]}" -M"$package" -le 1 2>/dev/null; then
+            if "$STOW_PERL" "${global_cpan_args[@]}" -M"$package" -le 1 2>/dev/null; then
                 continue
             fi
 
-            if ! run_named_command_group "Install '$package'" "$STOW_PERL" -MCPAN "${cpan_args[@]}" -e "CPAN::Shell->notest('install', '$package')"; then
+            if ! run_named_command_group "Install '$package'" "$STOW_PERL" "${global_cpan_args[@]}" -MCPAN -e "CPAN::Shell->notest('install', '$package')"; then
                 echo "❌ Failed to install '$package' module with CPAN."
                 unset PERL5_CPAN_IS_RUNNING
                 return 88
@@ -283,7 +278,7 @@ function initialize_perl() {
     fi
 
     if ! "$STOW_PERL" -I "$STOW_PERL_LOCAL_LIB" -Mlocal::lib -le 1 2>/dev/null; then
-        install_perl_modules 'YAML' 'ExtUtils::MakeMaker' 'ExtUtils::Config' 'local::lib'
+        install_perl_modules 'YAML' 'local::lib'
     fi
 
     _perl_local_setup="$("$STOW_PERL" -I "$STOW_PERL_LOCAL_LIB" -Mlocal::lib="$STOW_PERL_LOCAL_LIB")"
@@ -596,14 +591,16 @@ function update_stow_environment() {
     export PERL_MM_OPT=""
     export PERL_SITE_BIN_DIR=""
 
-    os_name="$(uname -o | sed 's#/#_#g' | sed 's# #_#g' | awk '{print tolower($0)}')"
+    if ! os_name="$(uname -s | sed 's#\.#_#g' | sed 's#-#_#g' | sed 's#/#_#g' | sed 's# #_#g' | awk '{print tolower($0)}')"; then
+        os_name="unknown"
+    fi
 
     if [ -f "/.dockerenv" ]; then
         os_name="docker_${os_name}"
     elif grep -qEi "(Microsoft|WSL)" /proc/version &>/dev/null; then
         os_name="wsl_${os_name}"
-    elif [ "$os_name" = "msys" ]; then
-        os_name="$(echo "${os_name}_${MSYSTEM}" | awk '{print tolower($0)}')"
+    elif [ "$(uname -o)" = "Msys" ]; then
+        os_name="$(echo "msys_${os_name}" | awk '{print tolower($0)}')"
     fi
     STOW_PERL_LOCAL_LIB="${STOW_LOCAL_BUILD_ROOT}/perllib/${os_name}"
     mkdir -p "$STOW_PERL_LOCAL_LIB"
