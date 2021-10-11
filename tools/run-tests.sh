@@ -82,40 +82,6 @@ EOF
     exit "$_error"
 }
 
-function run_prove() {
-    _result_filename=$(
-        echo "test_results_${RUNNER_OS:-$(uname)}_${MSYSTEM:-default}.xml" | awk '{print tolower($0)}'
-    )
-    test_results_path="$STOW_ROOT/$_result_filename"
-
-    if [ -n "${GITHUB_ENV:-}" ]; then
-        echo "STOW_TEST_RESULTS=$test_results_path" >>"$GITHUB_ENV"
-
-        if [ -n "${MSYSTEM:-}" ]; then
-            # https://github.com/msys2/setup-msys2/blob/master/main.js
-            # shellcheck disable=SC2028
-            echo 'STOW_CPAN_LOGS=C:\msys64\home\runneradmin\.cpanm\work\**\*.log' >>"$GITHUB_ENV"
-        else
-            # shellcheck disable=SC2016
-            echo "STOW_CPAN_LOGS=$HOME/.cpanm/work/**/*.log" >>"$GITHUB_ENV"
-        fi
-    fi
-
-    # shellcheck disable=SC2016
-    run_command "$STOW_PERL" -MApp::Prove \
-        -le 'my $c = App::Prove->new; $c->process_args(@ARGV); $c->run;' -- \
-        --formatter "TAP::Formatter::JUnit" \
-        --timer --verbose --normalize --parse \
-        t/ >"$test_results_path"
-    echo "Test results: '$test_results_path'"
-
-    # If file is empty, tests failed so report an error
-    if [ ! -s "$test_results_path" ]; then
-        "❌ Tests failed. Test result file empty."
-        return 77
-    fi
-}
-
 function test_perl_version() {
     # Use the version of Perl passed in if 'perlbrew' is installed
     if [ -x "$(command -v perlbrew)" ]; then
@@ -135,33 +101,66 @@ function test_perl_version() {
 
     _starting_directory="$(pwd)"
     if cd "$STOW_ROOT"; then
-        eval "$("$STOW_PERL" -V:siteprefix)"
-        STOW_SITE_PREFIX=$(normalize_path "${siteprefix:-}")
-
         # Run auto reconfigure ('autoreconf') to generate 'configure' script
         run_command_group autoreconf --install
 
         # Run 'configure' to generate Makefile
-        run_command_group ./configure --prefix="$STOW_SITE_PREFIX"
+        run_command_group ./configure --prefix="" --with-pmdir="$STOW_PERL_LOCAL_LIB"
 
         run_command_group make
         run_command_group make distcheck
 
-        run_named_command_group "prove" run_prove
+        _result_filename=$(
+            echo "test_results_${RUNNER_OS:-$(uname)}_${MSYSTEM:-default}.xml" | awk '{print tolower($0)}'
+        )
+        test_results_path="$STOW_ROOT/$_result_filename"
 
-        _cover="$(command -v cover)"
+        if [ -n "${GITHUB_ENV:-}" ]; then
+            echo "STOW_TEST_RESULTS=$test_results_path" >>"$GITHUB_ENV"
 
-        if [ ! -x "$_cover" ] && [ -x "$STOW_PERL_LOCAL_LIB/bin/cover" ]; then
-            _cover="$STOW_PERL_LOCAL_LIB/bin/cover"
+            if [ -n "${MSYSTEM:-}" ]; then
+                # https://github.com/msys2/setup-msys2/blob/master/main.js
+                # shellcheck disable=SC2028
+                echo 'STOW_CPAN_LOGS=C:\msys64\home\runneradmin\.cpanm\work\**\*.log' >>"$GITHUB_ENV"
+            else
+                # shellcheck disable=SC2016
+                echo "STOW_CPAN_LOGS=$HOME/.cpanm/work/**/*.log" >>"$GITHUB_ENV"
+            fi
         fi
 
-        if [ -x "$_cover" ]; then
+        _perl_args=(-I "$STOW_PERL_LOCAL_LIB")
+
+        if "$STOW_PERL" "${_perl_args[@]}" -Mlocal::lib -le 1 2>/dev/null; then
+            _perl_args+=(-Mlocal::lib="$STOW_PERL_LOCAL_LIB")
+        fi
+
+        # shellcheck disable=SC2016
+        run_command "$STOW_PERL" "${_perl_args[@]}" -MApp::Prove \
+            -le 'my $c = App::Prove->new; $c->process_args(@ARGV); $c->run;' -- \
+            --formatter "TAP::Formatter::JUnit" \
+            --timer --verbose --normalize --parse \
+            t/ >"$test_results_path"
+        echo "Test results: '$test_results_path'"
+
+        # If file is empty, tests failed so report an error
+        if [ ! -s "$test_results_path" ]; then
+            "❌ Tests failed. Test result file empty."
+            return 77
+        fi
+
+        if [ -f "$STOW_PERL_LOCAL_LIB/bin/cover" ]; then
+            _cover="$STOW_PERL_LOCAL_LIB/bin/cover"
+        else
+            _cover="$(command -v cover)"
+        fi
+
+        if [ -f "$_cover" ]; then
             run_command_group "$_cover" -test -report coveralls
         else
             echo "Failed to run cover. Missing binary: '$_cover'"
         fi
 
-        #run_command_group "$STOW_PERL" Build.PL
+        #run_command_group "$STOW_PERL" "${_perl_args[@]}" Build.PL
         #run_command_group ./Build build
         #run_command_group ./Build distcheck
 

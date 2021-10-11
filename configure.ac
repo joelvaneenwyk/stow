@@ -19,6 +19,9 @@ AC_INIT([stow], [2.3.2], [bug-stow@gnu.org])
 AC_PREREQ([2.61])
 AC_CONFIG_AUX_DIR([automake])
 
+AC_SUBST([MSYSTEM])
+AM_CONDITIONAL([MSYSTEM_SET], [test ! -z "$MSYSTEM"])
+
 # test whether we have cygpath
 if test -z "$CYGPATH_P"; then
   if (cygpath --version) >/dev/null 2>/dev/null; then
@@ -69,17 +72,11 @@ done
 #   pmdir_relative_path=`echo "${installsitelib}" | sed -e "s!^$siteprefix/!!"`
 #
 # but this is cleaner:
-pmdir_relative_path=`\
-  $PERL -MConfig \
+pmdir_relative_path=`$CYGPATH_P \
+  \`$PERL -MConfig \
         -wle '($_ = $Config{installsitelib})
               =~ s!^\Q$Config{siteprefix}/!!; \
-              print'`
-
-#pmdir_relative_path=`$CYGPATH_P \
-#  \`$PERL -MConfig \
-#        -wle '($_ = $Config{installsitelib})
-#              =~ s!^\Q$Config{siteprefix}/!!; \
-#              print'\``
+              print'\``
 
 AC_ARG_WITH(
     [pmdir],

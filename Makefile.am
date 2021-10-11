@@ -60,9 +60,6 @@ TEXI2DVI = texi2dvi $(AM_MAKEINFOFLAGS)
 # Specifically used when converting from '.texi' to '.pdf'
 TEXI2PDF = $(TEXI2DVI) --pdf
 
-#TEXI2PDF = $(TEXI2DVI) --pdf --batch
-#TEXI2PDF = pdfetex -output-format pdf
-
 doc_deps = $(info_TEXINFOS) doc/version.texi
 
 DEFAULT_IGNORE_LIST = $(srcdir)/default-ignore-list
@@ -126,7 +123,7 @@ maintainer-clean-local:
 	-rm -rf doc/manual-split cover_db
 
 # this is more explicit and reliable than the config file trick
-edit = sed -e 's|[@]PERL[@]|$(PERL)|g'       \
+edit = sed -e 's|[@]PERL[@]|$(PERL)|g' \
 	   -e 's|[@]VERSION[@]|$(VERSION)|g' \
 	   -e "s|[@]USE_LIB_PMDIR[@]|$$use_lib_pmdir|g"
 
@@ -232,24 +229,22 @@ $(HTML): $(doc_deps)
 	    `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi
 
 $(PDF): $(doc_deps) $(HTML)
-	TEXINPUTS="$(STOW_ROOT)/doc$(PATH_SEPARATOR)$(srcdir)$(PATH_SEPARATOR)$(srcdir)/automake$(PATH_SEPARATOR)$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
-	MAKEINFO='$(MAKEINFO) $(AM_MAKEINFOFLAGS) $(MAKEINFOFLAGS) -I doc -I $(srcdir)/doc -I automake -I $(srcdir)/automake' \
-	$(TEXI2PDF) -o $@ `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi
-
-#$(PDF): $(HTML)
-#	TEXINPUTS="$(STOW_ROOT)/doc$(PATH_SEPARATOR)$(srcdir)$(PATH_SEPARATOR)$(srcdir)/doc$(PATH_SEPARATOR)$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
-#	MAKEINFO='$(MAKEINFO) $(AM_MAKEINFOFLAGS) $(MAKEINFOFLAGS) -I doc -I $(srcdir)/doc' \
-#	$(TEXI2DVI) -o $@ `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi
-
-#$(PDF): $(HTML)
-#	[ -d doc ] || mkdir doc # required in vpath mode
-#	TEXMFOUTPUT="doc" \
-#	TEXINPUTS="$(STOW_ROOT)/doc$(PATH_SEPARATOR)$(srcdir)$(PATH_SEPARATOR)$(srcdir)/doc$(PATH_SEPARATOR)$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
-#	$(TEXI2PDF) -output-directory="doc/" `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi
-#	mv "doc/stow.pdf" "$@"
-#	rm -rf \
-#	    "doc/stow.aux" "doc/stow.cp" \
-#	    "doc/stow.log" "doc/stow.toc"
+	[ -d doc ] || mkdir doc # required in vpath mode
+	if [ -z "$(MSYSTEM)" ]; then \
+	    TEXINPUTS="$(STOW_ROOT)/doc$(PATH_SEPARATOR)$(srcdir)$(PATH_SEPARATOR)$(srcdir)/automake$(PATH_SEPARATOR)$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
+	    MAKEINFO='$(MAKEINFO) $(AM_MAKEINFOFLAGS) $(MAKEINFOFLAGS) -I doc -I $(srcdir)/doc -I automake -I $(srcdir)/automake' \
+	    $(TEXI2PDF) -o $@ `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi; \
+	else \
+	    TEXMFOUTPUT="doc" \
+	    TEXINPUTS="$(STOW_ROOT)/doc$(PATH_SEPARATOR)$(srcdir)$(PATH_SEPARATOR)$(srcdir)/doc$(PATH_SEPARATOR)$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
+	    pdfetex \
+	        -output-directory=`test -f 'doc/stow.texi' || echo '$(srcdir)/'`/doc \
+	        `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi; \
+	    mv "doc/stow.pdf" "$@"; \
+	    rm -rf \
+	        "doc/stow.aux" "doc/stow.cp" \
+	        "doc/stow.log" "doc/stow.toc"; \
+	fi
 
 doc/manual-split: $(doc_deps)
 	rm -rf $@.new

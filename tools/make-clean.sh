@@ -72,6 +72,7 @@ function remove_intermediate_files() {
     rm -f "$STOW_ROOT/stow-"* >/dev/null 2>&1
     rm -f "$STOW_ROOT/stow.log" >/dev/null 2>&1
     rm -f "$STOW_ROOT/stow."* >/dev/null 2>&1
+    rm -f "$STOW_ROOT/test" >/dev/null 2>&1
     rm -f "$STOW_ROOT/nul"* >/dev/null 2>&1
     rm -f "$STOW_ROOT/test_results"*.xml >/dev/null 2>&1
 

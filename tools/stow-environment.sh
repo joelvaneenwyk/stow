@@ -670,18 +670,18 @@ function update_stow_environment() {
         fi
     fi
 
+    PERL="$STOW_PERL"
+    export PERL
+
+    TEX_DIR=""
+    if [ -f "$TEX" ]; then
+        TEX_DIR="$(dirname "$TEX")"
+    fi
+
+    PATH="$PERL_BIN:$PERL_C_BIN:$TEX_DIR:$PATH"
+    export PATH
+
     if [ ! "${STOW_ENVIRONMENT_INITIALIZED:-}" == "1" ]; then
-        PERL="$STOW_PERL"
-        export PERL
-
-        TEX_DIR=""
-        if [ -f "$TEX" ]; then
-            TEX_DIR="$(dirname "$TEX")"
-        fi
-
-        PATH="$PERL_BIN:$PERL_C_BIN:$TEX_DIR:$PATH"
-        export PATH
-
         echo "----------------------------------------"
         echo "Stow Root: '$STOW_ROOT'"
         echo "Stow Version: 'v$STOW_VERSION'"
@@ -693,6 +693,7 @@ function update_stow_environment() {
         fi
 
         echo "Perl Lib: '$PERL_LIB'"
+        echo "Perl Local Lib: '$STOW_PERL_LOCAL_LIB'"
         echo "Perl Module (PMDIR): '$PMDIR'"
         echo "TeX: '${TEX:-}'"
         echo "----------------------------------------"
