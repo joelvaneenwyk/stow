@@ -95,7 +95,8 @@ sub create_build_script {
         }
     );
 
-    $build->create_build_script();
+    print "Generating build script for 'Stow' module.\n";
+    $build->create_build_script;
 
     print "Created build script for 'Stow' module.\n";
 }

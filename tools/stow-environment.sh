@@ -41,7 +41,7 @@ function timestamp() {
     echo "##[timestamp] $(date +"%T")"
 }
 
-function run_command {
+function run_command() {
     local command_display
 
     command_display="$*"
@@ -97,6 +97,36 @@ function use_sudo {
     fi
 }
 
+function use_perl_local_lib() {
+    _perl=("$STOW_PERL" -I "$STOW_PERL_LOCAL_LIB/lib/perl5")
+
+    if "${_perl[@]}" -Mlocal::lib -le 1 2>/dev/null; then
+        _perl+=(-Mlocal::lib="$STOW_PERL_LOCAL_LIB")
+        _perl_local_setup="$("${_perl[@]}")"
+        echo "$_perl_local_setup"
+        return 0
+    fi
+
+    return 1
+}
+
+function activate_local_perl_library() {
+    if _perl_export=$(use_perl_local_lib); then
+        eval "$_perl_export"
+
+        export PERL_LOCAL_LIB_ROOT="$STOW_PERL_LOCAL_LIB"
+
+        # shellcheck disable=SC2016
+        PERL5LIB="$PERL_LOCAL_LIB_ROOT"
+        PERL5LIB=$(normalize_path "$PERL5LIB")
+        export PERL5LIB
+
+        return 0
+    fi
+
+    return 1
+}
+
 function install_perl_modules() {
     # Since we call CPAN manually it is not always set, but there are some libraries
     # like IO::Socket::SSL use this to determine whether or not to prompt for next
@@ -112,14 +142,10 @@ function install_perl_modules() {
 
     while [ -n "${1:-}" ]; do
         package=$1
-        shift
 
-        if [ "$_use_local_lib" = "0" ] && "${_perl_args[@]}" -Mlocal::lib -le 1 2>/dev/null; then
+        if [ "$_use_local_lib" = "0" ] && use_perl_local_lib &>/dev/null; then
             _use_local_lib=1
             _perl_args+=(-Mlocal::lib="$STOW_PERL_LOCAL_LIB")
-            _perl_local_setup="$("${_perl_args[@]}")"
-            echo "$_perl_local_setup"
-            eval "$_perl_local_setup"
         fi
 
         if run_command "${_perl_args[@]}" -MApp::cpanminus::fatscript -le 1; then
@@ -159,6 +185,8 @@ function install_perl_modules() {
                 break
             fi
         fi
+
+        shift
     done
 
     unset PERL5_CPAN_IS_RUNNING NO_NETWORK_TESTING LOCALTESTS_ONLY
@@ -316,11 +344,11 @@ function install_perl_dependencies() {
     # possible including MSYS, cygwin, Ubuntu, Alpine, etc. The more libraries we add here the more
     # seemingly obscure issues you could run into e.g., missing 'cc1' or 'poll.h' even when they are
     # in fact installed.
-    modules+=(
+    modules=(
         local::lib App::cpanminus
         YAML Carp IO::Scalar Module::Build Module::Build::Tiny
         IO::Socket::SSL Net::SSLeay
-        Test::Harness Test::More Test::Exception Test::Output
+        Moose Test::Harness Test::More Test::Exception Test::Output
         Devel::Cover Devel::Cover::Report::Coveralls
         TAP::Formatter::JUnit
     )
@@ -542,9 +570,9 @@ function update_stow_environment() {
             find "$_root" -maxdepth 1 -mindepth 1 -type d | (
                 while read -r perl_dir; do
                     for variant in "perl/bin/perl.exe" "x64/perl/bin/perl.exe" "x64/perl/bin/perl"; do
-                        _perl="$perl_dir/$variant"
-                        if [ -e "$_perl" ]; then
-                            echo "$_perl"
+                        _perl_path="$perl_dir/$variant"
+                        if [ -e "$_perl_path" ]; then
+                            echo "$_perl_path"
                         fi
                     done
                 done
@@ -583,18 +611,10 @@ function update_stow_environment() {
     export STOW_VERSION="0.0.0"
 
     # Clear out all Perl variables so that they can be reset
-    export PMDIR=""
-    export PERL=""
-    export PERL5LIB=""
-    export PERL_C_BIN=""
-    export PERL_BIN=""
-    export PERL_BIN_C_DIR=""
-    export PERL_BIN_DIR=""
-    export PERL_LIB=""
-    export PERL_LOCAL_LIB_ROOT=""
-    export PERL_MB_OPT=""
-    export PERL_MM_OPT=""
-    export PERL_SITE_BIN_DIR=""
+    unset PMDIR PERL PERL5LIB \
+        PERL_C_BIN PERL_BIN PERL_BIN_C_DIR PERL_BIN_DIR \
+        PERL_LIB PERL_LOCAL_LIB_ROOT PERL_SITE_BIN_DIR \
+        PERL_MB_OPT ERL_MM_OPT
 
     if ! os_name="$(uname -s | sed 's#\.#_#g' | sed 's#-#_#g' | sed 's#/#_#g' | sed 's# #_#g' | awk '{print tolower($0)}')"; then
         os_name="unknown"
@@ -607,17 +627,11 @@ function update_stow_environment() {
     elif [ "$(uname -o)" = "Msys" ]; then
         os_name="$(echo "msys_${os_name}" | awk '{print tolower($0)}')"
     fi
+
     STOW_PERL_LOCAL_LIB="${STOW_LOCAL_BUILD_ROOT}/perllib/${os_name}"
     mkdir -p "$STOW_PERL_LOCAL_LIB"
     export STOW_PERL_LOCAL_LIB
     export PATH="$STOW_PERL_LOCAL_LIB/bin:$PATH"
-
-    export PERL_LOCAL_LIB_ROOT="$STOW_PERL_LOCAL_LIB"
-
-    # shellcheck disable=SC2016
-    PERL5LIB="$PERL_LOCAL_LIB_ROOT"
-    PERL5LIB=$(normalize_path "$PERL5LIB")
-    export PERL5LIB
 
     _perl_version="0.0"
 
@@ -683,11 +697,11 @@ function update_stow_environment() {
         TEX_DIR="$(dirname "$TEX")"
     fi
 
-    PATH="$PERL_BIN:$PERL_C_BIN:$TEX_DIR:$PATH"
+    PATH="${PERL_BIN:-}:${PERL_C_BIN:-}:$TEX_DIR:$PATH"
     export PATH
 
     if [ ! "${STOW_ENVIRONMENT_INITIALIZED:-}" == "1" ]; then
-        echo "----------------------------------------"
+        echo "--------------------"
         echo "Stow Root: '$STOW_ROOT'"
         echo "Stow Version: 'v$STOW_VERSION'"
         echo "Perl: '$PERL'"
@@ -698,10 +712,16 @@ function update_stow_environment() {
         fi
 
         echo "Perl Lib: '$PERL_LIB'"
+
         echo "Perl Local Lib: '$STOW_PERL_LOCAL_LIB'"
+        if use_perl_local_lib &>/dev/null; then
+            echo " > Local Perl library is ready for use with 'local::lib' module."
+        fi
+
         echo "Perl Module (PMDIR): '$PMDIR'"
         echo "TeX: '${TEX:-}'"
-        echo "----------------------------------------"
+        echo "--------------------"
+        echo "✔ Initialized Stow development environment."
 
         export STOW_ENVIRONMENT_INITIALIZED="1"
     fi

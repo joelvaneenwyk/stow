@@ -25,6 +25,7 @@ function remove_intermediate_files() {
         rm -rf "${STOW_LOCAL_BUILD_ROOT:?}/temp" >/dev/null 2>&1
     fi
 
+    rm -rf "$STOW_ROOT/_Inline" >/dev/null 2>&1
     rm -rf "$STOW_ROOT/doc/doc!manual.t2d" >/dev/null 2>&1
     rm -rf "$STOW_ROOT/doc/manual-split" >/dev/null 2>&1
     rm -rf "$STOW_ROOT/doc/stow.t2d" >/dev/null 2>&1

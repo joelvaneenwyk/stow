@@ -1,5 +1,4 @@
-#!start included /usr/share/perl5/ExtUtils/MANIFEST.SKIP
-
+#!start included /usr/share/perl/5.30/ExtUtils/MANIFEST.SKIP
 # Avoid version control files.
 \bRCS\b
 \bCVS\b
@@ -10,7 +9,7 @@
 \B\.gitignore\b
 \b_darcs\b
 \B\.cvsignore$
-^\.mrdownload$
+
 # Avoid VMS specific MakeMaker generated files
 \bDescrip.MMS$
 \bDESCRIP.MMS$
@@ -24,6 +23,7 @@
 \bpm_to_blib\.ts$
 \bpm_to_blib$
 \bblibdirs\.ts$         # 6.18 through 6.25 generated this
+\b_eumm/                # 7.05_05 and above
 
 # Avoid Module::Build generated and utility files.
 \bBuild$
@@ -32,6 +32,9 @@
 \bBuild.COM$
 \bBUILD.COM$
 \bbuild.com$
+
+# and Module::Build::Tiny generated files
+\b_build_params$
 
 # Avoid temp and backup files.
 ~$
@@ -42,7 +45,7 @@
 \.tmp$
 \.#
 \.rej$
-\.orig$
+\..*\.sw.?$
 
 # Avoid OS-specific files/dirs
 # Mac OSX metadata
@@ -50,9 +53,25 @@
 # Mac OSX SMB mount metadata files
 \B\._
 
-# Avoid Devel::Cover files.
+# Avoid Devel::Cover and Devel::CoverX::Covered files.
 \bcover_db\b
-#!end included /usr/share/perl5/ExtUtils/MANIFEST.SKIP
+\bcovered\b
+
+# Avoid prove files
+\B\.prove$
+
+# Avoid MYMETA files
+^MYMETA\.
+
+# Temp files for new META
+^META_new\.(?:json|yml)
+
+# Avoid travis-ci.org file
+^\.travis\.yml
+
+# Avoid AppVeyor file
+^\.?appveyor.yml
+#!end included /usr/share/perl/5.30/ExtUtils/MANIFEST.SKIP
 
 # Avoid configuration metadata file
 ^MYMETA\.
@@ -76,6 +95,8 @@
 ^autom4te\.cache/.+$
 ^config\.(log|status)$
 ^doc/\.dirstamp$
+^doc/manual-single-old-texi2html\.html
+^doc/manual-single-texi2html-wrapper\.html
 ^doc/manual-split/
 ^doc/stow.t2p/
 ^doc/stow.t2d/
@@ -87,17 +108,21 @@
 ^doc/stow.cp$
 ^doc/stow.toc$
 ^doc/stow.dvi$
-^doc/texi2dvi.sh$
 
-\btools/texinfo/\b
+# Avoid test files
+tmp-testing-trees
+.travis.yml
+^docker/
+^[a-zA-Z]*-docker.sh
 
 # Avoid test files and intermediate data
-tmp-testing-trees
 test_results.*$
 test$
-^docker/
 ^.devcontainer/
 ^.github/
 ^.vscode/
 ^local/
-^.tmp/
+\.log$
+
+\B\.tmp\b
+\B\.build\b

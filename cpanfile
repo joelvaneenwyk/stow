@@ -25,8 +25,6 @@ on 'test' => sub {
     requires 'Test::Output';
     requires 'Test::More';
     requires 'Test::Exception';
-    requires 'TAP::Formatter::JUnit';
-    requires 'Devel::Cover::Report::Coveralls';
 };
 
 on 'runtime' => sub {
@@ -36,4 +34,6 @@ on 'develop' => sub {
     recommends 'Perl::LanguageServer';
     recommends 'Perl::Critic';
     recommends 'Perl::Tidy';
+    requires 'TAP::Formatter::JUnit';
+    requires 'Devel::Cover::Report::Coveralls';
 };

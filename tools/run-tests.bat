@@ -34,9 +34,27 @@ endlocal & exit /b
 
 :RunStowTests
     setlocal EnableExtensions EnableDelayedExpansion
+
     set _root=%~dp1
     call "%_root:~0,-1%\tools\stow-environment.bat"
 
+    call :RunProve
+    if not "!ERRORLEVEL!"=="0" exit /b
+
+    call :RunCover
+    if not "!ERRORLEVEL!"=="0" exit /b
+endlocal & exit /b 0
+
+:RunProve
+    setlocal EnableExtensions EnableDelayedExpansion
+
+    set _result_filename=%STOW_ROOT%\test_results_windows.xml
+
+    if "%GITHUB_ENV%"=="" goto:$SkipGitHubActionSetup
+        echo STOW_TEST_RESULTS=%_result_filename% >>"%GITHUB_ENV%"
+        echo STOW_CPAN_LOGS=%USER_PROFILE%\.cpan*\work\**\*.log >>"%GITHUB_ENV%"
+
+    :$SkipGitHubActionSetup
     set _cmd="%STOW_PERL%" -MApp::Prove
     set _cmd=!_cmd! -le "my $c = App::Prove->new; $c->process_args(@ARGV); $c->run" --
     set _cmd=!_cmd! -I "%STOW_ROOT_UNIX%/t/"
@@ -45,24 +63,22 @@ endlocal & exit /b
     set _cmd=!_cmd! --norc --verbose --timer --normalize --formatter "TAP::Formatter::JUnit"
     set _cmd=!_cmd! "%STOW_ROOT_UNIX%/t/"
 
-    set _result_filename=%STOW_ROOT%\test_results_windows.xml
-
-    if "%GITHUB_ENV%"=="" goto:$RunProve
-    echo STOW_TEST_RESULTS=%_result_filename% >>"%GITHUB_ENV%"
-    echo STOW_CPAN_LOGS=%USER_PROFILE%\.cpan*\work\**\*.log >>"%GITHUB_ENV%"
-
-    :$RunProve
     if "%GITHUB_ACTIONS%"=="" (
         echo ##[cmd] !_cmd!
     ) else (
         echo [command]!_cmd!
     )
+    cd /d "%STOW_ROOT%"
     call !_cmd! >"%_result_filename%"
     echo Test results: '%_result_filename%'
     if not "!ERRORLEVEL!"=="0" (
         echo Tests failed with error code: '!ERRORLEVEL!'
         endlocal & exit /b !ERRORLEVEL!
     )
+endlocal & exit /b
+
+:RunCover
+    setlocal EnableExtensions EnableDelayedExpansion
 
     del "%STOW_ROOT%\Build" > nul 2>&1
     del "%STOW_ROOT%\Build.bat" > nul 2>&1
@@ -75,9 +91,20 @@ endlocal & exit /b
     rmdir /q /s "%STOW_ROOT%\tmp-testing-trees\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\cover_db\" > nul 2>&1
     mkdir "%STOW_ROOT%\cover_db\"
-    call :Run "%STOW_PERL_LOCAL_LIB%\bin\cover.bat" -test -report coveralls
+
+    set _cover=%PERL_SITE_BIN_DIR%\cover.bat
+    if not exist "!_cover!" set _cover=%STOW_PERL_LOCAL_LIB%\bin\cover.bat
+    if not exist "!_cover!" (
+        echo WARNING: Cover tool not found: '!_cover!'
+        endlocal & exit /b 44
+    )
+
+    set _cmd="!_cover!" -test
+    if not "%GITHUB_ENV%"=="" set _cmd=!_cmd! -report coveralls
+
+    call :Run !_cmd!
     if not "!ERRORLEVEL!"=="0" (
         echo Cover failed with error code: '!ERRORLEVEL!'
         endlocal & exit /b !ERRORLEVEL!
     )
-endlocal & exit /b 0
+endlocal & exit /b
