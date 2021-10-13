@@ -35,10 +35,10 @@ exit /b
         "%SystemRoot%\System32\wbem\wmic.exe" process where ExecutablePath='%WIN_UNIX_DIR%\usr\bin\dirmngr.exe' delete > nul 2>&1
     )
 
-    del "%PERL_CPAN_CONFIG%" > nul 2>&1
-    echo Removed CPAN config: '%PERL_CPAN_CONFIG%'
-
     if "%~2"=="--all" (
+        del "%PERL_CPAN_CONFIG%" > nul 2>&1
+        echo Removed CPAN config: '%PERL_CPAN_CONFIG%'
+
         rmdir /q /s "%WIN_UNIX_DIR%" > nul 2>&1
         echo Removed local 'MSYS2' install.
     )

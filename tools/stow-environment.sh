@@ -150,11 +150,18 @@ function install_perl_modules() {
             _perl_args+=(-Mlocal::lib="$STOW_PERL_LOCAL_LIB")
         fi
 
-        if run_command "${_perl_args[@]}" -MApp::cpanminus::fatscript -le 1; then
-            # shellcheck disable=SC2016
+        if run_command "${_perl_args[@]}" -MApp::cpanminus -le 1 &>/dev/null; then
+            if run_command "${_perl_args[@]}" -MApp::cpanminus::fatscript -le 1 &>/dev/null; then
+                # shellcheck disable=SC2016
+                _perl_args+=(-MApp::cpanminus::fatscript -le 'my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;' --)
+            else
+                export PERL="$STOW_PERL"
+                export PATH="$PERL_BIN:$PERL_C_BIN:$PATH"
+                _perl_args+=("$PERL_BIN/cpanm")
+            fi
+
             if ! run_named_command_group "Install Module(s): '$*'" \
-                "${_perl_args[@]}" -MApp::cpanminus::fatscript \
-                -le 'my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;' -- \
+                "${_perl_args[@]}" \
                 --local-lib "$STOW_PERL_LOCAL_LIB" --notest "$@"; then
                 echo "❌ Failed to install modules with CPANM."
                 _return_value=99
@@ -461,7 +468,6 @@ function update_stow_environment() {
     local POSITIONAL=()
     while [[ $# -gt 0 ]]; do
         key="$1"
-
         case $key in
         -w | --use-windows-tools)
             export STOW_USE_WINDOWS_TOOLS=1
@@ -583,6 +589,8 @@ function update_stow_environment() {
         if [ -f "$_where" ]; then
             "$_where" perl
         fi
+
+        echo "$STOW_LOCAL_BUILD_ROOT/perl/perl/bin/perl.exe"
     )
     export PERL_LOCAL
 
@@ -674,18 +682,16 @@ function update_stow_environment() {
         fi
         export STOW_SITE_PREFIX
 
-        if [ ! -x "$(command -v gmake)" ]; then
-            _perl_bin="$(dirname "$STOW_PERL")"
-            export PERL_BIN="$_perl_bin"
+        _perl_bin="$(dirname "$STOW_PERL")"
+        export PERL_BIN="$_perl_bin"
 
-            while [ ! "$_perl_bin" == "/" ] && [ -d "$_perl_bin/../" ]; do
-                _perl_bin=$(cd "$_perl_bin" && cd .. && pwd)
-                if [ ! "$_perl_bin" == "/" ] && [ -d "$_perl_bin/c/bin" ]; then
-                    export PERL_C_BIN="$_perl_bin/c/bin"
-                    break
-                fi
-            done
-        fi
+        while [ ! "$_perl_bin" == "/" ] && [ -d "$_perl_bin/../" ]; do
+            _perl_bin=$(cd "$_perl_bin" && cd .. && pwd)
+            if [ ! "$_perl_bin" == "/" ] && [ -d "$_perl_bin/c/bin" ]; then
+                export PERL_C_BIN="$_perl_bin/c/bin"
+                break
+            fi
+        done
     fi
 
     PERL="$STOW_PERL"
@@ -700,10 +706,14 @@ function update_stow_environment() {
     export PATH
 
     if [ ! "${STOW_ENVIRONMENT_INITIALIZED:-}" == "1" ]; then
+        if [ -n "${GITHUB_ACTIONS:-}" ] || [ "$STOW_USE_WINDOWS_TOOLS" = "1" ]; then
+            echo "✔ Checked Windows global environment for available tools."
+        fi
+
         echo "--------------------"
         echo "Stow Root: '$STOW_ROOT'"
         echo "Stow Version: 'v$STOW_VERSION'"
-        echo "Perl: '$PERL'"
+        echo "Perl: '$STOW_PERL'"
         echo "Perl Version: 'v$_perl_version'"
 
         if [ -n "${PERL_LOCAL:-}" ]; then

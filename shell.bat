@@ -37,6 +37,7 @@ endlocal & exit /b
     setlocal EnableExtensions EnableDelayedExpansion
 
     set _root=%~dp1
+    shift
     call "%_root:~0,-1%\tools\stow-environment.bat"
 
     :: We use 'minimal' to match what CI uses by default to ensure we have a clean environment
@@ -58,6 +59,16 @@ endlocal & exit /b
 
     :: Let the shell decide which version of TeX to use
     set TEX=
+    set STOW_ENVIRONMENT_INITIALIZED=
 
-    call :Run "%WIN_UNIX_DIR%\msys2_shell.cmd" -no-start -mingw64 -defterm -shell bash -here -c "source ./tools/stow-environment.sh %* && bash"
+    set _args=%~1
+    shift
+    :$GetArguments
+        if "%~1"=="" goto:$StartShell
+        set _args=!_args! %~1
+        shift
+    goto:$GetArguments
+
+    :$StartShell
+    call :Run "%WIN_UNIX_DIR%\msys2_shell.cmd" -no-start -mingw64 -defterm -shell bash -here -c "source ./tools/stow-environment.sh !_args! && bash"
 exit /b

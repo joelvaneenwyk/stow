@@ -45,8 +45,9 @@ exit /b
         call :ConvertToUnixyPath "STOW_ROOT_UNIX" "!STOW_ROOT!"
 
         set STOW_LOCAL_BUILD_ROOT=!STOW_ROOT!\.tmp
-        call :FindTool "WIN_UNIX_DIR" "msys2_shell" "!STOW_LOCAL_BUILD_ROOT!\msys64\msys2_shell.cmd"
-        call :GetDirectoryPath "WIN_UNIX_DIR" "!WIN_UNIX_DIR!"
+        set WIN_UNIX_SHELL=!STOW_LOCAL_BUILD_ROOT!\msys64\msys2_shell.cmd
+        call :FindTool "WIN_UNIX_SHELL" "msys2_shell"
+        call :GetDirectoryPath "WIN_UNIX_DIR" "!WIN_UNIX_SHELL!"
         call :ConvertToUnixyPath "WIN_UNIX_DIR_UNIX" "!WIN_UNIX_DIR!"
         call :ConvertToCygwinPath "STOW_ROOT_MSYS" "!STOW_ROOT!"
         if not exist "!STOW_LOCAL_BUILD_ROOT!" mkdir "!STOW_LOCAL_BUILD_ROOT!"
@@ -344,7 +345,10 @@ exit /b
         set _output_variable=%~1
         set _file=%~2
 
-        set _output=
+        :: If the variable already contains a valid path, then exit early
+        set _output=!%_output_variable%!
+        if exist "!_output!" goto:$FindToolDone
+
         set _where=%SystemRoot%\System32\WHERE.exe
         "%_where%" /Q %_file%
         if not "!ERRORLEVEL!"=="0" goto:$FindToolDone
