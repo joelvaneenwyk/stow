@@ -168,8 +168,14 @@ function test_perl_version() {
             else
                 echo "✔ Generated test results: '$_test_result_output_path'"
 
-                PATH=$(echo "${PATH}" | awk -v RS=: -v ORS=: "/$STOW_PERL_LOCAL_LIB/ {next} {print}")
+                # Remove the local library path
+                _local_bin="$STOW_PERL_LOCAL_LIB/bin"
+                PATH=:$PATH:
+                PATH=${PATH//:$_local_bin:/:}
+                PATH=${PATH#:}
+                PATH=${PATH%:}
                 export PATH
+
                 unset PERL5LIB PERL_MB_OPT PERL_MM_OPT PERL_LOCAL_LIB_ROOT
                 run_command_group make cpanm
 
