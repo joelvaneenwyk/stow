@@ -242,7 +242,7 @@ $(PDF): $(doc_deps) $(HTML)
 	    TEXINPUTS="$(STOW_ROOT)/doc$(PATH_SEPARATOR)$(srcdir)$(PATH_SEPARATOR)$(srcdir)/doc$(PATH_SEPARATOR)$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
 	    pdfetex \
 	        -output-directory=`test -f 'doc/stow.texi' || echo '$(srcdir)/'`/doc \
-	        `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi; \
+	        `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi </dev/null; \
 	    mv "doc/stow.pdf" "$@"; \
 	    rm -rf \
 	        "doc/stow.aux" "doc/stow.cp" \

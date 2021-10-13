@@ -98,11 +98,11 @@ function use_sudo {
 }
 
 function use_perl_local_lib() {
-    _perl=("$STOW_PERL" -I "$STOW_PERL_LOCAL_LIB/lib/perl5")
+    _perl=(-I "$STOW_PERL_LOCAL_LIB/lib/perl5")
 
-    if "${_perl[@]}" -Mlocal::lib -le 1 2>/dev/null; then
+    if "$STOW_PERL" "${_perl[@]}" -Mlocal::lib -le 1 2>/dev/null; then
         _perl+=(-Mlocal::lib="$STOW_PERL_LOCAL_LIB")
-        _perl_local_setup="$("${_perl[@]}")"
+        _perl_local_setup="$("$STOW_PERL" "${_perl[@]}")"
         echo "$_perl_local_setup"
         return 0
     fi

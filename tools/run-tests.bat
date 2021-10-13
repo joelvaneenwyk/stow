@@ -55,7 +55,7 @@ endlocal & exit /b 0
         echo STOW_CPAN_LOGS=%USER_PROFILE%\.cpan*\work\**\*.log >>"%GITHUB_ENV%"
 
     :$SkipGitHubActionSetup
-    set _cmd="%STOW_PERL%" -MApp::Prove
+    set _cmd="%STOW_PERL%" %STOW_PERL_ARGS% -MApp::Prove
     set _cmd=!_cmd! -le "my $c = App::Prove->new; $c->process_args(@ARGV); $c->run" --
     set _cmd=!_cmd! -I "%STOW_ROOT_UNIX%/t/"
     set _cmd=!_cmd! -I "%STOW_ROOT_UNIX%/bin/"
@@ -92,14 +92,15 @@ endlocal & exit /b
     rmdir /q /s "%STOW_ROOT%\cover_db\" > nul 2>&1
     mkdir "%STOW_ROOT%\cover_db\"
 
-    set _cover=%PERL_SITE_BIN_DIR%\cover.bat
-    if not exist "!_cover!" set _cover=%STOW_PERL_LOCAL_LIB%\bin\cover.bat
+    set _cover=%STOW_PERL_LOCAL_LIB%\bin\cover
+    if not exist "!_cover!" set _cover=%PERL_SITE_BIN_DIR%\cover
     if not exist "!_cover!" (
         echo WARNING: Cover tool not found: '!_cover!'
         endlocal & exit /b 44
     )
 
-    set _cmd="!_cover!" -test
+    set _cmd="%STOW_PERL%" %STOW_PERL_ARGS%
+    set _cmd=!_cmd! "!_cover!" -test
     if not "%GITHUB_ENV%"=="" set _cmd=!_cmd! -report coveralls
 
     call :Run !_cmd!

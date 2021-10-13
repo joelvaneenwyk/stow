@@ -43,6 +43,8 @@ endlocal & exit /b
         exit /b !ERRORLEVEL!
     )
 
+    call "%_root:~0,-1%\tools\make-clean.bat"
+
     set USE_LIB_PMDIR=
     set PMDIR=%STOW_ROOT%\lib
     set PMDIR=%PMDIR:\=/%
@@ -147,6 +149,22 @@ endlocal & exit /b
 :MakeDocs
     setlocal EnableExtensions EnableDelayedExpansion
 
+    if exist "%TEX_DIR%\pdfetex.exe" (
+        set TEXMFOUTPUT="doc"
+        set TEXINPUTS="%STOW_ROOT%\doc;%STOW_ROOT%;%TEXINPUTS%"
+        call :Run "%TEX_DIR%\pdfetex.exe" -output-directory="%STOW_ROOT%\doc" "%STOW_ROOT%\doc\stow.texi"
+        move "%STOW_ROOT%\doc\stow.pdf" "%STOW_ROOT%\doc\manual.pdf"
+        del "%STOW_ROOT%\doc\stow.aux" > nul 2>&1
+        del "%STOW_ROOT%\doc\stow.cp" > nul 2>&1
+        del "%STOW_ROOT%\doc\stow.toc" > nul 2>&1
+        del "%STOW_ROOT%\doc\stow.log" > nul 2>&1
+    )
+
+    if exist "%STOW_GIT%" (
+        "%STOW_GIT%" log --format="format:%%ad  %%aN <%%aE>%%n%%n    * %%w(70,0,4)%%s%%+b%%n" --name-status v2.0.2..HEAD >"%STOW_ROOT%\ChangeLog"
+        type "%STOW_ROOT%\ChangeLog.OLD" >>"%STOW_ROOT%\ChangeLog"
+    )
+
     if not exist "%WIN_UNIX_DIR%\usr\bin\bash.exe" (
         echo ERROR: Skipped making documentation. Missing unix tools. Please install dependencies first.
         echo ----------------------------------------
@@ -174,10 +192,7 @@ endlocal & exit /b
     call :Run %BASH% "autoreconf --install --verbose"
     if not "!ERRORLEVEL!"=="0" exit /b
 
-    call :Run %BASH% "./configure --prefix='' --with-pmdir='%PERL5LIB%'"
-    if not "!ERRORLEVEL!"=="0" exit /b
-
-    call :Run %BASH% "make doc/manual.pdf"
+    call :Run %BASH% "./configure --prefix='' --with-pmdir='%STOW_PERL_LOCAL_LIB_UNIX%'"
     if not "!ERRORLEVEL!"=="0" exit /b
 
     call :Run %BASH% "make doc/manual-single.html"
@@ -185,6 +200,11 @@ endlocal & exit /b
 
     call :Run %BASH% "make bin/stow bin/chkstow lib/Stow.pm lib/Stow/Util.pm"
     if not "!ERRORLEVEL!"=="0" exit /b
+
+    if not exist "%STOW_ROOT%\doc\manual.pdf" (
+        call :Run %BASH% "make doc/manual.pdf"
+        if not "!ERRORLEVEL!"=="0" exit /b
+    )
 
     echo ----------------------------------------
 exit /b
@@ -235,7 +255,7 @@ exit /b 0
     set PERL_INCLUDE=!PERL_INCLUDE! -I %WIN_UNIX_DIR_UNIX%/usr/share/texinfo/lib/Unicode-EastAsianWidth/lib
 
     :: Use 'stow.texi' to generate 'stow.info'
-    cd "%STOW_ROOT%"
+    cd /d "%STOW_ROOT%"
     call :Run "%WIN_UNIX_DIR%\usr\bin\perl" %PERL_INCLUDE% "%WIN_UNIX_DIR%\usr\bin\texi2any" -I doc\ -o doc\ doc\stow.texi
     echo Generated 'doc\stow.info'
 exit /b

@@ -28,8 +28,8 @@ exit /b
 
         set _root=%~dp1
         if not exist "%STOW_ROOT%" goto:$Setup
-        if "%~2"=="" goto:$Setup
         if "%~2"=="--refresh" goto:$Setup
+        if "%STOW_ENVIRONMENT_INITIALIZED%"=="1" goto:$EnvironmentSetupDone
         goto:$EnvironmentSetupDone
 
         :$Setup
@@ -63,11 +63,9 @@ exit /b
         set BASH_EXE=!WIN_UNIX_DIR!\usr\bin\bash.exe
         set BASH="%BASH_EXE%" --noprofile --norc -c
 
-        call :FindTool "STOW_PERL" "perl"
-        if not "!ERRORLEVEL!"=="0" (
-            set STOW_PERL=!STOW_LOCAL_BUILD_ROOT!\perl\perl\bin\perl.exe
-        )
+        call :FindTool "STOW_GIT" "git" "!WIN_UNIX_DIR!\usr\bin\git.exe"
 
+        call :FindTool "STOW_PERL" "perl" "!STOW_LOCAL_BUILD_ROOT!\perl\perl\bin\perl.exe"
         if not exist "!STOW_PERL!" (
             echo [ERROR] Perl executable not found.
             set STOW_PERL=
@@ -167,6 +165,8 @@ exit /b
         set "PERL_LOCAL_LIB_ROOT=%PERL_LOCAL_LIB_ROOT%"
         set "PERL_MB_OPT=%PERL_MB_OPT%"
         set "PERL_MM_OPT=%PERL_MM_OPT%"
+        set "STOW_GIT=%STOW_GIT%"
+        set "STOW_ENVIRONMENT_INITIALIZED=1"
         set "STOW_ROOT=%STOW_ROOT%"
         set "STOW_ROOT_UNIX=%STOW_ROOT_UNIX%"
         set "STOW_LOCAL_BUILD_ROOT=%STOW_LOCAL_BUILD_ROOT%"
@@ -357,8 +357,9 @@ exit /b
             )
 
         :$FindToolDone
-        if not exist "!_output!" exit /b 1
+        if not exist "!_output!" set _output=
     endlocal & (
         set "%_output_variable%=%_output%"
+        if not exist "%_output%" exit /b 1
     )
 exit /b
