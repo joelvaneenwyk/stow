@@ -158,7 +158,8 @@ function test_perl_version() {
             -le 'my $c = App::Prove->new; $c->process_args(@ARGV); $c->run;' -- \
             --formatter "TAP::Formatter::JUnit" \
             --norc --timer --verbose --normalize --parse \
-            -It/ -Ilib/ -Ibin/ \
+            -I "$STOW_PERL_LOCAL_LIB/lib/perl5" \
+            -I t/ -I lib/ -I bin/ \
             "$STOW_ROOT/t"; then
             # If file is empty, tests failed so report an error
             if [ ! -s "$_test_result_output_path" ]; then

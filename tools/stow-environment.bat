@@ -16,12 +16,7 @@
 :: along with this program. If not, see https://www.gnu.org/licenses/.
 ::
 
-if not exist "%STOW_ROOT%" goto:$Setup
-if "%~1"=="--refresh" goto:$Setup
-exit /b 0
-
-:$Setup
-call :SetupStowEnvironment "%~dp0..\"
+call :SetupStowEnvironment "%~dp0..\" %*
 exit /b
 
 ::
@@ -45,33 +40,55 @@ endlocal & exit /b
     echo ::endgroup::
 exit /b
 
+:FindTool
+    setlocal EnableExtensions EnableDelayedExpansion
+        set _output_variable=%~1
+        set _file=%~2
+        set _output=!%_output_variable%!
+        set _where=C:\Windows\System32\WHERE.exe
+        if exist "!_output!" goto:$FindToolDone
+
+        "%_where%" /Q %_file%
+        if not "!ERRORLEVEL!"=="0" goto:$FindToolDone
+            for /f "tokens=* usebackq" %%a in (`"%_where%" %_file%`) do (
+                set _output=%%a
+                goto:$FindToolDone
+            )
+
+        :$FindToolDone
+        if not exist "!_output!" set _output=
+    endlocal & (
+        set "%_output_variable%=%_output%"
+    )
+exit /b
+
 :SetupStowEnvironment
     setlocal EnableExtensions EnableDelayedExpansion
 
         set _root=%~dp1
+        if not exist "%STOW_ROOT%" goto:$Setup
+        if "%~2"=="" goto:$Setup
+        if "%~2"=="--refresh" goto:$Setup
+        goto:$EnvironmentSetupDone
+
+        :$Setup
         set STARTING_DIR=%CD%
         set STOW_ROOT=%_root:~0,-1%
-        set STOW_ROOT_UNIX=%STOW_ROOT:\=/%
+        set STOW_ROOT_UNIX=!STOW_ROOT:\=/!
         set STOW_VERSION=0.0.0
 
-        set STOW_LOCAL_BUILD_ROOT=%STOW_ROOT%\.tmp
-        if not exist "%STOW_LOCAL_BUILD_ROOT%" mkdir "%STOW_LOCAL_BUILD_ROOT%"
+        set STOW_LOCAL_BUILD_ROOT=!STOW_ROOT!\.tmp
+        if not exist "!STOW_LOCAL_BUILD_ROOT!" mkdir "!STOW_LOCAL_BUILD_ROOT!"
 
         set PATH_ORIGINAL=%PATH%
 
         set TMPDIR=%STOW_LOCAL_BUILD_ROOT%\temp
         if not exist "%TMPDIR%" mkdir "%TMPDIR%"
 
-        set WIN_UNIX_DIR=%STOW_LOCAL_BUILD_ROOT%\msys64\
-        if exist "!WIN_UNIX_DIR!" goto:$FoundUnixTools
-            "%_where%" /Q msys2_shell
-            if not "!ERRORLEVEL!"=="0" goto:$FoundUnixTools
-                for /f "tokens=* usebackq" %%a in (`"%_where%" msys2_shell`) do (
-                    set WIN_UNIX_DIR=%%a
-                    goto:$FoundUnixTools
-                )
-        :$FoundUnixTools
+        set WIN_UNIX_DIR=!STOW_LOCAL_BUILD_ROOT!\msys64\msys2_shell.cmd
+        call :FindTool "WIN_UNIX_DIR" "msys2_shell"
         call :GetDirectoryPath "WIN_UNIX_DIR" "!WIN_UNIX_DIR!"
+
         set WIN_UNIX_DIR_UNIX=
         if exist "!WIN_UNIX_DIR!" set WIN_UNIX_DIR_UNIX=!WIN_UNIX_DIR:\=/!
 
@@ -84,14 +101,7 @@ exit /b
         set BASH_EXE=!WIN_UNIX_DIR!\usr\bin\bash.exe
         set BASH="%BASH_EXE%" --noprofile --norc -c
 
-        set _where=C:\Windows\System32\WHERE.exe
-
-        if exist "!STOW_PERL!" goto:$PerlValidate
-            "%_where%" /Q perl
-            if not "!ERRORLEVEL!"=="0" goto:$PerlValidate
-            call :StoreCommandOutput "STOW_PERL" "%_where%" perl
-        :$PerlValidate
-
+        call :FindTool "STOW_PERL" "perl"
         call :StorePerlOutput "STOW_PERL_VERSION" -e "print substr($^^V, 1)"
         if not "!ERRORLEVEL!"=="0" (
             echo ERROR: Perl executable invalid or missing: '!STOW_PERL!'
@@ -164,6 +174,7 @@ exit /b
         :$SkipPostInstall
         echo ------------------
 
+        :$EnvironmentSetupDone
         if exist "%STOW_PERL_INIT%" call "%STOW_PERL_INIT%"
 
         :: Convert to forward slash otherwise it fails on older versions of Perl e.g, 5.14
