@@ -18,8 +18,8 @@
 
 setlocal EnableExtensions EnableDelayedExpansion
 
-call :RunCommand powershell -NoLogo -NoProfile -Command "Set-ExecutionPolicy RemoteSigned -scope CurrentUser;"
-call :RunCommand powershell -NoLogo -NoProfile -File "%~dp0install-dependencies.ps1"
+call :RunCommand "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -Command "Set-ExecutionPolicy RemoteSigned -scope CurrentUser;"
+call :RunCommand "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -File "%~dp0install-dependencies.ps1"
 
 call :InstallPerlDependencies "%~dp0..\"
 
@@ -39,7 +39,7 @@ exit /b
 
     :: First install 'local::lib' and then remaining libraries so that they can all be
     :: stored in the local modules path.
-    call :InstallPerlModules "local::lib" "App::cpanminus"
+    call :InstallPerlModules "LWP::Protocol::https" "local::lib" "App::cpanminus"
     if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
 
     :: Install dependencies. Note that 'Inline::C' requires 'make' and 'gcc' to be installed. It
@@ -97,30 +97,36 @@ exit /b
         if exist "%STOW_PERL_INIT%" call "%STOW_PERL_INIT%"
 
         set _cpanm=0
-        !_cmd! -MApp::cpanminus::fatscript -le 1 > nul 2>&1
+        !_cmd! -MApp::cpanminus -le 1 > nul 2>&1
         if "!ERRORLEVEL!"=="0" set _cpanm=1
 
-        set _modules=
+        set _modules=%~1
+        shift
+        if "!_cpanm!"=="0" goto:$UseCpan
         :$GetModulesLoop
+            if "%~1"=="" goto:$UseCpanm
             set _modules=!_modules! %~1
             shift
-            if "!_cpanm!"=="0" goto:$UseCpan
-        if not "%~1"=="" goto:$GetModulesLoop
-        goto:$UseCpanm
+        goto:$GetModulesLoop
 
         :$UseCpan
             set _cmd=!_cmd! -MCPAN -e "CPAN::Shell->notest('install', '!_modules!')"
             goto:$RunCommand
 
         :$UseCpanm
-            set _cmd=!_cmd! -MApp::cpanminus::fatscript -le
-            set _cmd=!_cmd! "my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;" --
-            set _cmd=!_cmd! --skip-installed --skip-satisfied --local-lib "%STOW_PERL_LOCAL_LIB_UNIX%" --notest
+            !_cmd! -MApp::cpanminus::fatscript -le 1 > nul 2>&1
+            if "!ERRORLEVEL!"=="0" (
+                set _cmd=!_cmd! -MApp::cpanminus::fatscript -le
+                set _cmd=!_cmd! "my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;" --
+            ) else (
+                set _cmd=!_cmd! "%PERL_BIN_DIR%\cpanm"
+            )
+            set _cmd=!_cmd! --verbose --skip-installed --skip-satisfied --local-lib "%STOW_PERL_LOCAL_LIB_UNIX%" --notest
             set _cmd=!_cmd! !_modules!
             goto:$RunCommand
 
         :$RunCommand
-            echo ::group::Install Module(s)
+            echo ::group::Install Module(s): '!_modules!'
             echo [command]!_cmd!
             !_cmd!
             set _cmd_return=!ERRORLEVEL!

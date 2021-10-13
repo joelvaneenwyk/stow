@@ -322,20 +322,23 @@ tlpdbopt_sys_man /usr/local/share/man
 tlpdbopt_w32_multi_user 0
 "@
 
+        # Update PATH environment as we need to make sure 'cmd.exe' is available since the TeX Live manager
+        # expected it to work.
+        $env:Path = "C:\Windows\System32\;$env:TEXLIVE_BIN;$env:Path"
+
         $texExecutable = Join-Path -Path "$env:TEXLIVE_BIN" -ChildPath "tex.exe"
         If (Test-Path "$texExecutable" -PathType Leaf) {
             Write-Host "Skipped install. TeX already exists: '$texExecutable'"
         }
         elseif ($IsWindows -or $ENV:OS) {
-            & cmd.exe /d /c "$env:TEXLIVE_INSTALL" -no-gui -portable -profile "$texLiveProfile"
+            & "C:\Windows\System32\cmd.exe" /d /c "$env:TEXLIVE_INSTALL" -no-gui -portable -profile "$texLiveProfile"
         }
         else {
             Write-Host "TeX Live install process only supported on Windows."
         }
 
         if ($IsWindows -or $ENV:OS) {
-            $env:Path = "$env:TEXLIVE_BIN;$env:Path"
-            & cmd.exe /d /c "call $env:TEXLIVE_BIN/tlmgr.bat update -all"
+            & "C:\Windows\System32\cmd.exe" /d /c "call $env:TEXLIVE_BIN/tlmgr.bat update -all"
         }
     }
     catch [Exception] {
@@ -381,8 +384,10 @@ Function Install-MSYS2 {
         }
     }
 
-    if (Test-Path -Path "$script:MsysTargetDir/usr/bin/bash.exe" -PathType Leaf) {
-        $postInstallScript = "$script:MsysTargetDir/etc/post-install/09-stow.post"
+    $postInstallScript = "$script:MsysTargetDir/etc/post-install/09-stow.post"
+    $initializedFile = "$script:MsysTargetDir/initialized"
+
+    if ((Test-Path -Path "$script:MsysTargetDir/usr/bin/bash.exe" -PathType Leaf) -and (-not((Test-Path -Path "$initializedFile" -PathType Leaf)))) {
 
         # Create a file that gets automatically called after installation which will silence the
         # clear that happens during a normal install. This may be useful for users by default but
@@ -401,7 +406,7 @@ echo '[stow] Post-install complete.'
             $msys2_shell = "$script:MsysTargetDir/msys2_shell.cmd"
             $msys2_shell += " -mingw64 -defterm -no-start -where $script:StowRoot -shell bash"
             $msys2_shell += " -c ./tools/install-dependencies.sh"
-            & "cmd.exe" /d /s /c "$msys2_shell"
+            & "C:\Windows\System32\cmd.exe" /d /s /c "$msys2_shell"
             Write-Host "::endgroup::"
 
             Write-Host "::group::Upgrade MSYS2 Packages"
@@ -418,6 +423,10 @@ echo '[stow] Post-install complete.'
         }
 
         Write-Host '[stow] Finished MSYS2 install.'
+
+        # Create initialized file to indicate we have done the initialization and do not need to
+        # go through these steps again.
+        Set-Content -Path "$initializedFile" -Value "$(Get-Date)"
     }
 }
 
@@ -515,7 +524,7 @@ Function Install-Toolset {
     # that we always have a version to use.
     try {
         if (-Not (Test-Path -Path "$script:StowTempDir/perl/portableshell.bat" -PathType Leaf)) {
-            $strawberryPerlVersion = "5.32.1.1"
+            $strawberryPerlVersion = "5.14.4.1"
             $strawberyPerlUrl = "https://strawberryperl.com/download/$strawberryPerlVersion/strawberry-perl-$strawberryPerlVersion-64bit-portable.zip"
             Get-File -Url "$strawberyPerlUrl" -Filename "$script:StowArchivesDir/strawberry-perl-$strawberryPerlVersion-64bit-portable.zip"
             Expand-File -Path "$script:StowArchivesDir/strawberry-perl-$strawberryPerlVersion-64bit-portable.zip" -DestinationPath "$script:StowTempDir/perl"

@@ -155,6 +155,8 @@ exit /b
         :$EnvironmentSetupDone
         if exist "%STOW_PERL_INIT%" call "%STOW_PERL_INIT%"
 
+        set "PATH=!STOW_PERL_LOCAL_LIB!\bin;!PERL_BIN_C_DIR!;!PERL_BIN_DIR!;%PATH%"
+
         :: Convert to forward slash otherwise it fails on older versions of Perl e.g, 5.14
         set PERL_MB_OPT=%PERL_MB_OPT:\=/%
         set PERL_MM_OPT=%PERL_MM_OPT:\=/%
