@@ -5,6 +5,8 @@ use constant IS_WIN32 => $^O eq 'MSWin32';
 requires 'Carp';
 requires 'IO::File';
 requires 'IO::Scalar';
+requires 'ExtUtils::PL2Bat';
+requires 'Module::Build';
 
 if (IS_WIN32) {
     requires 'Win32::Mutex';

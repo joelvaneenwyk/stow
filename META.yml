@@ -4,8 +4,6 @@ author:
   - unknown
 build_requires:
   IO::Scalar: '0'
-  Inline::C: '0'
-  Parse::RecDescent: '0'
   Test::Exception: '0'
   Test::More: '0'
   Test::Output: '0'
@@ -27,7 +25,10 @@ provides:
     version: v2.3.2
 requires:
   Carp: '0'
+  ExtUtils::PL2Bat: '0'
   IO::File: '0'
+  Inline::C: '0'
+  Win32::Mutex: '0'
   perl: '5.006'
 resources:
   homepage: https://savannah.gnu.org/projects/stow

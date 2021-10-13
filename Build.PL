@@ -67,9 +67,12 @@ sub create_build_script {
         },
 
         requires => {
-            'perl'        => '5.006',
-            'Carp'        => 0,
-            'IO::File'    => 0,
+            'perl'                          => '5.006',
+            'Carp'                          => 0,
+            'IO::File'                      => 0,
+            (IS_WIN32 ? ('Inline::C'        => 0) : ()),
+            (IS_WIN32 ? ('ExtUtils::PL2Bat' => 0) : ()),
+            (IS_WIN32 ? ('Win32::Mutex'     => 0) : ())
         },
 
         script_files => [ 'bin/stow', 'bin/chkstow' ],
@@ -80,14 +83,7 @@ sub create_build_script {
             'Module::Build' => 0,
         },
 
-        build_requires => IS_WIN32 ? {
-            'Test::More'        => 0,
-            'Test::Output'      => 0,
-            'Test::Exception'   => 0,
-            'IO::Scalar'        => 0,
-            'Inline::C'         => 0,
-            'Win32::Mutex'      => 0
-        } : {
+        test_requires => {
             'Test::More'        => 0,
             'Test::Output'      => 0,
             'Test::Exception'   => 0,

@@ -121,6 +121,8 @@ function activate_local_perl_library() {
         PERL5LIB=$(normalize_path "$PERL5LIB")
         export PERL5LIB
 
+        export PATH="$STOW_PERL_LOCAL_LIB/bin:$PATH"
+
         return 0
     fi
 
@@ -452,9 +454,7 @@ function make_docs() {
 function update_stow_environment() {
     # Clear out TMP as TEMP may come from Windows and we do not want tools confused
     # if they find both.
-    unset TMP
-    unset temp
-    unset tmp
+    unset TMP temp tmp
 
     export STOW_USE_WINDOWS_TOOLS=0
 
@@ -614,7 +614,7 @@ function update_stow_environment() {
     unset PMDIR PERL PERL5LIB \
         PERL_C_BIN PERL_BIN PERL_BIN_C_DIR PERL_BIN_DIR \
         PERL_LIB PERL_LOCAL_LIB_ROOT PERL_SITE_BIN_DIR \
-        PERL_MB_OPT ERL_MM_OPT
+        PERL_MB_OPT PERL_MM_OPT
 
     if ! os_name="$(uname -s | sed 's#\.#_#g' | sed 's#-#_#g' | sed 's#/#_#g' | sed 's# #_#g' | awk '{print tolower($0)}')"; then
         os_name="unknown"
@@ -631,7 +631,6 @@ function update_stow_environment() {
     STOW_PERL_LOCAL_LIB="${STOW_LOCAL_BUILD_ROOT}/perllib/${os_name}"
     mkdir -p "$STOW_PERL_LOCAL_LIB"
     export STOW_PERL_LOCAL_LIB
-    export PATH="$STOW_PERL_LOCAL_LIB/bin:$PATH"
 
     _perl_version="0.0"
 

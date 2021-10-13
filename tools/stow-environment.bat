@@ -48,126 +48,128 @@ exit /b
 :SetupStowEnvironment
     setlocal EnableExtensions EnableDelayedExpansion
 
-    set _root=%~dp1
-    set STARTING_DIR=%CD%
-    set STOW_ROOT=%_root:~0,-1%
-    set STOW_ROOT_UNIX=%STOW_ROOT:\=/%
-    set STOW_VERSION=0.0.0
+        set _root=%~dp1
+        set STARTING_DIR=%CD%
+        set STOW_ROOT=%_root:~0,-1%
+        set STOW_ROOT_UNIX=%STOW_ROOT:\=/%
+        set STOW_VERSION=0.0.0
 
-    set STOW_LOCAL_BUILD_ROOT=%STOW_ROOT%\.tmp
-    if not exist "%STOW_LOCAL_BUILD_ROOT%" mkdir "%STOW_LOCAL_BUILD_ROOT%"
+        set STOW_LOCAL_BUILD_ROOT=%STOW_ROOT%\.tmp
+        if not exist "%STOW_LOCAL_BUILD_ROOT%" mkdir "%STOW_LOCAL_BUILD_ROOT%"
 
-    set PATH_ORIGINAL=%PATH%
+        set PATH_ORIGINAL=%PATH%
 
-    set TMPDIR=%STOW_LOCAL_BUILD_ROOT%\temp
-    if not exist "%TMPDIR%" mkdir "%TMPDIR%"
+        set TMPDIR=%STOW_LOCAL_BUILD_ROOT%\temp
+        if not exist "%TMPDIR%" mkdir "%TMPDIR%"
 
-    set WIN_UNIX_DIR=%STOW_LOCAL_BUILD_ROOT%\msys64\
-    if exist "!WIN_UNIX_DIR!" goto:$FoundUnixTools
-        "C:\Windows\System32\WHERE.exe" /Q msys2_shell
-        if not "!ERRORLEVEL!"=="0" goto:$FoundUnixTools
-            for /f "tokens=* usebackq" %%a in (`"C:\Windows\System32\WHERE.exe" msys2_shell`) do (
-                set WIN_UNIX_DIR=%%a
-                goto:$FoundUnixTools
-            )
-    :$FoundUnixTools
-    call :GetDirectoryPath "WIN_UNIX_DIR" "!WIN_UNIX_DIR!"
-    set WIN_UNIX_DIR_UNIX=
-    if exist "!WIN_UNIX_DIR!" set WIN_UNIX_DIR_UNIX=!WIN_UNIX_DIR:\=/!
+        set WIN_UNIX_DIR=%STOW_LOCAL_BUILD_ROOT%\msys64\
+        if exist "!WIN_UNIX_DIR!" goto:$FoundUnixTools
+            "%_where%" /Q msys2_shell
+            if not "!ERRORLEVEL!"=="0" goto:$FoundUnixTools
+                for /f "tokens=* usebackq" %%a in (`"%_where%" msys2_shell`) do (
+                    set WIN_UNIX_DIR=%%a
+                    goto:$FoundUnixTools
+                )
+        :$FoundUnixTools
+        call :GetDirectoryPath "WIN_UNIX_DIR" "!WIN_UNIX_DIR!"
+        set WIN_UNIX_DIR_UNIX=
+        if exist "!WIN_UNIX_DIR!" set WIN_UNIX_DIR_UNIX=!WIN_UNIX_DIR:\=/!
 
-    set TEX_DIR=%STOW_LOCAL_BUILD_ROOT%\texlive\bin\win32
-    set TEX=%TEX_DIR%\tex.exe
+        set TEX_DIR=%STOW_LOCAL_BUILD_ROOT%\texlive\bin\win32
+        set TEX=%TEX_DIR%\tex.exe
 
-    set STOW_HOME=%STOW_LOCAL_BUILD_ROOT%\home
-    if not exist "%STOW_HOME%" mkdir "%STOW_HOME%"
+        set STOW_HOME=%STOW_LOCAL_BUILD_ROOT%\home
+        if not exist "%STOW_HOME%" mkdir "%STOW_HOME%"
 
-    set BASH_EXE=!WIN_UNIX_DIR!\usr\bin\bash.exe
-    set BASH="%BASH_EXE%" --noprofile --norc -c
+        set BASH_EXE=!WIN_UNIX_DIR!\usr\bin\bash.exe
+        set BASH="%BASH_EXE%" --noprofile --norc -c
 
-    if exist "!STOW_PERL!" goto:$PerlValidate
-        "C:\Windows\System32\WHERE.exe" /Q perl
-        if not "!ERRORLEVEL!"=="0" goto:$PerlValidate
-        call :GetCommandOutput "STOW_PERL" "C:\Windows\System32\WHERE.exe" perl
-    :$PerlValidate
+        set _where=C:\Windows\System32\WHERE.exe
 
-    call :GetCommandOutput "STOW_PERL_VERSION" %STOW_PERL% -e "print substr($^V, 1)"
-    if not "!ERRORLEVEL!"=="0" (
-        echo ERROR: Perl executable invalid or missing: '!STOW_PERL!'
-        goto:$InitializeEnvironment
-    )
+        if exist "!STOW_PERL!" goto:$PerlValidate
+            "%_where%" /Q perl
+            if not "!ERRORLEVEL!"=="0" goto:$PerlValidate
+            call :StoreCommandOutput "STOW_PERL" "%_where%" perl
+        :$PerlValidate
 
-    set STOW_PERL_LOCAL_LIB=!STOW_LOCAL_BUILD_ROOT!\perllib\windows\%STOW_PERL_VERSION%
-    if not exist "!STOW_LOCAL_BUILD_ROOT!\perllib" mkdir "!STOW_LOCAL_BUILD_ROOT!\perllib"
-    if not exist "!STOW_PERL_LOCAL_LIB!" mkdir "!STOW_PERL_LOCAL_LIB!"
-    set STOW_PERL_LOCAL_LIB_UNIX=!STOW_PERL_LOCAL_LIB:\=/!
+        call :StorePerlOutput "STOW_PERL_VERSION" -e "print substr($^^V, 1)"
+        if not "!ERRORLEVEL!"=="0" (
+            echo ERROR: Perl executable invalid or missing: '!STOW_PERL!'
+            goto:$InitializeEnvironment
+        )
 
-    set PERL5LIB=!STOW_PERL_LOCAL_LIB_UNIX!/lib
-    set PERL_LOCAL_LIB_ROOT=%STOW_PERL_LOCAL_LIB_UNIX%
-    set STOW_PERL_ARGS=-I "!STOW_PERL_LOCAL_LIB_UNIX!/lib/perl5"
+        set STOW_PERL_LOCAL_LIB=!STOW_LOCAL_BUILD_ROOT!\perllib\windows\%STOW_PERL_VERSION%
+        if not exist "!STOW_LOCAL_BUILD_ROOT!\perllib" mkdir "!STOW_LOCAL_BUILD_ROOT!\perllib"
+        if not exist "!STOW_PERL_LOCAL_LIB!" mkdir "!STOW_PERL_LOCAL_LIB!"
+        set STOW_PERL_LOCAL_LIB_UNIX=!STOW_PERL_LOCAL_LIB:\=/!
 
-    set STOW_PERL_INIT=!STOW_PERL_LOCAL_LIB!\init.bat
-    if exist "!STOW_PERL_INIT!" del "!STOW_PERL_INIT!"
-    "%STOW_PERL%" !STOW_PERL_ARGS! -Mlocal::lib -le 1 > nul 2>&1
-    if "!ERRORLEVEL!"=="0" (
-        set "STOW_PERL_ARGS=%STOW_PERL_ARGS% -Mlocal::lib^="!STOW_PERL_LOCAL_LIB_UNIX!""
-        "!STOW_PERL!" !STOW_PERL_ARGS! >"!STOW_PERL_INIT!"
-    )
+        set PERL5LIB=!STOW_PERL_LOCAL_LIB_UNIX!/lib
+        set PERL_LOCAL_LIB_ROOT=%STOW_PERL_LOCAL_LIB_UNIX%
+        set STOW_PERL_ARGS=-I "!STOW_PERL_LOCAL_LIB_UNIX!/lib/perl5"
 
-    call :GetDirectoryPath "PERL_BIN_DIR" "!STOW_PERL!"
-    call :GetDirectoryPath "STOW_PERL_ROOT" "!PERL_BIN_DIR!\..\..\DISTRIBUTIONS.txt"
+        set STOW_PERL_INIT=!STOW_PERL_LOCAL_LIB!\init.bat
+        if exist "!STOW_PERL_INIT!" del "!STOW_PERL_INIT!"
+        "!STOW_PERL!" !STOW_PERL_ARGS! -Mlocal::lib -le 1 > nul 2>&1
+        if "!ERRORLEVEL!"=="0" (
+            set "STOW_PERL_ARGS=%STOW_PERL_ARGS% -Mlocal::lib^="!STOW_PERL_LOCAL_LIB_UNIX!""
+            "!STOW_PERL!" !STOW_PERL_ARGS! >"!STOW_PERL_INIT!"
+        )
 
-    set PERL_SITE_BIN_DIR=!STOW_PERL_ROOT!\perl\site\bin
-    set PERL_BIN_C_DIR=!STOW_PERL_ROOT!\c\bin
+        call :GetDirectoryPath "PERL_BIN_DIR" "!STOW_PERL!"
+        call :GetDirectoryPath "STOW_PERL_ROOT" "!PERL_BIN_DIR!\..\..\DISTRIBUTIONS.txt"
 
-    if not exist "%BASH_EXE%" goto:$ValidatePerlShebang
-        call :GetCygPath "!STOW_PERL!" "STOW_PERL_UNIX"
-    if not "!STOW_PERL_UNIX!"=="" goto:$ValidatePerlShebang
-        call :GetCommandOutput "STOW_PERL_UNIX" %BASH% "command -v perl"
-    :$ValidatePerlShebang
-    if "!STOW_PERL_UNIX!"=="" set STOW_PERL_UNIX=/bin/perl
+        set PERL_SITE_BIN_DIR=!STOW_PERL_ROOT!\perl\site\bin
+        set PERL_BIN_C_DIR=!STOW_PERL_ROOT!\c\bin
 
-    echo ::group::Initialize CPAN
-    (
-        echo yes && echo. && echo no && echo exit
-    ) | "%STOW_PERL%" %STOW_PERL_ARGS% -MCPAN -e "shell"
-    echo ::endgroup::
+        call :ConvertToCygwinPath "!STOW_PERL!" "STOW_PERL_UNIX"
+        if "!STOW_PERL_UNIX!"=="" (
+            call :StoreCommandOutput "STOW_PERL_UNIX" %BASH% "command -v perl"4
+        )
+        if "!STOW_PERL_UNIX!"=="" set STOW_PERL_UNIX=/bin/perl
 
-    call :GetCygPath "!STOW_ROOT!" "STOW_ROOT_MSYS"
-    call :GetPerlCommandOutput "STOW_VERSION" "%STOW_ROOT%\tools\get-version"
-    call :RunTaskGroup "%STOW_PERL%" %STOW_PERL_ARGS% "%STOW_ROOT%\tools\initialize-cpan-config.pl"
-    call :GetPerlCommandOutput "PERL_LIB" -MCPAN -e "use Config; print $Config{privlib};"
-    if not exist "!PERL_LIB!" goto:$InitializeEnvironment
-    set "PERL_CPAN_CONFIG=%PERL_LIB%\CPAN\Config.pm"
+        echo ::group::Initialize CPAN
+        (
+            echo yes && echo. && echo no && echo exit
+        ) | "!STOW_PERL!" %STOW_PERL_ARGS% -MCPAN -e "shell"
+        echo ::endgroup::
 
-    :$InitializeEnvironment
+        call :ConvertToCygwinPath "!STOW_ROOT!" "STOW_ROOT_MSYS"
+        call :StorePerlOutput "STOW_VERSION" "%STOW_ROOT%\tools\get-version"
+        call :RunTaskGroup "!STOW_PERL!" %STOW_PERL_ARGS% "%STOW_ROOT%\tools\initialize-cpan-config.pl"
+
+        call :StorePerlOutput "PERL_LIB" -MCPAN -e "use Config; print $Config{privlib};"
+        if exist "!PERL_LIB!" (
+            set "PERL_CPAN_CONFIG=%PERL_LIB%\CPAN\Config.pm"
+        )
+
+        :$InitializeEnvironment
+            echo ------------------
+            echo Perl v%STOW_PERL_VERSION%
+            echo Perl: '!STOW_PERL!'
+            echo Perl Bin: '!PERL_BIN_DIR!'
+            echo Perl C Bin: '!PERL_BIN_C_DIR!'
+            echo Perl (MSYS): '!STOW_PERL_UNIX!'
+            echo Perl CPAN Config: '%PERL_CPAN_CONFIG%'
+            if exist "!STOW_PERL_INIT!" echo Perl Init: '!STOW_PERL_INIT!'
+            echo MSYS2: '!WIN_UNIX_DIR!'
+            echo MSYS2 (unixy): '!WIN_UNIX_DIR_UNIX!'
+            echo Stow Root (unixy): '!STOW_ROOT_MSYS!'
+            echo Stow v!STOW_VERSION!
+
+        if not exist "!WIN_UNIX_DIR!\post-install.bat" goto:$SkipPostInstall
+            cd /d "!WIN_UNIX_DIR!"
+            call :Run "!WIN_UNIX_DIR!\post-install.bat"
+            echo Executed post install script.
+
+        :$SkipPostInstall
         echo ------------------
-        echo Perl v%STOW_PERL_VERSION%
-        echo Perl: '!STOW_PERL!'
-        echo Perl Bin: '!PERL_BIN_DIR!'
-        echo Perl C Bin: '!PERL_BIN_C_DIR!'
-        echo Perl (MSYS): '!STOW_PERL_UNIX!'
-        echo Perl CPAN Config: '%PERL_CPAN_CONFIG%'
-        if exist "!STOW_PERL_INIT!" echo Perl Init: '!STOW_PERL_INIT!'
-        echo MSYS2: '!WIN_UNIX_DIR!'
-        echo MSYS2 (unixy): '!WIN_UNIX_DIR_UNIX!'
-        echo Stow Root (unixy): '!STOW_ROOT_MSYS!'
-        echo Stow v!STOW_VERSION!
 
-    if not exist "!WIN_UNIX_DIR!\post-install.bat" goto:$SkipPostInstall
-        cd /d "!WIN_UNIX_DIR!"
-        call :Run "!WIN_UNIX_DIR!\post-install.bat"
-        echo Executed post install script.
+        if exist "%STOW_PERL_INIT%" call "%STOW_PERL_INIT%"
 
-    :$SkipPostInstall
-    echo ------------------
-
-    if exist "%STOW_PERL_INIT%" call "%STOW_PERL_INIT%"
-
-    :: Convert to forward slash otherwise it fails on older versions of Perl e.g, 5.14
-    set PERL_MB_OPT=%PERL_MB_OPT:\=/%
-    set PERL_MM_OPT=%PERL_MM_OPT:\=/%
-    set PERL5LIB=%PERL5LIB:\=/%
-
+        :: Convert to forward slash otherwise it fails on older versions of Perl e.g, 5.14
+        set PERL_MB_OPT=%PERL_MB_OPT:\=/%
+        set PERL_MM_OPT=%PERL_MM_OPT:\=/%
+        set PERL5LIB=%PERL5LIB:\=/%
     endlocal & (
         set "PATH=%PATH%"
         set "PERL5LIB=%PERL5LIB%"
@@ -225,7 +227,7 @@ exit /b 0
     )
 exit /b
 
-:GetPerlCommandOutput
+:StorePerlOutput
     setlocal EnableDelayedExpansion
         set _output=
         set _output_variable=%~1
@@ -233,30 +235,32 @@ exit /b
 
         set "_args=%1"
         shift
-        :$GetArgs
-            if [%1]==[] goto:$ExecuteCommand
+        :$GetPerlArgs
+            if "%~1"=="" goto:$ExecutePerlCommand
             set "_args=%_args% %1"
             shift
-        goto:$GetArgs
-        :$ExecuteCommand
+        goto:$GetPerlArgs
+        :$ExecutePerlCommand
 
-        echo ##[cmd] %STOW_PERL% -I "!STOW_PERL_LOCAL_LIB_UNIX!/lib/perl5" -Mlocal::lib^="%STOW_PERL_LOCAL_LIB_UNIX%" %_args%
-        for /f "tokens=* usebackq" %%a in (`%STOW_PERL% -I "!STOW_PERL_LOCAL_LIB_UNIX!/lib/perl5" -Mlocal::lib^="%STOW_PERL_LOCAL_LIB_UNIX%" %_args%`) do (
+        set "_cmd=%STOW_PERL% -I "!STOW_PERL_LOCAL_LIB_UNIX!/lib/perl5" -Mlocal::lib^="%STOW_PERL_LOCAL_LIB_UNIX%""
+        echo ##[perl] !_cmd! %_args%
+        for /f "tokens=* usebackq" %%a in (`!_cmd! %_args%`) do (
             set "_output=%%a"
-            goto:$CommandDone
+            goto:$PerlCommandDone
         )
 
-        :$CommandDone
+        :$PerlCommandDone
     endlocal & (
         set "%_output_variable%=%_output%"
     )
 exit /b
 
-:GetCommandOutput
+:StoreCommandOutput
     setlocal EnableDelayedExpansion
         set _output_variable=%~1
         shift
 
+        set _args=
         set "_args=%1"
         shift
         :$GetArgs
@@ -278,7 +282,7 @@ exit /b
     )
 exit /b
 
-:GetCygPath
+:ConvertToCygwinPath
     setlocal EnableDelayedExpansion
         set _inPath=%~1
         set _outVar=%~2
