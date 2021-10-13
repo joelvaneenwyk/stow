@@ -48,6 +48,8 @@ exit /b
     del "%STOW_ROOT%\Build" > nul 2>&1
     del "%STOW_ROOT%\Build.bat" > nul 2>&1
     del "%STOW_ROOT%\config.*" > nul 2>&1
+    del "%STOW_ROOT%\*.bak" > nul 2>&1
+    del "%STOW_ROOT%\*.tmp" > nul 2>&1
     del "%STOW_ROOT%\configure" > nul 2>&1
     del "%STOW_ROOT%\configure~" > nul 2>&1
     del "%STOW_ROOT%\configure.lineno" > nul 2>&1

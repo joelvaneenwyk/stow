@@ -23,45 +23,6 @@ exit /b
 :: Local functions
 ::
 
-:Run %*=Command with arguments
-    if "%GITHUB_ACTIONS%"=="" (
-        echo ##[cmd] %*
-    ) else (
-        echo [command]%*
-    )
-    call %*
-endlocal & exit /b
-
-:RunTaskGroup
-    for /F "tokens=*" %%i in ('echo %*') do set _cmd=%%i
-    echo ::group::%_cmd%
-    echo [command]%_cmd%
-    %*
-    echo ::endgroup::
-exit /b
-
-:FindTool
-    setlocal EnableExtensions EnableDelayedExpansion
-        set _output_variable=%~1
-        set _file=%~2
-        set _output=!%_output_variable%!
-        set _where=C:\Windows\System32\WHERE.exe
-        if exist "!_output!" goto:$FindToolDone
-
-        "%_where%" /Q %_file%
-        if not "!ERRORLEVEL!"=="0" goto:$FindToolDone
-            for /f "tokens=* usebackq" %%a in (`"%_where%" %_file%`) do (
-                set _output=%%a
-                goto:$FindToolDone
-            )
-
-        :$FindToolDone
-        if not exist "!_output!" set _output=
-    endlocal & (
-        set "%_output_variable%=%_output%"
-    )
-exit /b
-
 :SetupStowEnvironment
     setlocal EnableExtensions EnableDelayedExpansion
 
@@ -72,25 +33,26 @@ exit /b
         goto:$EnvironmentSetupDone
 
         :$Setup
+        set PATH_ORIGINAL=%PATH%
         set STARTING_DIR=%CD%
-        set STOW_ROOT=%_root:~0,-1%
-        set STOW_ROOT_UNIX=!STOW_ROOT:\=/!
         set STOW_VERSION=0.0.0
+        set STOW_PERL_VERSION=0.0
+        set STOW_PERL_UNIX=
+        set PERL_SITE_BIN_DIR=
+        set PERL_BIN_C_DIR=
+
+        set STOW_ROOT=%_root:~0,-1%
+        call :ConvertToUnixyPath "STOW_ROOT_UNIX" "!STOW_ROOT!"
 
         set STOW_LOCAL_BUILD_ROOT=!STOW_ROOT!\.tmp
+        call :FindTool "WIN_UNIX_DIR" "msys2_shell" "!STOW_LOCAL_BUILD_ROOT!\msys64\msys2_shell.cmd"
+        call :GetDirectoryPath "WIN_UNIX_DIR" "!WIN_UNIX_DIR!"
+        call :ConvertToUnixyPath "WIN_UNIX_DIR_UNIX" "!WIN_UNIX_DIR!"
+        call :ConvertToCygwinPath "STOW_ROOT_MSYS" "!STOW_ROOT!"
         if not exist "!STOW_LOCAL_BUILD_ROOT!" mkdir "!STOW_LOCAL_BUILD_ROOT!"
-
-        set PATH_ORIGINAL=%PATH%
 
         set TMPDIR=%STOW_LOCAL_BUILD_ROOT%\temp
         if not exist "%TMPDIR%" mkdir "%TMPDIR%"
-
-        set WIN_UNIX_DIR=!STOW_LOCAL_BUILD_ROOT!\msys64\msys2_shell.cmd
-        call :FindTool "WIN_UNIX_DIR" "msys2_shell"
-        call :GetDirectoryPath "WIN_UNIX_DIR" "!WIN_UNIX_DIR!"
-
-        set WIN_UNIX_DIR_UNIX=
-        if exist "!WIN_UNIX_DIR!" set WIN_UNIX_DIR_UNIX=!WIN_UNIX_DIR:\=/!
 
         set TEX_DIR=%STOW_LOCAL_BUILD_ROOT%\texlive\bin\win32
         set TEX=%TEX_DIR%\tex.exe
@@ -102,27 +64,39 @@ exit /b
         set BASH="%BASH_EXE%" --noprofile --norc -c
 
         call :FindTool "STOW_PERL" "perl"
+        if not "!ERRORLEVEL!"=="0" (
+            set STOW_PERL=!STOW_LOCAL_BUILD_ROOT!\perl\perl\bin\perl.exe
+        )
+
+        if not exist "!STOW_PERL!" (
+            echo [ERROR] Perl executable not found.
+            set STOW_PERL=
+            goto:$InitializeEnvironment
+        )
+
         call :StorePerlOutput "STOW_PERL_VERSION" -e "print substr($^^V, 1)"
         if not "!ERRORLEVEL!"=="0" (
-            echo ERROR: Perl executable invalid or missing: '!STOW_PERL!'
+            echo [ERROR] Perl executable invalid: '!STOW_PERL!'
+            set STOW_PERL=
             goto:$InitializeEnvironment
         )
 
         set STOW_PERL_LOCAL_LIB=!STOW_LOCAL_BUILD_ROOT!\perllib\windows\%STOW_PERL_VERSION%
-        if not exist "!STOW_LOCAL_BUILD_ROOT!\perllib" mkdir "!STOW_LOCAL_BUILD_ROOT!\perllib"
-        if not exist "!STOW_PERL_LOCAL_LIB!" mkdir "!STOW_PERL_LOCAL_LIB!"
-        set STOW_PERL_LOCAL_LIB_UNIX=!STOW_PERL_LOCAL_LIB:\=/!
+        call :ConvertToUnixyPath "STOW_PERL_LOCAL_LIB_UNIX" "!STOW_PERL_LOCAL_LIB!"
+        if not exist "!STOW_LOCAL_BUILD_ROOT!" mkdir "!STOW_PERL_LOCAL_LIB!"
 
         set PERL5LIB=!STOW_PERL_LOCAL_LIB_UNIX!/lib
-        set PERL_LOCAL_LIB_ROOT=%STOW_PERL_LOCAL_LIB_UNIX%
+        set PERL_LOCAL_LIB_ROOT=!STOW_PERL_LOCAL_LIB_UNIX!
         set STOW_PERL_ARGS=-I "!STOW_PERL_LOCAL_LIB_UNIX!/lib/perl5"
 
         set STOW_PERL_INIT=!STOW_PERL_LOCAL_LIB!\init.bat
         if exist "!STOW_PERL_INIT!" del "!STOW_PERL_INIT!"
+
         "!STOW_PERL!" !STOW_PERL_ARGS! -Mlocal::lib -le 1 > nul 2>&1
         if "!ERRORLEVEL!"=="0" (
-            set "STOW_PERL_ARGS=%STOW_PERL_ARGS% -Mlocal::lib^="!STOW_PERL_LOCAL_LIB_UNIX!""
-            "!STOW_PERL!" !STOW_PERL_ARGS! >"!STOW_PERL_INIT!"
+            set "STOW_PERL_ARGS=!STOW_PERL_ARGS! -Mlocal::lib^="!STOW_PERL_LOCAL_LIB_UNIX!""
+            echo ##[cmd] "!STOW_PERL!" -Mlocal::lib="!STOW_PERL_LOCAL_LIB_UNIX!"
+            "!STOW_PERL!" -Mlocal::lib="!STOW_PERL_LOCAL_LIB_UNIX!" >"!STOW_PERL_INIT!"
         )
 
         call :GetDirectoryPath "PERL_BIN_DIR" "!STOW_PERL!"
@@ -131,7 +105,7 @@ exit /b
         set PERL_SITE_BIN_DIR=!STOW_PERL_ROOT!\perl\site\bin
         set PERL_BIN_C_DIR=!STOW_PERL_ROOT!\c\bin
 
-        call :ConvertToCygwinPath "!STOW_PERL!" "STOW_PERL_UNIX"
+        call :ConvertToCygwinPath "STOW_PERL_UNIX" "!STOW_PERL!"
         if "!STOW_PERL_UNIX!"=="" (
             call :StoreCommandOutput "STOW_PERL_UNIX" %BASH% "command -v perl"4
         )
@@ -143,9 +117,10 @@ exit /b
         ) | "!STOW_PERL!" %STOW_PERL_ARGS% -MCPAN -e "shell"
         echo ::endgroup::
 
-        call :ConvertToCygwinPath "!STOW_ROOT!" "STOW_ROOT_MSYS"
-        call :StorePerlOutput "STOW_VERSION" "%STOW_ROOT%\tools\get-version"
         call :RunTaskGroup "!STOW_PERL!" %STOW_PERL_ARGS% "%STOW_ROOT%\tools\initialize-cpan-config.pl"
+
+        :: Get current version of Stow using Perl helper utility
+        call :StorePerlOutput "STOW_VERSION" "%STOW_ROOT%\tools\get-version"
 
         call :StorePerlOutput "PERL_LIB" -MCPAN -e "use Config; print $Config{privlib};"
         if exist "!PERL_LIB!" (
@@ -154,17 +129,19 @@ exit /b
 
         :$InitializeEnvironment
             echo ------------------
-            echo Perl v%STOW_PERL_VERSION%
+            echo Stow Root: '!STOW_ROOT!'
+            echo Stow Root (unixy): '!STOW_ROOT_MSYS!'
+            echo Stow v!STOW_VERSION!
             echo Perl: '!STOW_PERL!'
+            echo Perl v!STOW_PERL_VERSION!
             echo Perl Bin: '!PERL_BIN_DIR!'
             echo Perl C Bin: '!PERL_BIN_C_DIR!'
             echo Perl (MSYS): '!STOW_PERL_UNIX!'
-            echo Perl CPAN Config: '%PERL_CPAN_CONFIG%'
+            echo Perl CPAN Config: '!PERL_CPAN_CONFIG!'
+            echo Perl Local Lib: '!STOW_PERL_LOCAL_LIB_UNIX!'
             if exist "!STOW_PERL_INIT!" echo Perl Init: '!STOW_PERL_INIT!'
             echo MSYS2: '!WIN_UNIX_DIR!'
             echo MSYS2 (unixy): '!WIN_UNIX_DIR_UNIX!'
-            echo Stow Root (unixy): '!STOW_ROOT_MSYS!'
-            echo Stow v!STOW_VERSION!
 
         if not exist "!WIN_UNIX_DIR!\post-install.bat" goto:$SkipPostInstall
             cd /d "!WIN_UNIX_DIR!"
@@ -216,7 +193,7 @@ exit /b
     )
 
     if not exist "%STOW_PERL%" (
-        echo [ERROR] Perl not found.
+        echo [ERROR] Initialization of Stow environment failed. Perl not found.
         exit /b 55
     )
 exit /b 0
@@ -254,13 +231,25 @@ exit /b
         :$ExecutePerlCommand
 
         set "_cmd=%STOW_PERL% -I "!STOW_PERL_LOCAL_LIB_UNIX!/lib/perl5" -Mlocal::lib^="%STOW_PERL_LOCAL_LIB_UNIX%""
-        echo ##[perl] !_cmd! %_args%
+
+        if "%GITHUB_ACTIONS%"=="" (
+            echo ^=^=----------------------
+            echo ## !_cmd! %_args%
+            echo ^=^=----------------------
+        ) else (
+            echo ::group::!_cmd! %_args%
+            echo [command]!_cmd! %_args%
+        )
+
         for /f "tokens=* usebackq" %%a in (`!_cmd! %_args%`) do (
             set "_output=%%a"
             goto:$PerlCommandDone
         )
 
         :$PerlCommandDone
+        if not "%GITHUB_ACTIONS%"=="" (
+            echo ::endgroup::
+        )
     endlocal & (
         set "%_output_variable%=%_output%"
     )
@@ -293,10 +282,21 @@ exit /b
     )
 exit /b
 
+:ConvertToUnixyPath
+    setlocal EnableDelayedExpansion
+        set _outVar=%~1
+        set _inPath=%~2
+        set _outPath=%_inPath%
+        if exist "!_outPath!" set _outPath=!_outPath:\=/!
+    endlocal & (
+        set "%_outVar%=%_outPath%"
+    )
+exit /b
+
 :ConvertToCygwinPath
     setlocal EnableDelayedExpansion
-        set _inPath=%~1
-        set _outVar=%~2
+        set _outVar=%~1
+        set _inPath=%~2
         set _outPath=
         set _cygpath="%WIN_UNIX_DIR%\usr\bin\cygpath.exe"
         if not exist "%_cygpath%" goto:$Done
@@ -306,5 +306,56 @@ exit /b
         :$Done
     endlocal & (
         set "%_outVar%=%_outPath%"
+    )
+exit /b
+
+:Run %*=Command with arguments
+    if "%GITHUB_ACTIONS%"=="" (
+        echo ##[cmd] %*
+    ) else (
+        echo [command]%*
+    )
+    call %*
+endlocal & exit /b
+
+:RunTaskGroup
+    for /F "tokens=*" %%i in ('echo %*') do set _cmd=%%i
+    if "%GITHUB_ACTIONS%"=="" (
+        echo ^=^=----------------------
+        echo ## !_cmd!
+        echo ^=^=----------------------
+    ) else (
+        echo ::group::!_cmd!
+        echo [command]!_cmd!
+    )
+
+    %*
+
+    if not "%GITHUB_ACTIONS%"=="" (
+        echo ::endgroup::
+    )
+exit /b
+
+:FindTool
+    setlocal EnableExtensions EnableDelayedExpansion
+        set _output_variable=%~1
+        set _file=%~2
+
+        set _output=
+        if "!_output!"=="" set _output=%~3
+        if exist "!_output!" goto:$FindToolDone
+
+        set _where=C:\Windows\System32\WHERE.exe
+        "%_where%" /Q %_file%
+        if not "!ERRORLEVEL!"=="0" goto:$FindToolDone
+            for /f "tokens=* usebackq" %%a in (`"%_where%" %_file%`) do (
+                set _output=%%a
+                goto:$FindToolDone
+            )
+
+        :$FindToolDone
+        if not exist "!_output!" exit /b 1
+    endlocal & (
+        set "%_output_variable%=%_output%"
     )
 exit /b
