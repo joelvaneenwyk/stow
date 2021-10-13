@@ -83,7 +83,7 @@ exit /b
 
         set STOW_PERL_LOCAL_LIB=!STOW_LOCAL_BUILD_ROOT!\perllib\windows\%STOW_PERL_VERSION%
         call :ConvertToUnixyPath "STOW_PERL_LOCAL_LIB_UNIX" "!STOW_PERL_LOCAL_LIB!"
-        if not exist "!STOW_LOCAL_BUILD_ROOT!" mkdir "!STOW_PERL_LOCAL_LIB!"
+        if not exist "!STOW_PERL_LOCAL_LIB!" mkdir "!STOW_PERL_LOCAL_LIB!"
 
         set PERL5LIB=!STOW_PERL_LOCAL_LIB_UNIX!/lib
         set PERL_LOCAL_LIB_ROOT=!STOW_PERL_LOCAL_LIB_UNIX!
@@ -93,11 +93,11 @@ exit /b
         if exist "!STOW_PERL_INIT!" del "!STOW_PERL_INIT!"
 
         "!STOW_PERL!" !STOW_PERL_ARGS! -Mlocal::lib -le 1 > nul 2>&1
-        if "!ERRORLEVEL!"=="0" (
+        if not "!ERRORLEVEL!"=="0" goto:$PerlLocalLibInitialized
             set "STOW_PERL_ARGS=!STOW_PERL_ARGS! -Mlocal::lib^="!STOW_PERL_LOCAL_LIB_UNIX!""
             echo ##[cmd] "!STOW_PERL!" -Mlocal::lib="!STOW_PERL_LOCAL_LIB_UNIX!"
             "!STOW_PERL!" -Mlocal::lib="!STOW_PERL_LOCAL_LIB_UNIX!" >"!STOW_PERL_INIT!"
-        )
+        :$PerlLocalLibInitialized
 
         call :GetDirectoryPath "PERL_BIN_DIR" "!STOW_PERL!"
         call :GetDirectoryPath "STOW_PERL_ROOT" "!PERL_BIN_DIR!\..\..\DISTRIBUTIONS.txt"
@@ -106,9 +106,10 @@ exit /b
         set PERL_BIN_C_DIR=!STOW_PERL_ROOT!\c\bin
 
         call :ConvertToCygwinPath "STOW_PERL_UNIX" "!STOW_PERL!"
-        if "!STOW_PERL_UNIX!"=="" (
-            call :StoreCommandOutput "STOW_PERL_UNIX" %BASH% "command -v perl"4
-        )
+            if not exist "!BASH_EXE!" goto:$StowPerlUnixPathSet
+            if not "!STOW_PERL_UNIX!"=="" goto:$StowPerlUnixPathSet
+            call :StoreCommandOutput "STOW_PERL_UNIX" !BASH! "command -v perl"4
+        :$StowPerlUnixPathSet
         if "!STOW_PERL_UNIX!"=="" set STOW_PERL_UNIX=/bin/perl
 
         echo ::group::Initialize CPAN
