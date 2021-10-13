@@ -24,15 +24,6 @@ exit /b
 :: Local functions
 ::
 
-:Run %*=Command with arguments
-    if "%GITHUB_ACTIONS%"=="" (
-        echo ##[cmd] %*
-    ) else (
-        echo [command]%*
-    )
-    call %*
-endlocal & exit /b
-
 :MakeStow
     setlocal EnableExtensions EnableDelayedExpansion
 
@@ -154,15 +145,15 @@ endlocal & exit /b
         set TEXINPUTS="%STOW_ROOT%\doc;%STOW_ROOT%;%TEXINPUTS%"
         call :Run "%TEX_DIR%\pdfetex.exe" -output-directory="%STOW_ROOT%\doc" "%STOW_ROOT%\doc\stow.texi"
         move "%STOW_ROOT%\doc\stow.pdf" "%STOW_ROOT%\doc\manual.pdf"
-        del "%STOW_ROOT%\doc\stow.aux" > nul 2>&1
-        del "%STOW_ROOT%\doc\stow.cp" > nul 2>&1
-        del "%STOW_ROOT%\doc\stow.toc" > nul 2>&1
-        del "%STOW_ROOT%\doc\stow.log" > nul 2>&1
     )
+    del "%STOW_ROOT%\doc\stow.aux" > nul 2>&1
+    del "%STOW_ROOT%\doc\stow.cp" > nul 2>&1
+    del "%STOW_ROOT%\doc\stow.toc" > nul 2>&1
+    del "%STOW_ROOT%\doc\stow.log" > nul 2>&1
 
     if exist "%STOW_GIT%" (
         "%STOW_GIT%" log --format="format:%%ad  %%aN <%%aE>%%n%%n    * %%w(70,0,4)%%s%%+b%%n" --name-status v2.0.2..HEAD >"%STOW_ROOT%\ChangeLog"
-        type "%STOW_ROOT%\ChangeLog.OLD" >>"%STOW_ROOT%\ChangeLog"
+        type "%STOW_ROOT%\doc\ChangeLog.OLD" >>"%STOW_ROOT%\ChangeLog"
     )
 
     if not exist "%WIN_UNIX_DIR%\usr\bin\bash.exe" (
@@ -170,8 +161,6 @@ endlocal & exit /b
         echo ----------------------------------------
         exit /b 5
     )
-
-    call :CreateStowInfo "%~dp0..\"
 
     set "MSYSTEM=MSYS"
     set "MSYS2_PATH_TYPE=inherit"
@@ -186,8 +175,22 @@ endlocal & exit /b
     set BASH="%BASH_EXE%" -c
 
     cd /d "%STOW_ROOT%"
+
     call :Run %BASH% "source ./tools/stow-environment.sh && install_system_dependencies"
     if not "!ERRORLEVEL!"=="0" exit /b
+
+    set PERL_INCLUDE=-I %WIN_UNIX_DIR_UNIX%/usr/share/automake-1.16
+    set PERL_INCLUDE=!PERL_INCLUDE! -I %WIN_UNIX_DIR_UNIX%/usr/share/autoconf
+    set PERL_INCLUDE=!PERL_INCLUDE! -I %WIN_UNIX_DIR_UNIX%/usr/share/texinfo
+    set PERL_INCLUDE=!PERL_INCLUDE! -I %WIN_UNIX_DIR_UNIX%/usr/share/texinfo/lib/libintl-perl/lib
+    set PERL_INCLUDE=!PERL_INCLUDE! -I %WIN_UNIX_DIR_UNIX%/usr/share/texinfo/lib/Text-Unidecode/lib
+    set PERL_INCLUDE=!PERL_INCLUDE! -I %WIN_UNIX_DIR_UNIX%/usr/share/texinfo/lib/Unicode-EastAsianWidth/lib
+
+    :: Use 'stow.texi' to generate 'stow.info'
+    if exist "%WIN_UNIX_DIR%\usr\bin\texi2any" (
+        call :Run "%WIN_UNIX_DIR%\usr\bin\perl" %PERL_INCLUDE% "%WIN_UNIX_DIR%\usr\bin\texi2any" -I doc\ -o doc\ doc\stow.texi
+        echo Generated 'doc\stow.info'
+    )
 
     call :Run %BASH% "autoreconf --install --verbose"
     if not "!ERRORLEVEL!"=="0" exit /b
@@ -244,18 +247,13 @@ exit /b
     echo @set VERSION %STOW_VERSION% >>"%STOW_VERSION_TEXI%"
 exit /b 0
 
-:CreateStowInfo
-    setlocal EnableExtensions EnableDelayedExpansion
-
-    set PERL_INCLUDE=-I %WIN_UNIX_DIR_UNIX%/usr/share/automake-1.16
-    set PERL_INCLUDE=!PERL_INCLUDE! -I %WIN_UNIX_DIR_UNIX%/usr/share/autoconf
-    set PERL_INCLUDE=!PERL_INCLUDE! -I %WIN_UNIX_DIR_UNIX%/usr/share/texinfo
-    set PERL_INCLUDE=!PERL_INCLUDE! -I %WIN_UNIX_DIR_UNIX%/usr/share/texinfo/lib/libintl-perl/lib
-    set PERL_INCLUDE=!PERL_INCLUDE! -I %WIN_UNIX_DIR_UNIX%/usr/share/texinfo/lib/Text-Unidecode/lib
-    set PERL_INCLUDE=!PERL_INCLUDE! -I %WIN_UNIX_DIR_UNIX%/usr/share/texinfo/lib/Unicode-EastAsianWidth/lib
-
-    :: Use 'stow.texi' to generate 'stow.info'
-    cd /d "%STOW_ROOT%"
-    call :Run "%WIN_UNIX_DIR%\usr\bin\perl" %PERL_INCLUDE% "%WIN_UNIX_DIR%\usr\bin\texi2any" -I doc\ -o doc\ doc\stow.texi
-    echo Generated 'doc\stow.info'
-exit /b
+:Run %*=Command with arguments
+    if "%GITHUB_ACTIONS%"=="" (
+        echo ^=^=----------------------
+        echo ##[cmd] %*
+        echo ^=^=----------------------
+    ) else (
+        echo [command]%*
+    )
+    call %*
+endlocal & exit /b

@@ -168,6 +168,9 @@ function test_perl_version() {
             else
                 echo "✔ Generated test results: '$_test_result_output_path'"
 
+                # Reset to default Perl install
+                unset PERL5LIB PERL_MB_OPT PERL_MM_OPT PERL_LOCAL_LIB_ROOT
+
                 # Remove the local library path
                 _local_bin="$STOW_PERL_LOCAL_LIB/bin"
                 PATH=:$PATH:
@@ -176,10 +179,12 @@ function test_perl_version() {
                 PATH=${PATH%:}
                 export PATH
 
-                unset PERL5LIB PERL_MB_OPT PERL_MM_OPT PERL_LOCAL_LIB_ROOT
+                export PERL="$STOW_PERL"
+
                 run_command_group make cpanm
 
-                run_command_group "$STOW_PERL" "${_perl[@]}" Build.PL
+                rm -f "$STOW_ROOT/Build" "$STOW_ROOT/Build.bat" >/dev/null 2>&1
+                run_command_group "$PERL" "${_perl[@]}" Build.PL
                 run_command_group ./Build build
                 run_command_group ./Build distcheck
 
