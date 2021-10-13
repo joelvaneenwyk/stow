@@ -155,7 +155,7 @@ exit /b
         :$EnvironmentSetupDone
         if exist "%STOW_PERL_INIT%" call "%STOW_PERL_INIT%"
 
-        set "PATH=!STOW_PERL_LOCAL_LIB!\bin;!PERL_BIN_C_DIR!;!PERL_BIN_DIR!;%PATH%"
+        set "PATH=%SystemRoot%\System32;!STOW_PERL_LOCAL_LIB!\bin;!PERL_BIN_C_DIR!;!PERL_BIN_DIR!;%PATH%"
 
         :: Convert to forward slash otherwise it fails on older versions of Perl e.g, 5.14
         set PERL_MB_OPT=%PERL_MB_OPT:\=/%
@@ -348,7 +348,7 @@ exit /b
         if "!_output!"=="" set _output=%~3
         if exist "!_output!" goto:$FindToolDone
 
-        set _where=C:\Windows\System32\WHERE.exe
+        set _where=%SystemRoot%\System32\WHERE.exe
         "%_where%" /Q %_file%
         if not "!ERRORLEVEL!"=="0" goto:$FindToolDone
             for /f "tokens=* usebackq" %%a in (`"%_where%" %_file%`) do (

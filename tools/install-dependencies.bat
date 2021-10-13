@@ -18,8 +18,8 @@
 
 setlocal EnableExtensions EnableDelayedExpansion
 
-call :RunCommand "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -Command "Set-ExecutionPolicy RemoteSigned -scope CurrentUser;"
-call :RunCommand "C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -File "%~dp0install-dependencies.ps1"
+call :RunCommand "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -Command "Set-ExecutionPolicy RemoteSigned -scope CurrentUser;"
+call :RunCommand "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -File "%~dp0install-dependencies.ps1"
 
 call :InstallPerlDependencies "%~dp0..\"
 

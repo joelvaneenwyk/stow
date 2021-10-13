@@ -324,21 +324,21 @@ tlpdbopt_w32_multi_user 0
 
         # Update PATH environment as we need to make sure 'cmd.exe' is available since the TeX Live manager
         # expected it to work.
-        $env:Path = "C:\Windows\System32\;$env:TEXLIVE_BIN;$env:Path"
+        $env:Path = "$ENV:SystemRoot\System32\;$env:TEXLIVE_BIN;$env:Path"
 
         $texExecutable = Join-Path -Path "$env:TEXLIVE_BIN" -ChildPath "tex.exe"
         If (Test-Path "$texExecutable" -PathType Leaf) {
             Write-Host "Skipped install. TeX already exists: '$texExecutable'"
         }
         elseif ($IsWindows -or $ENV:OS) {
-            & "C:\Windows\System32\cmd.exe" /d /c "$env:TEXLIVE_INSTALL" -no-gui -portable -profile "$texLiveProfile"
+            & "$ENV:SystemRoot\System32\cmd.exe" /d /c "$env:TEXLIVE_INSTALL" -no-gui -portable -profile "$texLiveProfile"
         }
         else {
             Write-Host "TeX Live install process only supported on Windows."
         }
 
         if ($IsWindows -or $ENV:OS) {
-            & "C:\Windows\System32\cmd.exe" /d /c "call $env:TEXLIVE_BIN/tlmgr.bat update -all"
+            & "$ENV:SystemRoot\System32\cmd.exe" /d /c "call $env:TEXLIVE_BIN/tlmgr.bat update -all"
         }
     }
     catch [Exception] {
@@ -406,7 +406,7 @@ echo '[stow] Post-install complete.'
             $msys2_shell = "$script:MsysTargetDir/msys2_shell.cmd"
             $msys2_shell += " -mingw64 -defterm -no-start -where $script:StowRoot -shell bash"
             $msys2_shell += " -c ./tools/install-dependencies.sh"
-            & "C:\Windows\System32\cmd.exe" /d /s /c "$msys2_shell"
+            & "$ENV:SystemRoot\System32\cmd.exe" /d /s /c "$msys2_shell"
             Write-Host "::endgroup::"
 
             Write-Host "::group::Upgrade MSYS2 Packages"

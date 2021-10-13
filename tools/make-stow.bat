@@ -16,7 +16,7 @@
 :: along with this program. If not, see https://www.gnu.org/licenses/.
 ::
 
-call :MakeStow "%~dp0..\"
+call :MakeStow "%~dp0..\" %*
 
 exit /b
 
@@ -36,29 +36,32 @@ endlocal & exit /b
 :MakeStow
     setlocal EnableExtensions EnableDelayedExpansion
 
-    set _root=%~dp17
-    set _stow_root=%_root:~0,-1%
-    call "%_stow_root%\tools\stow-environment.bat"
-    if not "!ERRORLEVEL!"=="0" exit /b
+    set _root=%~dp1
+    call "%_root:~0,-1%\tools\stow-environment.bat" %2 %3 %4 %5 %6 %7 %8 %9
+    if not "!ERRORLEVEL!"=="0" (
+        echo [ERROR] Environment setup failed.
+        exit /b !ERRORLEVEL!
+    )
 
     set USE_LIB_PMDIR=
     set PMDIR=%STOW_ROOT%\lib
     set PMDIR=%PMDIR:\=/%
 
-    set _inc=0
-    for /f "tokens=*" %%a in ('%STOW_PERL% -V') do (
-        if "!_inc!"=="1" (
-            echo %%a | findstr /C:"%PMDIR%" > nul 2>&1
-
-            if not errorlevel 1 (
-                set PERL5LIB=%%a
+    set _found=X
+    echo !STOW_PERL! !PMDIR!
+    for /f "tokens=* usebackq" %%a in (`!STOW_PERL! -V`) do (
+        set "_include=%%a"
+        if exist "%%a" (
+            echo "!_include!" | "%SystemRoot%\System32\find.exe" /I "!PMDIR!" >nul
+            if "!ERRORLEVEL!"=="!_found!" (
+                set _found=X
+                set "PERL5LIB=!_include!"
                 echo Target folder '!PMDIR!' is part of built-in @INC, so everything
                 echo should work fine with no extra include statements.
-                goto:$PerlModuleCheckDone
             )
         )
-        if "%%a"=="@INC:" (
-            set _inc=1
+        if [!_include!]==[@INC:] (
+            set _found=0
         )
     )
     :$PerlModuleCheckDone
@@ -190,7 +193,7 @@ exit /b
     setlocal EnableExtensions EnableDelayedExpansion
 
     for /F "skip=1 delims=" %%F in ('
-        wmic PATH Win32_LocalTime GET Day^,Month^,Year /FORMAT:TABLE
+        "%SystemRoot%\System32\wbem\wmic.exe" PATH Win32_LocalTime GET Day^,Month^,Year /FORMAT:TABLE
     ') do (
         for /F "tokens=1-3" %%L in ("%%F") do (
             set CurrentDay=0%%L

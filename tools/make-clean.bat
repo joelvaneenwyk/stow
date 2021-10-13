@@ -27,12 +27,12 @@ exit /b
 
     :: Shut down 'gpg-agent' otherwise some files can't be deleted from 'msys64' folder
     if exist "%WIN_UNIX_DIR%\usr\bin\gpg-agent.exe" (
-        wmic process where ExecutablePath='%WIN_UNIX_DIR%\usr\bin\gpg-agent.exe' delete > nul 2>&1
+        "%SystemRoot%\System32\wbem\wmic.exe" process where ExecutablePath='%WIN_UNIX_DIR%\usr\bin\gpg-agent.exe' delete > nul 2>&1
     )
 
     :: Shut down 'dirmngr' otherwise some files can't be deleted from 'msys64' folder
     if exist "%WIN_UNIX_DIR%\usr\bin\dirmngr.exe" (
-        wmic process where ExecutablePath='%WIN_UNIX_DIR%\usr\bin\dirmngr.exe' delete > nul 2>&1
+        "%SystemRoot%\System32\wbem\wmic.exe" process where ExecutablePath='%WIN_UNIX_DIR%\usr\bin\dirmngr.exe' delete > nul 2>&1
     )
 
     del "%PERL_CPAN_CONFIG%" > nul 2>&1
@@ -60,7 +60,6 @@ exit /b
     del "%STOW_ROOT%\ChangeLog" > nul 2>&1
     del "%STOW_ROOT%\stow-*.tar.bz2" > nul 2>&1
     del "%STOW_ROOT%\stow-*.tar.gz" > nul 2>&1
-    del "%STOW_ROOT%\test_results*.xml" > nul 2>&1
     del "%STOW_ROOT%\bin\chkstow" > nul 2>&1
     del "%STOW_ROOT%\bin\stow" > nul 2>&1
     del "%STOW_ROOT%\lib\Stow\Util.pm" > nul 2>&1
