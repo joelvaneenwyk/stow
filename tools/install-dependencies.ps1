@@ -524,7 +524,7 @@ Function Install-Toolset {
     # that we always have a version to use.
     try {
         if (-Not (Test-Path -Path "$script:StowTempDir/perl/portableshell.bat" -PathType Leaf)) {
-            $strawberryPerlVersion = "5.14.4.1"
+            $strawberryPerlVersion = "5.12.3.0"
             $strawberyPerlUrl = "https://strawberryperl.com/download/$strawberryPerlVersion/strawberry-perl-$strawberryPerlVersion-64bit-portable.zip"
             Get-File -Url "$strawberyPerlUrl" -Filename "$script:StowArchivesDir/strawberry-perl-$strawberryPerlVersion-64bit-portable.zip"
             Expand-File -Path "$script:StowArchivesDir/strawberry-perl-$strawberryPerlVersion-64bit-portable.zip" -DestinationPath "$script:StowTempDir/perl"

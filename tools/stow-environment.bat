@@ -345,9 +345,6 @@ exit /b
         set _file=%~2
 
         set _output=
-        if "!_output!"=="" set _output=%~3
-        if exist "!_output!" goto:$FindToolDone
-
         set _where=%SystemRoot%\System32\WHERE.exe
         "%_where%" /Q %_file%
         if not "!ERRORLEVEL!"=="0" goto:$FindToolDone
@@ -357,6 +354,7 @@ exit /b
             )
 
         :$FindToolDone
+        if not exist "!_output!" set _output=%~3
         if not exist "!_output!" set _output=
     endlocal & (
         set "%_output_variable%=%_output%"
