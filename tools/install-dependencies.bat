@@ -49,11 +49,10 @@ exit /b
         "YAML" "ExtUtils::Config" ^
         "LWP::Protocol::https" "IO::Socket::SSL" "Net::SSLeay" ^
         "Carp" "Module::Build" "Module::Build::Tiny" "IO::Scalar" ^
-        "Devel::Cover" "Devel::Cover::Report::Coveralls" ^
         "Test::Harness" "Test::Output" "Test::More" "Test::Exception" ^
         "ExtUtils::PL2Bat" "Inline::C" "Win32::Mutex" ^
+        "Devel::Cover" "Devel::Cover::Report::Coveralls" ^
         "TAP::Formatter::JUnit"
-
     if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
 
     :$InstallDone
@@ -76,8 +75,8 @@ exit /b
 :InstallPerlModules
     cd /d "!STOW_ROOT!"
 
-    set _cmd_base="%STOW_PERL%" -I "%STOW_PERL_LOCAL_LIB_UNIX%/lib/perl5"
     set _cmd_return=0
+    set _cmd_base="%STOW_PERL%" -I "%STOW_PERL_LOCAL_LIB_UNIX%/lib/perl5"
 
     :: Since we call CPAN manually it is not always set, but there are some libraries
     :: like IO::Socket::SSL use this to determine whether or not to prompt for next
@@ -121,7 +120,7 @@ exit /b
             ) else (
                 set _cmd=!_cmd! "%PERL_BIN_DIR%\cpanm"
             )
-            set _cmd=!_cmd! --verbose --skip-installed --skip-satisfied --local-lib "%STOW_PERL_LOCAL_LIB_UNIX%" --notest
+            set _cmd=!_cmd! --skip-installed --skip-satisfied --local-lib "%STOW_PERL_LOCAL_LIB_UNIX%" --notest
             set _cmd=!_cmd! !_modules!
             goto:$RunCommand
 

@@ -40,9 +40,6 @@ endlocal & exit /b
 
     call :RunProve
     if not "!ERRORLEVEL!"=="0" exit /b
-
-    call :RunCover
-    if not "!ERRORLEVEL!"=="0" exit /b
 endlocal & exit /b 0
 
 :RunProve
@@ -55,31 +52,6 @@ endlocal & exit /b 0
         echo STOW_CPAN_LOGS=%USER_PROFILE%\.cpan*\work\**\*.log >>"%GITHUB_ENV%"
 
     :$SkipGitHubActionSetup
-    set _cmd="%STOW_PERL%" %STOW_PERL_ARGS% -MApp::Prove
-    set _cmd=!_cmd! -le "my $c = App::Prove->new; $c->process_args(@ARGV); $c->run" --
-    set _cmd=!_cmd! -I "%STOW_ROOT_UNIX%/t/"
-    set _cmd=!_cmd! -I "%STOW_ROOT_UNIX%/bin/"
-    set _cmd=!_cmd! -I "%STOW_ROOT_UNIX%/lib/"
-    set _cmd=!_cmd! --norc --verbose --timer --normalize --formatter "TAP::Formatter::JUnit"
-    set _cmd=!_cmd! "%STOW_ROOT_UNIX%/t/"
-
-    if "%GITHUB_ACTIONS%"=="" (
-        echo ##[cmd] !_cmd!
-    ) else (
-        echo [command]!_cmd!
-    )
-    cd /d "%STOW_ROOT%"
-    call !_cmd! >"%_result_filename%"
-    echo Test results: '%_result_filename%'
-    if not "!ERRORLEVEL!"=="0" (
-        echo Tests failed with error code: '!ERRORLEVEL!'
-        endlocal & exit /b !ERRORLEVEL!
-    )
-endlocal & exit /b
-
-:RunCover
-    setlocal EnableExtensions EnableDelayedExpansion
-
     del "%STOW_ROOT%\Build" > nul 2>&1
     del "%STOW_ROOT%\Build.bat" > nul 2>&1
     del "%STOW_ROOT%\config.*" > nul 2>&1
@@ -92,20 +64,69 @@ endlocal & exit /b
     rmdir /q /s "%STOW_ROOT%\cover_db\" > nul 2>&1
     mkdir "%STOW_ROOT%\cover_db\"
 
+    set _cmd="%STOW_PERL%" %STOW_PERL_ARGS% -MApp::Prove
+    set _cmd=!_cmd! -le "my $c = App::Prove->new; $c->process_args(@ARGV); $c->run" --
+    set _cmd=!_cmd! -I "%STOW_ROOT_UNIX%/t/"
+    set _cmd=!_cmd! -I "%STOW_ROOT_UNIX%/bin/"
+    set _cmd=!_cmd! -I "%STOW_ROOT_UNIX%/lib/"
+    set _cmd=!_cmd! --norc --verbose --timer --normalize --formatter "TAP::Formatter::JUnit"
+    set _cmd=!_cmd! "%STOW_ROOT_UNIX%/t/"
+    if "%GITHUB_ACTIONS%"=="" (
+        echo ##[cmd] !_cmd!
+    ) else (
+        echo [command]!_cmd!
+    )
+    cd /d "%STOW_ROOT%"
+    call !_cmd! >"%_result_filename%"
+    echo Test results: '%_result_filename%'
+    if not "!ERRORLEVEL!"=="0" (
+        echo Tests failed with error code: '!ERRORLEVEL!'
+        endlocal & exit /b !ERRORLEVEL!
+    )
+
+    call :RunCover
+endlocal & exit /b
+
+:RunCover
+    setlocal EnableExtensions EnableDelayedExpansion
+
     set _cover=%STOW_PERL_LOCAL_LIB%\bin\cover
     if not exist "!_cover!" set _cover=%PERL_SITE_BIN_DIR%\cover
     if not exist "!_cover!" (
-        echo WARNING: Cover tool not found: '!_cover!'
+        echo [WARNING] Cover tool not found: '!_cover!'
         endlocal & exit /b 44
     )
 
-    set _cmd="%STOW_PERL%" %STOW_PERL_ARGS%
-    set _cmd=!_cmd! "!_cover!" -test
-    if not "%GITHUB_ENV%"=="" set _cmd=!_cmd! -report coveralls
+    set PERL5OPT=
+    set PERL_LOCAL_LIB_ROOT=
+    set PERL_MB_OPT=
+    set PERL_MM_OPT=
+    set PERL5LIB=
+    set HARNESS_PERL_SWITCHES=%STOW_PERL_ARGS% -I "%STOW_PERL_LOCAL_LIB_UNIX%/lib/perl5" -I "%STOW_ROOT_UNIX%/t/" -I "%STOW_ROOT_UNIX%/lib/" -I "%STOW_ROOT_UNIX%/bin/" -MDevel::Cover
 
+    cd /d "%STOW_ROOT%"
+    set _cmd="%STOW_PERL%" -I "%STOW_PERL_LOCAL_LIB_UNIX%/lib/perl5" -MApp::Prove
+    set _cmd=!_cmd! -le "my $c = App::Prove->new; $c->process_args(@ARGV); $c->run;" --
+    set _cmd=!_cmd! --lib -I "%STOW_ROOT_UNIX%/t/" -I "%STOW_ROOT_UNIX%/lib/" -I "%STOW_ROOT_UNIX%/bin/"
+    set _cmd=!_cmd! --norc --timer --normalize
+    set _cmd=!_cmd! "%STOW_ROOT_UNIX%/t/"
     call :Run !_cmd!
     if not "!ERRORLEVEL!"=="0" (
-        echo Cover failed with error code: '!ERRORLEVEL!'
+        echo [ERROR] Cover failed with error code: '!ERRORLEVEL!'
+        endlocal & exit /b !ERRORLEVEL!
+    )
+
+    cd /d "%STOW_ROOT%"
+    set _cmd="%STOW_PERL%" %STOW_PERL_ARGS%
+    set _cmd=!_cmd! "!_cover!"
+    if "%GITHUB_ENV%"=="" (
+        set _cmd=!_cmd! -report html
+    ) else (
+        set _cmd=!_cmd! -report coveralls
+    )
+    call :Run !_cmd!
+    if not "!ERRORLEVEL!"=="0" (
+        echo [ERROR] Cover report generation failed with error code: '!ERRORLEVEL!'
         endlocal & exit /b !ERRORLEVEL!
     )
 endlocal & exit /b
