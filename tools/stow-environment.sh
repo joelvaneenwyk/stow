@@ -669,8 +669,8 @@ function update_stow_environment() {
     if [ -z "$STOW_PERL" ] || ! _perl_version=$("$STOW_PERL" -e "print substr($^V, 1)"); then
         echo "Failed to find Perl install."
     else
-        STOW_PERL_HASH=$(shasum -a 512 --tag "$STOW_PERL" | awk -F= '{print $2}' | awk '{ gsub(/ /,""); print }' | head -c 8)
-        export SToW_PERL_HASH
+        STOW_PERL_HASH=$(shasum -a 512 "$STOW_PERL" | awk '{split($0,a," "); print a[1]}' | head -c 8)
+        export STOW_PERL_HASH
 
         STOW_PERL_LOCAL_LIB="${STOW_LOCAL_BUILD_ROOT}/perllib/${os_name}/${_perl_version}.${STOW_PERL_HASH}"
         mkdir -p "$STOW_PERL_LOCAL_LIB"
@@ -718,15 +718,12 @@ function update_stow_environment() {
 
         while [ ! "$_perl_bin" == "/" ] && [ -d "$_perl_bin/../" ]; do
             _perl_bin=$(cd "$_perl_bin" && cd .. && pwd)
-            if [ ! "$_perl_bin" == "/" ] && [ -d "$_perl_bin/c/bin" ]; then
+            if [ -f "$_perl_bin/c/bin/ld.exe" ]; then
                 export PERL_C_BIN="$_perl_bin/c/bin"
                 break
             fi
         done
     fi
-
-    PERL="$STOW_PERL"
-    export PERL
 
     if [ ! -f "${PERL_C_BIN:-}" ]; then
         if [ -x "$(command -v gcc)" ]; then
@@ -736,6 +733,9 @@ function update_stow_environment() {
         fi
     fi
     export PERL_C_BIN
+
+    PERL="$STOW_PERL"
+    export PERL
 
     TEX_DIR=""
     if [ -f "$TEX" ]; then

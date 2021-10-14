@@ -22,7 +22,6 @@ call :RunCommand "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -
 call :RunCommand "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -File "%~dp0install-dependencies.ps1"
 
 call :InstallPerlDependencies "%~dp0..\"
-
 exit /b
 
 :InstallPerlDependencies
@@ -53,8 +52,6 @@ exit /b
         "ExtUtils::PL2Bat" "Inline::C" "Win32::Mutex" ^
         "Devel::Cover" "Devel::Cover::Report::Coveralls" ^
         "TAP::Formatter::JUnit"
-    if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
-
     :$InstallDone
 exit /b
 
@@ -120,7 +117,7 @@ exit /b
             ) else (
                 set _cmd=!_cmd! "%PERL_BIN_DIR%\cpanm"
             )
-            set _cmd=!_cmd! --skip-installed --skip-satisfied --local-lib "%STOW_PERL_LOCAL_LIB_UNIX%" --notest
+            set _cmd=!_cmd! --local-lib "%STOW_PERL_LOCAL_LIB_UNIX%" --notest
             set _cmd=!_cmd! !_modules!
             goto:$RunCommand
 
