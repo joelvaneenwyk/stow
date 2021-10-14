@@ -123,6 +123,7 @@ test$
 ^.vscode/
 ^local/
 \.log$
+^ldeps/
 
 \B\.tmp\b
 \B\.build\b

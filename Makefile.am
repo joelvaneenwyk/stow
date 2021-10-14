@@ -28,8 +28,7 @@ dist_doc_DATA = \
 	ChangeLog doc/ChangeLog.OLD
 
 # automake magic to define where *_DATA files get installed:
-pmdir = `$(CYGPATH_P) $(PMDIR)`
-
+pmdir = $(PMDIR)
 pmstowdir = $(pmdir)/Stow
 
 pm_DATA = lib/Stow.pm
@@ -120,7 +119,7 @@ EXTRA_DIST = \
 	$(DEFAULT_IGNORE_LIST) \
 	$(CPAN_FILES)
 CLEANFILES = $(bin_SCRIPTS) $(pm_DATA) $(pmstow_DATA)
-DISTCLEANFILES = Makefile.in configure Build MYMETA.*
+DISTCLEANFILES = Makefile.in configure Build MYMETA.* $(PDF)
 MAINTAINERCLEANFILES = $(dist_man_MANS) $(HTML) $(PDF) ChangeLog
 
 # clean up auto-generated files
@@ -138,18 +137,18 @@ pmdir_in_INC = \
 	PERL5LIB= $(PERL) -V | \
 	    awk '/@INC:/ {p=1; next} p==1 {print $$1}' | \
 	    sed 's/\\/\//g' | \
-	    grep -q "$(pmdir)"
+	    grep -q "`$(CYGPATH_P) $(pmdir)`"
 
 calc_use_lib_pmdir = \
 	if $(pmdir_in_INC); then \
 	    use_lib_pmdir=""; \
 	else \
-	    use_lib_pmdir="use lib \"$(pmdir)\";"; \
+	    use_lib_pmdir="use lib \"`$(CYGPATH_P) $(pmdir)`\";"; \
 	fi
 
 check_pmdir = \
 	echo; \
-	echo "\# Perl modules will be installed to $(pmdir)"; \
+	echo "\# Perl modules will be installed to `$(CYGPATH_P) $(pmdir)`"; \
 	echo "\# "; \
 	if $(pmdir_in_INC); then \
 	    echo "\# This is in $(PERL)'s built-in @INC, so everything"; \

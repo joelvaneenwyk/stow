@@ -37,6 +37,7 @@ function initialize_environment() {
     STOW_ROOT="${STOW_ROOT:-$(pwd)}"
 
     if [ ! -f "$STOW_ROOT/Build.PL" ]; then
+        # If running in a Docker instance, we mount project directory to '/stow'
         if [ -f "/stow/Build.PL" ]; then
             STOW_ROOT="/stow"
         else
@@ -184,7 +185,10 @@ function test_perl_version() {
                 run_command_group make cpanm
 
                 rm -f "$STOW_ROOT/Build" "$STOW_ROOT/Build.bat" >/dev/null 2>&1
-                run_command_group "$PERL" "${_perl_test_args[@]}" Build.PL
+
+                # Ignore line that contains 'Unsuccessful stat on filename' as the error is sometimes not avoidable depending
+                # on files in the project folder.
+                run_command_group "$PERL" "${_perl_test_args[@]}" Build.PL 2>&1 | "$PERL" -ne 'print unless /Unsuccessful stat on filename/'
                 run_command_group ./Build build
                 run_command_group ./Build distcheck
 
