@@ -84,10 +84,12 @@ sub create_build_script {
         },
 
         test_requires => {
-            'Test::More'        => 0,
-            'Test::Output'      => 0,
-            'Test::Exception'   => 0,
-            'IO::Scalar'        => 0
+            'Test::More'                        => 0,
+            'Test::Output'                      => 0,
+            'Test::Exception'                   => 0,
+            'IO::Scalar'                        => 0,
+            'TAP::Formatter::JUnit'             => 0,
+            'Devel::Cover::Report::Coveralls'   => 0,
         }
     );
 

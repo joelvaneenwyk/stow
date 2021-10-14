@@ -1,4 +1,5 @@
-﻿<#
+#!/usr/bin/env pwsh
+<#
 This file is part of GNU Stow.
 
 GNU Stow is free software: you can redistribute it and/or modify it

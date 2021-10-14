@@ -69,6 +69,7 @@ test_results*.xml
 nul
 .bash_history
 .gnupg/
+ldeps/
 
 # Intermediate file from running 'cover'
 test

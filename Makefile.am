@@ -190,10 +190,16 @@ lib/Stow/Util.pm: lib/Stow/Util.pm.in Makefile.am
 ##############################################################################
 
 cpanm:
+	( \
+	    echo "yes"     \
+	    echo ""        \
+	    echo "no"      \
+	    echo "exit"    \
+	) | "$(PERL)" -MCPAN -e "shell" || true; \
 	"$(PERL)" -MCPAN -e "CPAN::Shell->notest('install', 'App::cpanminus')"; \
 	"$(PERL)" -MApp::cpanminus::fatscript \
-	    -le "my \$$c = App::cpanminus::script->new; \$$c->parse_options(@ARGV); \$$c->doit;" -- \
-	    --quiet --installdeps --notest .; \
+	    -le 'my $$c = App::cpanminus::script->new; $$c->parse_options(@ARGV); $$c->doit;' -- \
+	    --verbose --installdeps --notest --with-recommends --with-suggests .; \
 	CPANM_RESULT=$$?; \
 	if [ $$CPANM_RESULT != 0 ]; then \
 	    echo ---------------------------------------------------; \
