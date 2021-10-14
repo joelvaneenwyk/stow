@@ -130,15 +130,15 @@ function test_perl_version() {
         echo "✔ Exported paths for GitHub Action jobs."
     fi
 
-    _perl=(-I "$STOW_PERL_LOCAL_LIB/lib/perl5")
+    _perl_test_args=(-I "$STOW_PERL_LOCAL_LIB/lib/perl5")
 
     if activate_local_perl_library; then
-        _perl+=(-Mlocal::lib="$STOW_PERL_LOCAL_LIB")
+        _perl_test_args+=(-Mlocal::lib="$STOW_PERL_LOCAL_LIB")
     fi
 
     # Print first non-blank line of Perl version as it includes details of where it
     # was built e.g., 'x86_64-msys-thread-multi'
-    "$STOW_PERL" "${_perl[@]}" --version | sed -e '/^[ \t]*$/d' -e 's/^[ \t]*//' | head -n 1
+    "$STOW_PERL" "${_perl_test_args[@]}" --version | sed -e '/^[ \t]*$/d' -e 's/^[ \t]*//' | head -n 1
 
     # Remove all intermediate files before we start to ensure a clean test
     run_command_group "$STOW_ROOT/tools/make-clean.sh"
@@ -154,7 +154,7 @@ function test_perl_version() {
 
         # shellcheck disable=SC2016
         if run_command_output_file "$_test_result_output_path" \
-            "$STOW_PERL" "${_perl[@]}" -MApp::Prove \
+            "$STOW_PERL" "${_perl_test_args[@]}" -MApp::Prove \
             -le 'my $c = App::Prove->new; $c->process_args(@ARGV); $c->run;' -- \
             --formatter "TAP::Formatter::JUnit" \
             --norc --timer --verbose --normalize --parse \
@@ -184,7 +184,7 @@ function test_perl_version() {
                 run_command_group make cpanm
 
                 rm -f "$STOW_ROOT/Build" "$STOW_ROOT/Build.bat" >/dev/null 2>&1
-                run_command_group "$PERL" "${_perl[@]}" Build.PL
+                run_command_group "$PERL" "${_perl_test_args[@]}" Build.PL
                 run_command_group ./Build build
                 run_command_group ./Build distcheck
 
@@ -196,9 +196,9 @@ function test_perl_version() {
 
                 if [ -f "$_cover" ]; then
                     if [ -z "${GITHUB_ENV:-}" ]; then
-                        run_command_group "$STOW_PERL" "${_perl[@]}" "$_cover" -test
+                        run_command_group "$STOW_PERL" "${_perl_test_args[@]}" "$_cover" -test
                     else
-                        run_command_group "$STOW_PERL" "${_perl[@]}" "$_cover" -test -report coveralls
+                        run_command_group "$STOW_PERL" "${_perl_test_args[@]}" "$_cover" -test -report coveralls
                     fi
                 else
                     echo "Failed to run cover. Missing binary: '$_cover'"
@@ -207,8 +207,8 @@ function test_perl_version() {
                 run_command_group make distcheck
             fi
         else
-            echo "❌ Tests failed. Test result file empty: '$_test_result_output_path"
             _return_value=$?
+            echo "❌ Tests failed. Test result file empty: '$_test_result_output_path"
         fi
 
         cd "$_starting_directory" || true

@@ -98,11 +98,12 @@ function use_sudo {
 }
 
 function use_perl_local_lib() {
-    _perl=(-I "$STOW_PERL_LOCAL_LIB/lib/perl5")
+    local _perl_local_args
+    _perl_local_args=(-I "$STOW_PERL_LOCAL_LIB/lib/perl5")
 
-    if "$STOW_PERL" "${_perl[@]}" -Mlocal::lib -le 1 2>/dev/null; then
-        _perl+=(-Mlocal::lib="$STOW_PERL_LOCAL_LIB")
-        _perl_local_setup="$("$STOW_PERL" "${_perl[@]}")"
+    if "$STOW_PERL" "${_perl_local_args[@]}" -Mlocal::lib -le 1 2>/dev/null; then
+        _perl_local_args+=(-Mlocal::lib="$STOW_PERL_LOCAL_LIB")
+        _perl_local_setup="$("$STOW_PERL" "${_perl_local_args[@]}")"
         echo "$_perl_local_setup"
         return 0
     fi
@@ -140,55 +141,68 @@ function install_perl_modules() {
     _return_value=0
     _use_local_lib=0
 
-    _perl_args=("$STOW_PERL" -I "$STOW_PERL_LOCAL_LIB/lib/perl5")
+    _cpanm_install="$STOW_PERL_LOCAL_LIB/bin/cpanm_install"
+    mkdir -p "$STOW_PERL_LOCAL_LIB/bin/"
+    if [ ! -f "$_cpanm_install" ]; then
+        if [ -x "$(command -v wget)" ] && wget -O "$_cpanm_install" "https://cpanmin.us/"; then
+            echo "[wget] Downloaded 'cpanm' installer: '$_cpanm_install'"
+        elif [ -x "$(command -v curl)" ] && curl -SLf -o "$_cpanm_install" "https://cpanmin.us/"; then
+            echo "[curl] Downloaded 'cpanm' installer: '$_cpanm_install'"
+        fi
+
+        if [ -f "$_cpanm_install" ]; then
+            chmod +x "$_cpanm_install"
+        fi
+    fi
+
+    _cpanm=""
+    _perl_bin="$(dirname "$STOW_PERL")"
+    _cpanm_options=(
+        "$STOW_PERL_LOCAL_LIB/bin/cpanm"
+        "$_perl_bin/cpanm"
+        "$_perl_bin/site_perl/$("$STOW_PERL" -e "print substr($^V, 1)")/cpanm"
+        "$_perl_bin/core_perl/cpanm")
+    for _cpanm_option in "${_cpanm_options[@]}"; do
+        if [ -f "$_cpanm_option" ]; then
+            _cpanm="$_cpanm_option"
+            break
+        fi
+    done
+
+    _perl_install_args=("$STOW_PERL" -I "$STOW_PERL_LOCAL_LIB/lib/perl5")
 
     while [ -n "${1:-}" ]; do
         package=$1
 
         if [ "$_use_local_lib" = "0" ] && use_perl_local_lib &>/dev/null; then
             _use_local_lib=1
-            _perl_args+=(-Mlocal::lib="$STOW_PERL_LOCAL_LIB")
+            _perl_install_args+=(-Mlocal::lib="$STOW_PERL_LOCAL_LIB")
         fi
 
-        if run_command "${_perl_args[@]}" -MApp::cpanminus -le 1 &>/dev/null; then
-            if run_command "${_perl_args[@]}" -MApp::cpanminus::fatscript -le 1 &>/dev/null; then
+        if [ "$_use_local_lib" = "1" ] &&
+            run_command "${_perl_install_args[@]}" -MApp::cpanminus -le 1 &>/dev/null; then
+            if run_command "${_perl_install_args[@]}" -MApp::cpanminus::fatscript -le 1 &>/dev/null; then
                 # shellcheck disable=SC2016
-                _perl_args+=(-MApp::cpanminus::fatscript -le 'my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;' --)
+                _perl_install_args+=(-MApp::cpanminus::fatscript -le 'my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;' --)
             else
-                export PERL="$STOW_PERL"
-                export PATH="$PERL_BIN:$PERL_C_BIN:$PATH"
-                _perl_args+=("$PERL_BIN/cpanm")
+                _perl_install_args=("$STOW_PERL" "$_cpanm")
             fi
 
             if ! run_named_command_group "Install Module(s): '$*'" \
-                "${_perl_args[@]}" \
-                --local-lib "$STOW_PERL_LOCAL_LIB" --notest "$@"; then
+                "${_perl_install_args[@]}" --local-lib "$STOW_PERL_LOCAL_LIB" --notest "$@"; then
                 echo "❌ Failed to install modules with CPANM."
                 _return_value=99
             fi
 
             break
-        elif [ "$package" = "App::cpanminus" ]; then
-            _cpanm="$STOW_PERL_LOCAL_LIB/cpanm"
-
-            if [ ! -f "$_cpanm" ]; then
-                if [ -x "$(command -v wget)" ] && wget -O "$_cpanm" "https://cpanmin.us/"; then
-                    echo "[wget] Downloaded 'cpanm' installer: '$_cpanm'"
-                elif [ -x "$(command -v curl)" ] && curl -SLf -o "$_cpanm" "https://cpanmin.us/"; then
-                    echo "[curl] Downloaded 'cpanm' installer: '$_cpanm'"
-                fi
-            fi
-
-            if [ -f "$_cpanm" ]; then
-                chmod +x "$_cpanm"
-                run_command "${_perl_args[@]}" "$_cpanm" \
-                    --local-lib "$STOW_PERL_LOCAL_LIB" --notest 'App::cpanminus'
-            fi
+        elif [ "$package" = "App::cpanminus" ] && [ -f "$_cpanm_install" ]; then
+            run_command "${_perl_install_args[@]}" "$_cpanm_install" \
+                --local-lib "$STOW_PERL_LOCAL_LIB" --notest 'App::cpanminus'
         fi
 
-        if ! "$STOW_PERL" "${_perl_args[@]}" -M"$package" -le 1 2>/dev/null; then
+        if ! "${_perl_install_args[@]}" -M"$package" -le 1 2>/dev/null; then
             if ! run_named_command_group "Install '$package'" \
-                "${_perl_args[@]}" -MCPAN -e "CPAN::Shell->notest('install', '$package')"; then
+                "${_perl_install_args[@]}" -MCPAN -e "CPAN::Shell->notest('install', '$package')"; then
                 echo "❌ Failed to install '$package' module with CPAN."
                 _return_value=88
                 break
@@ -355,9 +369,10 @@ function install_perl_dependencies() {
     # in fact installed.
     modules=(
         local::lib App::cpanminus
-        YAML Carp IO::Scalar Module::Build Module::Build::Tiny
+        YAML Carp Scalar::Util IO::Scalar Module::Build
         IO::Socket::SSL Net::SSLeay
-        Moose Test::Harness Test::More Test::Exception Test::Output
+        Moose TAP::Harness TAP::Harness::Env
+        Test::Harness Test::More Test::Exception Test::Output
         Devel::Cover Devel::Cover::Report::Coveralls
         TAP::Formatter::JUnit
     )
@@ -636,15 +651,19 @@ function update_stow_environment() {
         os_name="$(echo "msys_${os_name}" | awk '{print tolower($0)}')"
     fi
 
-    STOW_PERL_LOCAL_LIB="${STOW_LOCAL_BUILD_ROOT}/perllib/${os_name}"
-    mkdir -p "$STOW_PERL_LOCAL_LIB"
-    export STOW_PERL_LOCAL_LIB
+    export STOW_PERL_LOCAL_LIB=""
 
     _perl_version="0.0"
 
     if [ -z "$STOW_PERL" ] || ! _perl_version=$("$STOW_PERL" -e "print substr($^V, 1)"); then
         echo "Failed to find Perl install."
     else
+        STOW_PERL_LOCAL_LIB="${STOW_LOCAL_BUILD_ROOT}/perllib/${os_name}/$_perl_version"
+        mkdir -p "$STOW_PERL_LOCAL_LIB"
+        export STOW_PERL_LOCAL_LIB
+
+        STOW_PERL_HASH=$(sha1sum --tag "$STOW_PERL" | awk -F= '{print $2}' | awk '{ gsub(/ /,""); print }')
+
         STOW_VERSION="$("$STOW_PERL" "$STOW_ROOT/tools/get-version")"
         export STOW_VERSION
 
@@ -697,6 +716,15 @@ function update_stow_environment() {
     PERL="$STOW_PERL"
     export PERL
 
+    if [ ! -f "${PERL_C_BIN:-}" ]; then
+        if [ -x "$(command -v gcc)" ]; then
+            PERL_C_BIN="$(dirname "$(command -v gcc)")"
+        else
+            PERL_C_BIN="/usr/bin"
+        fi
+    fi
+    export PERL_C_BIN
+
     TEX_DIR=""
     if [ -f "$TEX" ]; then
         TEX_DIR="$(dirname "$TEX")"
@@ -715,6 +743,7 @@ function update_stow_environment() {
         echo "Stow Version: 'v$STOW_VERSION'"
         echo "Perl: '$STOW_PERL'"
         echo "Perl Version: 'v$_perl_version'"
+        echo "Perl Hash: '$STOW_PERL_HASH'"
 
         if [ -n "${PERL_LOCAL:-}" ]; then
             echo "Perl Local: '$PERL_LOCAL'"

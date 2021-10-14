@@ -87,14 +87,14 @@ function make_stow() {
     fi
     echo "✔ Generated Stow binaries and libraries."
 
-    _perl=()
+    local _perl_make_args=()
 
     if activate_local_perl_library; then
-        _perl+=(-I "$STOW_PERL_LOCAL_LIB/lib/perl5" -Mlocal::lib="$STOW_PERL_LOCAL_LIB")
+        _perl_make_args+=(-I "$STOW_PERL_LOCAL_LIB/lib/perl5" -Mlocal::lib="$STOW_PERL_LOCAL_LIB")
     fi
 
-    _perl+=(-I "$STOW_ROOT/lib" -I "$STOW_ROOT/bin")
-    run_command "$STOW_PERL" "${_perl[@]}" "$STOW_ROOT/bin/stow" --version
+    _perl_make_args+=(-I "$STOW_ROOT/lib" -I "$STOW_ROOT/bin")
+    run_command "$STOW_PERL" "${_perl_make_args[@]}" "$STOW_ROOT/bin/stow" --version
 
     # Revert build changes and remove intermediate files
     git -C "$STOW_ROOT" restore aclocal.m4 >/dev/null 2>&1 || true
