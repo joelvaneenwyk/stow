@@ -19,9 +19,6 @@ AC_INIT([stow], [2.3.2], [bug-stow@gnu.org])
 AC_PREREQ([2.61])
 AC_CONFIG_AUX_DIR([automake])
 
-AC_SUBST([MSYSTEM])
-AM_CONDITIONAL([MSYSTEM_SET], [test ! -z "$MSYSTEM"])
-
 # test whether we have cygpath
 if test -z "$CYGPATH_P"; then
   if (cygpath --version) >/dev/null 2>/dev/null; then

@@ -28,13 +28,20 @@ dist_doc_DATA = \
 	ChangeLog doc/ChangeLog.OLD
 
 # automake magic to define where *_DATA files get installed:
-pmdir = $(PMDIR)
-#pmdir = `$(CYGPATH_P) $(PMDIR)`
+pmdir = `$(CYGPATH_P) $(PMDIR)`
 
 pmstowdir = $(pmdir)/Stow
 
 pm_DATA = lib/Stow.pm
 pmstow_DATA = lib/Stow/Util.pm
+
+is_msys = { \
+    if test -n '$(MSYSTEM)'; then \
+        true; \
+    else \
+        false; \
+    fi; \
+}
 
 # We require this -I parameter to ensure that the include of the
 # default ignore list in the manual works.  Unfortunately this is
@@ -214,8 +221,43 @@ doc/stow.8: bin/stow.in Makefile.am
 # install-data-hook to rename from stow.pdf to manual.pdf etc. on
 # install.  Instead, by overriding the built-in rules with modified
 # versions, we can kill both birds with one stone.
-
 .PHONY: manual-single-html-all
+
+doc/stow.dvi: doc/stow.texi $(srcdir)/doc/version.texi doc/$(am__dirstamp)
+	[ -d doc ] || mkdir doc # required in vpath mode
+	if $(is_msys); then \
+	    TEXMFOUTPUT="doc" \
+	    TEXINPUTS="$(STOW_ROOT)/doc$(PATH_SEPARATOR)$(srcdir)$(PATH_SEPARATOR)$(srcdir)/doc$(PATH_SEPARATOR)$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
+	    pdfetex \
+	        --output-format dvi -output-directory=`test -f 'doc/stow.texi' || echo '$(srcdir)/'`/doc \
+	        `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi </dev/null; \
+	    rm -rf \
+	        "doc/stow.aux" "doc/stow.cp" \
+	        "doc/stow.log" "doc/stow.toc"; \
+	else \
+	    $(AM_V_TEXI2DVI)TEXINPUTS="$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
+	    MAKEINFO='$(MAKEINFO) $(AM_MAKEINFOFLAGS) $(MAKEINFOFLAGS) -I doc -I $(srcdir)/doc' \
+	    $(TEXI2DVI) $(AM_V_texinfo) --build-dir=$(@:.dvi=.t2d) -o $@ $(AM_V_texidevnull) \
+	    `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi; \
+	fi
+
+doc/stow.pdf: doc/stow.texi $(srcdir)/doc/version.texi doc/$(am__dirstamp)
+	[ -d doc ] || mkdir doc # required in vpath mode
+	if $(is_msys); then \
+	    TEXMFOUTPUT="doc" \
+	    TEXINPUTS="$(STOW_ROOT)/doc$(PATH_SEPARATOR)$(srcdir)$(PATH_SEPARATOR)$(srcdir)/doc$(PATH_SEPARATOR)$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
+	    pdfetex \
+	        -output-directory=`test -f 'doc/stow.texi' || echo '$(srcdir)/'`/doc \
+	        `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi </dev/null; \
+	    rm -rf \
+	        "doc/stow.aux" "doc/stow.cp" \
+	        "doc/stow.log" "doc/stow.toc"; \
+	else \
+	    $(AM_V_TEXI2PDF)TEXINPUTS="$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
+	    MAKEINFO='$(MAKEINFO) $(AM_MAKEINFOFLAGS) $(MAKEINFOFLAGS) -I doc -I $(srcdir)/doc' \
+	    $(TEXI2PDF) $(AM_V_texinfo) --build-dir=$(@:.pdf=.t2p) -o $@ $(AM_V_texidevnull) \
+	    `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi; \
+	fi
 
 manual-single-html-all: \
 	$(HTML)
@@ -231,23 +273,9 @@ $(HTML): $(doc_deps)
 	    -c USE_TITLEPAGE_FOR_TITLE=1 --no-split -o $@ \
 	    `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi
 
-$(PDF): $(doc_deps) $(HTML)
+$(PDF): $(doc_deps) $(HTML) doc/stow.pdf
 	[ -d doc ] || mkdir doc # required in vpath mode
-	if [ -z "$(MSYSTEM)" ]; then \
-	    TEXINPUTS="$(STOW_ROOT)/doc$(PATH_SEPARATOR)$(srcdir)$(PATH_SEPARATOR)$(srcdir)/automake$(PATH_SEPARATOR)$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
-	    MAKEINFO='$(MAKEINFO) $(AM_MAKEINFOFLAGS) $(MAKEINFOFLAGS) -I doc -I $(srcdir)/doc -I automake -I $(srcdir)/automake' \
-	    $(TEXI2PDF) -o $@ `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi; \
-	else \
-	    TEXMFOUTPUT="doc" \
-	    TEXINPUTS="$(STOW_ROOT)/doc$(PATH_SEPARATOR)$(srcdir)$(PATH_SEPARATOR)$(srcdir)/doc$(PATH_SEPARATOR)$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
-	    pdfetex \
-	        -output-directory=`test -f 'doc/stow.texi' || echo '$(srcdir)/'`/doc \
-	        `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi </dev/null; \
-	    mv "doc/stow.pdf" "$@"; \
-	    rm -rf \
-	        "doc/stow.aux" "doc/stow.cp" \
-	        "doc/stow.log" "doc/stow.toc"; \
-	fi
+	mv `test -f 'doc/stow.pdf' || echo '$(srcdir)/'`doc/stow.pdf "$@"
 
 doc/manual-split: $(doc_deps)
 	rm -rf $@.new
@@ -275,6 +303,7 @@ install-data-hook: doc/manual-split
 uninstall-hook:
 	chmod -R u+w $(DESTDIR)$(docdir)/manual-split
 	rm -rf $(DESTDIR)$(docdir)/manual-split
+	rm -f $(DESTDIR)/info/dir
 
 # Using install-data-hook has the slightly annoying disadvantage that
 # by default the split version of the manual isn't automatically

@@ -145,7 +145,7 @@ function test_perl_version() {
 
     if cd "$STOW_ROOT"; then
         # Run auto reconfigure ('autoreconf') to generate 'configure' script
-        run_command_group autoreconf --install
+        run_command_group autoreconf --install --verbose
 
         # Run 'configure' to generate Makefile
         run_command_group ./configure --prefix="" --with-pmdir="$STOW_PERL_LOCAL_LIB"

@@ -21,6 +21,9 @@ function normalize_path {
 
     if [ -n "$input_path" ] && [ -x "$(command -v cygpath)" ]; then
         input_path="$(cygpath "$input_path")"
+        if [ -f "${input_path}.exe" ]; then
+            input_path="${input_path}.exe"
+        fi
     fi
 
     echo "$input_path"
@@ -122,7 +125,7 @@ function activate_local_perl_library() {
         PERL5LIB=$(normalize_path "$PERL5LIB")
         export PERL5LIB
 
-        export PATH="$STOW_PERL_LOCAL_LIB/bin:$PATH"
+        export PATH="$PERL_BIN:$PERL_C_BIN:$STOW_PERL_LOCAL_LIB/bin:$PATH"
 
         return 0
     fi
@@ -169,14 +172,14 @@ function install_perl_modules() {
         fi
     done
 
-    _perl_install_args=("$STOW_PERL" -I "$STOW_PERL_LOCAL_LIB/lib/perl5")
+    _perl_install_args=("$STOW_PERL")
 
     while [ -n "${1:-}" ]; do
         package=$1
 
-        if [ "$_use_local_lib" = "0" ] && use_perl_local_lib &>/dev/null; then
+        if [ "$_use_local_lib" = "0" ] && activate_local_perl_library; then
             _use_local_lib=1
-            _perl_install_args+=(-Mlocal::lib="$STOW_PERL_LOCAL_LIB")
+            _perl_install_args+=(-I "$STOW_PERL_LOCAL_LIB/lib/perl5" -Mlocal::lib="$STOW_PERL_LOCAL_LIB")
         fi
 
         if [ "$_use_local_lib" = "1" ] &&
@@ -329,6 +332,13 @@ function initialize_perl() {
         echo "Perl install not found."
         return 2
     fi
+
+    if [ -n "${USERPROFILE:-}" ]; then
+        _user_profile=$(cygpath "${USERPROFILE}")
+        rm -f "$_user_profile/.cpan/CPAN/MyConfig.pm" &>/dev/null
+        rm -f "$_user_profile/.cpan-w64/CPAN/MyConfig.pm" &>/dev/null
+    fi
+    rm -rf "$HOME/.cpanm" &>/dev/null
 
     if "$STOW_PERL" -MCPAN -le 1 2>/dev/null; then
         (
@@ -630,6 +640,7 @@ function update_stow_environment() {
             fi
         fi
     fi
+    STOW_PERL="$(normalize_path "${STOW_PERL}")"
     export STOW_PERL
     export STOW_VERSION="0.0.0"
 
@@ -658,11 +669,12 @@ function update_stow_environment() {
     if [ -z "$STOW_PERL" ] || ! _perl_version=$("$STOW_PERL" -e "print substr($^V, 1)"); then
         echo "Failed to find Perl install."
     else
-        STOW_PERL_LOCAL_LIB="${STOW_LOCAL_BUILD_ROOT}/perllib/${os_name}/$_perl_version"
+        STOW_PERL_HASH=$(shasum -a 512 --tag "$STOW_PERL" | awk -F= '{print $2}' | awk '{ gsub(/ /,""); print }' | head -c 8)
+        export SToW_PERL_HASH
+
+        STOW_PERL_LOCAL_LIB="${STOW_LOCAL_BUILD_ROOT}/perllib/${os_name}/${_perl_version}.${STOW_PERL_HASH}"
         mkdir -p "$STOW_PERL_LOCAL_LIB"
         export STOW_PERL_LOCAL_LIB
-
-        STOW_PERL_HASH=$(sha1sum --tag "$STOW_PERL" | awk -F= '{print $2}' | awk '{ gsub(/ /,""); print }')
 
         STOW_VERSION="$("$STOW_PERL" "$STOW_ROOT/tools/get-version")"
         export STOW_VERSION

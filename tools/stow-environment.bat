@@ -80,7 +80,9 @@ exit /b
             goto:$InitializeEnvironment
         )
 
-        set STOW_PERL_LOCAL_LIB=!STOW_LOCAL_BUILD_ROOT!\perllib\windows\%STOW_PERL_VERSION%
+        call :StoreCommandOutput "STOW_PERL_HASH" C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile "(Get-FileHash -Algorithm sha512 !STOW_PERL!).Hash.ToLower().Substring(0, 8)"
+
+        set STOW_PERL_LOCAL_LIB=!STOW_LOCAL_BUILD_ROOT!\perllib\windows\!STOW_PERL_VERSION!.!STOW_PERL_HASH!
         call :ConvertToUnixyPath "STOW_PERL_LOCAL_LIB_UNIX" "!STOW_PERL_LOCAL_LIB!"
         if not exist "!STOW_PERL_LOCAL_LIB!" mkdir "!STOW_PERL_LOCAL_LIB!"
 
@@ -251,6 +253,7 @@ exit /b
         )
 
         :$PerlCommandDone
+        echo.  ^> Perl output: '!_output!'
         if not "%GITHUB_ACTIONS%"=="" (
             echo ::endgroup::
         )
@@ -274,13 +277,25 @@ exit /b
         goto:$GetArgs
         :$ExecuteCommand
 
-        echo ##[cmd] %_args%
+        if "%GITHUB_ACTIONS%"=="" (
+            echo ^=^=----------------------
+            echo ## !_cmd! %_args%
+            echo ^=^=----------------------
+        ) else (
+            echo ::group::!_cmd! %_args%
+            echo [command]!_cmd! %_args%
+        )
+
         for /f "tokens=* usebackq" %%a in (`%_args%`) do (
             set "_output=%%a"
             goto:$CommandDone
         )
 
         :$CommandDone
+        echo.  ^> Command output: '!_output!'
+        if not "%GITHUB_ACTIONS%"=="" (
+            echo ::endgroup::
+        )
     endlocal & (
         set "%_output_variable%=%_output%"
     )
@@ -315,9 +330,12 @@ exit /b
 
 :Run %*=Command with arguments
     if "%GITHUB_ACTIONS%"=="" (
-        echo ##[cmd] %*
+        echo ^=^=----------------------
+        echo ## !_cmd! %_args%
+        echo ^=^=----------------------
     ) else (
-        echo [command]%*
+        echo ::group::!_cmd! %_args%
+        echo [command]!_cmd! %_args%
     )
     call %*
 endlocal & exit /b
