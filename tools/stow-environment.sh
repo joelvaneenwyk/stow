@@ -105,8 +105,15 @@ function use_perl_local_lib() {
     _perl_local_args=(-I "$STOW_PERL_LOCAL_LIB/lib/perl5")
 
     if "$STOW_PERL" "${_perl_local_args[@]}" -Mlocal::lib -le 1 2>/dev/null; then
+        # shellcheck disable=SC2054
         _perl_local_args+=(-Mlocal::lib="$STOW_PERL_LOCAL_LIB")
-        _perl_local_setup="$("$STOW_PERL" "${_perl_local_args[@]}")"
+        _perl_local_setup="$(
+            COMSPEC="" "$STOW_PERL" "${_perl_local_args[@]}" |
+                sed 's.\\./.g' |
+                sed 's.C:./c.g' |
+                sed 's.;.:.g' |
+                sed 's/\%\([^]]*\)\%/\${\1}/g'
+        )"
         echo "$_perl_local_setup"
         return 0
     fi
@@ -116,7 +123,13 @@ function use_perl_local_lib() {
 
 function activate_local_perl_library() {
     if _perl_export=$(use_perl_local_lib); then
+        echo "Perl: '$STOW_PERL'"
+
+        echo "$_perl_export"
         eval "$_perl_export"
+
+        export PATH="$PERL_BIN:$PERL_C_BIN:$STOW_PERL_LOCAL_LIB/bin:$PATH"
+        echo "Path: '$PATH'"
 
         export PERL_LOCAL_LIB_ROOT="$STOW_PERL_LOCAL_LIB"
 
@@ -125,9 +138,9 @@ function activate_local_perl_library() {
         PERL5LIB=$(normalize_path "$PERL5LIB")
         export PERL5LIB
 
-        export PATH="$PERL_BIN:$PERL_C_BIN:$STOW_PERL_LOCAL_LIB/bin:$PATH"
-
         return 0
+    else
+        export PATH="$PERL_BIN:$PERL_C_BIN:$STOW_PERL_LOCAL_LIB/bin:$PATH"
     fi
 
     return 1
@@ -161,10 +174,11 @@ function install_perl_modules() {
     _cpanm=""
     _perl_bin="$(dirname "$STOW_PERL")"
     _cpanm_options=(
-        "$STOW_PERL_LOCAL_LIB/bin/cpanm"
         "$_perl_bin/cpanm"
         "$_perl_bin/site_perl/$("$STOW_PERL" -e "print substr($^V, 1)")/cpanm"
-        "$_perl_bin/core_perl/cpanm")
+        "$_perl_bin/core_perl/cpanm"
+        "$STOW_PERL_LOCAL_LIB/bin/cpanm"
+    )
     for _cpanm_option in "${_cpanm_options[@]}"; do
         if [ -f "$_cpanm_option" ]; then
             _cpanm="$_cpanm_option"
@@ -182,8 +196,7 @@ function install_perl_modules() {
             _perl_install_args+=(-I "$STOW_PERL_LOCAL_LIB/lib/perl5" -Mlocal::lib="$STOW_PERL_LOCAL_LIB")
         fi
 
-        if [ "$_use_local_lib" = "1" ] &&
-            run_command "${_perl_install_args[@]}" -MApp::cpanminus -le 1 &>/dev/null; then
+        if [ "$_use_local_lib" = "1" ] && run_command "${_perl_install_args[@]}" -MApp::cpanminus -le 1 &>/dev/null; then
             if run_command "${_perl_install_args[@]}" -MApp::cpanminus::fatscript -le 1 &>/dev/null; then
                 # shellcheck disable=SC2016
                 _perl_install_args+=(-MApp::cpanminus::fatscript -le 'my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;' --)
@@ -338,6 +351,8 @@ function initialize_perl() {
         rm -f "$_user_profile/.cpan/CPAN/MyConfig.pm" &>/dev/null
         rm -f "$_user_profile/.cpan-w64/CPAN/MyConfig.pm" &>/dev/null
     fi
+    rm -rf "$STOW_ROOT/.tmp/home/.cpan" &>/dev/null
+    rm -rf "$STOW_ROOT/.tmp/home/.cpan-w64" &>/dev/null
     rm -rf "$HOME/.cpanm" &>/dev/null
 
     if "$STOW_PERL" -MCPAN -le 1 2>/dev/null; then
@@ -346,9 +361,7 @@ function initialize_perl() {
             echo ""
             echo "no"
             echo "exit"
-        ) | run_command_group "$STOW_PERL" -MCPAN -e "shell" || true
-
-        run_command_group "$STOW_PERL" "$STOW_ROOT/tools/initialize-cpan-config.pl" || true
+        ) | COMSPEC="" run_command_group "$STOW_PERL" "$STOW_ROOT/tools/initialize-cpan-config.pl" || true
     fi
 
     # Depending on install order it is possible in an MSYS environment to get errors about
@@ -496,6 +509,10 @@ function update_stow_environment() {
         case $key in
         -w | --use-windows-tools)
             export STOW_USE_WINDOWS_TOOLS=1
+            shift # past argument
+            ;;
+        -r | --refresh)
+            unset STOW_ENVIRONMENT_INITIALIZED
             shift # past argument
             ;;
         -d | --debug)
@@ -725,7 +742,7 @@ function update_stow_environment() {
         done
     fi
 
-    if [ ! -f "${PERL_C_BIN:-}" ]; then
+    if [ ! -d "${PERL_C_BIN:-}" ]; then
         if [ -x "$(command -v gcc)" ]; then
             PERL_C_BIN="$(dirname "$(command -v gcc)")"
         else

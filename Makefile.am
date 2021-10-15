@@ -137,18 +137,18 @@ pmdir_in_INC = \
 	PERL5LIB= $(PERL) -V | \
 	    awk '/@INC:/ {p=1; next} p==1 {print $$1}' | \
 	    sed 's/\\/\//g' | \
-	    grep -q "`$(CYGPATH_P) $(pmdir)`"
+	    grep -q "`$(CYGPATH_P) '$(pmdir)'`"
 
 calc_use_lib_pmdir = \
 	if $(pmdir_in_INC); then \
 	    use_lib_pmdir=""; \
 	else \
-	    use_lib_pmdir="use lib \"`$(CYGPATH_P) $(pmdir)`\";"; \
+	    use_lib_pmdir="use lib \"`$(CYGPATH_P) '$(pmdir)'`\";"; \
 	fi
 
 check_pmdir = \
 	echo; \
-	echo "\# Perl modules will be installed to `$(CYGPATH_P) $(pmdir)`"; \
+	echo "\# Perl modules will be installed to `$(CYGPATH_P) '$(pmdir)'`"; \
 	echo "\# "; \
 	if $(pmdir_in_INC); then \
 	    echo "\# This is in $(PERL)'s built-in @INC, so everything"; \
@@ -232,7 +232,7 @@ doc/stow.dvi: doc/stow.texi $(srcdir)/doc/version.texi doc/$(am__dirstamp)
 	[ -d doc ] || mkdir doc # required in vpath mode
 	if $(is_msys); then \
 	    TEXMFOUTPUT="doc" \
-	    TEXINPUTS="$(STOW_ROOT)/doc$(PATH_SEPARATOR)$(srcdir)$(PATH_SEPARATOR)$(srcdir)/doc$(PATH_SEPARATOR)$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
+	    TEXINPUTS="`$(CYGPATH_P) '$(STOW_ROOT)'`/doc$(PATH_SEPARATOR)$(srcdir)$(PATH_SEPARATOR)$(srcdir)/doc$(PATH_SEPARATOR)$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
 	    pdfetex \
 	        --output-format dvi -output-directory=`test -f 'doc/stow.texi' || echo '$(srcdir)/'`/doc \
 	        `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi </dev/null; \
@@ -250,7 +250,7 @@ doc/stow.pdf: doc/stow.texi $(srcdir)/doc/version.texi doc/$(am__dirstamp)
 	[ -d doc ] || mkdir doc # required in vpath mode
 	if $(is_msys); then \
 	    TEXMFOUTPUT="doc" \
-	    TEXINPUTS="$(STOW_ROOT)/doc$(PATH_SEPARATOR)$(srcdir)$(PATH_SEPARATOR)$(srcdir)/doc$(PATH_SEPARATOR)$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
+	    TEXINPUTS="`$(CYGPATH_P) '$(STOW_ROOT)'`/doc$(PATH_SEPARATOR)$(srcdir)$(PATH_SEPARATOR)$(srcdir)/doc$(PATH_SEPARATOR)$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
 	    pdfetex \
 	        -output-directory=`test -f 'doc/stow.texi' || echo '$(srcdir)/'`/doc \
 	        `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi </dev/null; \
@@ -275,7 +275,8 @@ $(HTML): $(doc_deps)
 	[ -d doc ] || mkdir doc # required in vpath mode
 	-rm -f $@
 	$(MAKEINFOHTML) $(AM_MAKEINFOHTMLFLAGS) $(MAKEINFOFLAGS) -I doc -I $(srcdir)/doc \
-	    -c USE_TITLEPAGE_FOR_TITLE=1 --no-split -o $@ \
+	    --set-`$(MAKEINFOHTML) --help 2>&1 | grep -q "set-customization-variable" && echo 'customization-variable' || echo 'init-variable'` USE_TITLEPAGE_FOR_TITLE=1 \
+	    --no-split -o "$@" \
 	    `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi
 
 $(PDF): $(doc_deps) $(HTML) doc/stow.pdf

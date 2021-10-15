@@ -70,6 +70,8 @@ nul
 .bash_history
 .gnupg/
 ldeps/
+confdefs.h
+conftest.tar
 
 # Intermediate file from running 'cover'
 test

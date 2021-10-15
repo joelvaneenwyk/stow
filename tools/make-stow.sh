@@ -32,7 +32,7 @@ function make_stow() {
     STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && cd ../ && pwd -P)"
 
     # shellcheck source=./tools/stow-environment.sh
-    source "$STOW_ROOT/tools/stow-environment.sh"
+    source "$STOW_ROOT/tools/stow-environment.sh" "$@"
 
     rm -rf "$STOW_ROOT/_Inline"
     rm -f "$STOW_ROOT/bin/chkstow"
@@ -40,6 +40,16 @@ function make_stow() {
     rm -f "$STOW_ROOT/lib/Stow.pm"
     rm -f "$STOW_ROOT/lib/Stow/Util.pm"
     echo "✔ Removed output files."
+
+    local _perl_make_args=()
+
+    if install_perl_dependencies; then
+        if activate_local_perl_library; then
+            _perl_make_args+=(-I "$STOW_PERL_LOCAL_LIB/lib/perl5" -Mlocal::lib="$STOW_PERL_LOCAL_LIB")
+        fi
+    else
+        return $?
+    fi
 
     if [ -x "$(command -v autoreconf)" ]; then
         cd "$STOW_ROOT" || true
@@ -87,12 +97,6 @@ function make_stow() {
     fi
     echo "✔ Generated Stow binaries and libraries."
 
-    local _perl_make_args=()
-
-    if activate_local_perl_library; then
-        _perl_make_args+=(-I "$STOW_PERL_LOCAL_LIB/lib/perl5" -Mlocal::lib="$STOW_PERL_LOCAL_LIB")
-    fi
-
     _perl_make_args+=(-I "$STOW_ROOT/lib" -I "$STOW_ROOT/bin")
     run_command "$STOW_PERL" "${_perl_make_args[@]}" "$STOW_ROOT/bin/stow" --version
 
@@ -104,4 +108,4 @@ function make_stow() {
     echo "✔ Removed intermediate output files."
 }
 
-make_stow
+make_stow "$@"

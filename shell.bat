@@ -70,5 +70,5 @@ endlocal & exit /b
     goto:$GetArguments
 
     :$StartShell
-    call :Run "%WIN_UNIX_DIR%\msys2_shell.cmd" -no-start -mingw64 -defterm -shell bash -here -c "source ./tools/stow-environment.sh !_args! && bash"
+    call :Run "%WIN_UNIX_DIR%\msys2_shell.cmd" -no-start -mingw64 -defterm -shell bash -here -c "bash"
 exit /b

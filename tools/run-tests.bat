@@ -23,27 +23,12 @@ exit /b
 :: Local functions
 ::
 
-:Run %*=Command with arguments
-    if "%GITHUB_ACTIONS%"=="" (
-        echo ##[cmd] %*
-    ) else (
-        echo [command]%*
-    )
-    call %*
-endlocal & exit /b
-
 :RunStowTests
     setlocal EnableExtensions EnableDelayedExpansion
 
     set _root=%~dp1
     call "%_root:~0,-1%\tools\stow-environment.bat"
-
-    call :RunProve
     if not "!ERRORLEVEL!"=="0" exit /b
-endlocal & exit /b 0
-
-:RunProve
-    setlocal EnableExtensions EnableDelayedExpansion
 
     set _result_filename=%STOW_ROOT%\test_results_windows.xml
 
@@ -66,10 +51,12 @@ endlocal & exit /b 0
 
     set _cmd="%STOW_PERL%" %STOW_PERL_ARGS% -MApp::Prove
     set _cmd=!_cmd! -le "my $c = App::Prove->new; $c->process_args(@ARGV); $c->run" --
+    set _cmd=!_cmd! --formatter "TAP::Formatter::JUnit"
+    set _cmd=!_cmd! --norc --timer --verbose --normalize --parse
+    set _cmd=!_cmd! -I "!STOW_PERL_LOCAL_LIB_UNIX!/lib/perl5"
     set _cmd=!_cmd! -I "%STOW_ROOT_UNIX%/t/"
     set _cmd=!_cmd! -I "%STOW_ROOT_UNIX%/bin/"
     set _cmd=!_cmd! -I "%STOW_ROOT_UNIX%/lib/"
-    set _cmd=!_cmd! --norc --verbose --timer --normalize --formatter "TAP::Formatter::JUnit"
     set _cmd=!_cmd! "%STOW_ROOT_UNIX%/t/"
     if "%GITHUB_ACTIONS%"=="" (
         echo ##[cmd] !_cmd!
@@ -129,4 +116,13 @@ endlocal & exit /b
         echo [ERROR] Cover report generation failed with error code: '!ERRORLEVEL!'
         endlocal & exit /b !ERRORLEVEL!
     )
+endlocal & exit /b
+
+:Run %*=Command with arguments
+    if "%GITHUB_ACTIONS%"=="" (
+        echo ##[cmd] %*
+    ) else (
+        echo [command]%*
+    )
+    call %*
 endlocal & exit /b
