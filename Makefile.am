@@ -195,10 +195,10 @@ cpanm:
 	    echo "no"      \
 	    echo "exit"    \
 	) | COMSPEC="" "$(PERL)" "./tools/initialize-cpan-config.pl" || true; \
-	"$(PERL)" -MCPAN -e "CPAN::Shell->notest('install', 'App::cpanminus')"; \
+	"$(PERL)" -MCPAN -e "CPAN::Shell->notest('install', 'App::cpanminus')" 2>&1; \
 	"$(PERL)" -MApp::cpanminus::fatscript \
 	    -le 'my $$c = App::cpanminus::script->new; $$c->parse_options(@ARGV); $$c->doit;' -- \
-	    --verbose --installdeps --notest --with-recommends --with-suggests . 2>&1; \
+	    --installdeps --notest --with-recommends --with-suggests . 2>&1; \
 	CPANM_RESULT=$$?; \
 	if [ $$CPANM_RESULT != 0 ]; then \
 	    echo ---------------------------------------------------; \

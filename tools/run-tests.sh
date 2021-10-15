@@ -152,7 +152,7 @@ function test_perl_version() {
         _env_test_path=$(cygpath --windows "$_env_test_path")
     fi
 
-    _cpanm_logs="$_cpanm_root/.cpanm/work/**/*.log"
+    _cpanm_logs="$_cpanm_root/**/*.log"
 
     if [ -n "${MSYSTEM:-}" ]; then
         _cpanm_logs="${_cpanm_logs//\//\\}"

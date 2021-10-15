@@ -272,25 +272,26 @@ Function Get-TexLive {
         $env:TEXLIVE_ROOT = "$tempTexTargetFolder"
         $env:TEXLIVE_INSTALL = "$tempTexTargetInstall"
 
-        $env:TEXDIR = "$script:StowTempDir\texlive"
-        $env:TEXLIVE_BIN = "$env:TEXDIR\bin\win32"
-        $env:TEXMFCONFIG = "$env:TEXDIR\texmf-config"
-        $env:TEXMFHOME = "$env:TEXDIR\texmf-local"
-        $env:TEXMFLOCAL = "$env:TEXDIR\texmf-local"
-        $env:TEXMFSYSCONFIG = "$env:TEXDIR\texmf-config"
-        $env:TEXMFSYSVAR = "$env:TEXDIR\texmf-var"
-        $env:TEXMFVAR = "$env:TEXDIR\texmf-var"
+        $TexLiveInstallRoot = "$script:StowTempDir\texlive"
+        $env:TEXDIR = "$TexLiveInstallRoot\tlpkg"
+        $env:TEXLIVE_BIN = "$TexLiveInstallRoot\bin\win32"
+        $env:TEXMFCONFIG = "$TexLiveInstallRoot\texmf-config"
+        $env:TEXMFHOME = "$TexLiveInstallRoot\texmf-local"
+        $env:TEXMFLOCAL = "$TexLiveInstallRoot\texmf-local"
+        $env:TEXMFSYSCONFIG = "$TexLiveInstallRoot\texmf-config"
+        $env:TEXMFSYSVAR = "$TexLiveInstallRoot\texmf-var"
+        $env:TEXMFVAR = "$TexLiveInstallRootR\texmf-var"
 
-        $env:TEXLIVE_INSTALL_PREFIX = "$env:TEXDIR"
+        $env:TEXLIVE_INSTALL_PREFIX = "$TexLiveInstallRoot"
         $env:TEXLIVE_INSTALL_TEXDIR = "$env:TEXDIR"
-        $env:TEXLIVE_INSTALL_TEXMFCONFIG = "$env:TEXDIR\texmf-config"
-        $env:TEXLIVE_INSTALL_TEXMFHOME = "$env:TEXDIR\texmf-local"
-        $env:TEXLIVE_INSTALL_TEXMFLOCAL = "$env:TEXDIR\texmf-local"
-        $env:TEXLIVE_INSTALL_TEXMFSYSCONFIG = "$env:TEXDIR\texmf-config"
-        $env:TEXLIVE_INSTALL_TEXMFSYSVAR = "$env:TEXDIR\texmf-var"
-        $env:TEXLIVE_INSTALL_TEXMFVAR = "$env:TEXDIR\texmf-var"
+        $env:TEXLIVE_INSTALL_TEXMFCONFIG = "$TexLiveInstallRoot\texmf-config"
+        $env:TEXLIVE_INSTALL_TEXMFHOME = "$TexLiveInstallRoot\texmf-local"
+        $env:TEXLIVE_INSTALL_TEXMFLOCAL = "$TexLiveInstallRoot\texmf-local"
+        $env:TEXLIVE_INSTALL_TEXMFSYSCONFIG = "$TexLiveInstallRoot\texmf-config"
+        $env:TEXLIVE_INSTALL_TEXMFSYSVAR = "$TexLiveInstallRoot\texmf-var"
+        $env:TEXLIVE_INSTALL_TEXMFVAR = "$TexLiveInstallRoot\texmf-var"
 
-        $texLiveProfile = Join-Path -Path "$script:StowTempDir" -ChildPath "install-texlive.profile"
+        $texLiveProfile = Join-Path -Path "$tempTexTargetFolder" -ChildPath "install-texlive.profile"
         Set-Content -Path "$texLiveProfile" -Value @"
 # It will NOT be updated and reflects only the
 # installation profile at installation time.
@@ -332,7 +333,9 @@ tlpdbopt_w32_multi_user 0
             Write-Host "Skipped install. TeX already exists: '$texExecutable'"
         }
         elseif ($IsWindows -or $ENV:OS) {
-            & "$ENV:SystemRoot\System32\cmd.exe" /d /c "$env:TEXLIVE_INSTALL" -no-gui -portable -profile "$texLiveProfile"
+            # We redirect stderr to stdout because of a seemingly unavoidable error that we get during
+            # install e.g. 'Use of uninitialized value $deftmflocal in string at C:\...\texlive-install\install-tl line 1364.'
+            & "$ENV:SystemRoot\System32\cmd.exe" /d /c "$env:TEXLIVE_INSTALL" -no-gui -portable -profile "$texLiveProfile" 2>&1
         }
         else {
             Write-Host "TeX Live install process only supported on Windows."

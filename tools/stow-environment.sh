@@ -117,9 +117,11 @@ function use_perl_local_lib() {
         #
         _perl_local_setup="$(
             COMSPEC="" "$STOW_PERL" "${_perl_local_args[@]}" |
-                sed 's#\([a-zA-Z]\):\\#/\1/#g' |
+                sed 's#\([a-zA-Z]\):\\#/\1#g' |
                 sed 's#\%\([^]]*\)\%#\${\1}#g' |
-                perl -pe 's/\\(?!\")/\//g'
+                perl -pe 's#\\(?!\")#\/#g' |
+                sed 's#\/\/#\/#g' |
+                sed 's#\/\/#\/#g'
         )"
 
         echo "$_perl_local_setup"
