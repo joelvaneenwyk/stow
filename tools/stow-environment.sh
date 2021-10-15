@@ -132,13 +132,23 @@ function use_perl_local_lib() {
 
 function activate_local_perl_library() {
     if _perl_export=$(use_perl_local_lib); then
-        echo "Perl: '$STOW_PERL'"
-
         echo "$_perl_export"
         eval "$_perl_export"
 
-        export PATH="$PERL_BIN:$PERL_C_BIN:$STOW_PERL_LOCAL_LIB/bin:$PATH"
-        echo "Path: '$PATH'"
+        # Allows tex to be used right after installation
+        if [ -f "/usr/libexec/path_helper" ]; then
+            eval "$(/usr/libexec/path_helper)"
+        fi
+
+        # Need to make sure that latest texinfo and makeinfo are found first as the version
+        # that comes with macOS is too old and you will get errors while building docs with
+        # errors like 'makeinfo: invalid option -- c'
+        PATH="/usr/local/opt/texinfo/bin:/Library/TeX/texbin/:$PERL_BIN:$PERL_C_BIN:$STOW_PERL_LOCAL_LIB/bin:$PATH"
+        export PATH
+        echo "PATH='$PATH'"
+
+        echo "-------------"
+        echo "Perl: '$STOW_PERL'"
 
         export PERL_LOCAL_LIB_ROOT="$STOW_PERL_LOCAL_LIB"
 
@@ -269,7 +279,7 @@ function install_packages() {
         # Need to make sure that latest texinfo and makeinfo are found first as the version
         # that comes with macOS is too old and you will get errors while building docs with
         # errors like 'makeinfo: invalid option -- c'
-        export PATH="/usr/local/opt/texinfo/bin:$PATH"
+        export PATH="/usr/local/opt/texinfo/bin:/Library/TeX/texbin/:$PATH"
         if [ -n "${GITHUB_PATH:-}" ]; then
             # Prepend to path so that next GitHub Action will have this updated path as well
             echo "/usr/local/opt/texinfo/bin" >>"$GITHUB_PATH"
