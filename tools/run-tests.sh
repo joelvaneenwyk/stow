@@ -134,7 +134,7 @@ function test_perl_version() {
         os_name="docker_${os_name}"
     elif grep -qEi "(Microsoft|WSL)" /proc/version &>/dev/null; then
         os_name="wsl_${os_name}"
-    elif [ "$(uname -o)" = "Msys" ]; then
+    elif [ "$(uname -o 2>&1)" = "Msys" ]; then
         os_name="$(echo "msys_${os_name}" | awk '{print tolower($0)}')"
     fi
 
@@ -158,8 +158,8 @@ function test_perl_version() {
         _cpanm_logs="${_cpanm_logs//\//\\}"
     fi
 
-    echo "STOW_CPAN_LOGS=${_cpanm_logs}" | tee --append "$_env"
-    echo "STOW_TEST_RESULTS=${_env_test_path}" | tee --append "$_env"
+    echo "STOW_CPAN_LOGS=${_cpanm_logs}" | tee -a "$_env"
+    echo "STOW_TEST_RESULTS=${_env_test_path}" | tee -a "$_env"
 
     echo "✔ Exported paths for GitHub Action jobs."
 

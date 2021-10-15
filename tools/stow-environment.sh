@@ -693,7 +693,7 @@ function update_stow_environment() {
         os_name="docker_${os_name}"
     elif grep -qEi "(Microsoft|WSL)" /proc/version &>/dev/null; then
         os_name="wsl_${os_name}"
-    elif [ "$(uname -o)" = "Msys" ]; then
+    elif [ "$(uname -o 2>&1)" = "Msys" ]; then
         os_name="$(echo "msys_${os_name}" | awk '{print tolower($0)}')"
     fi
 
