@@ -116,10 +116,8 @@ exit /b
         echo ::group::Initialize CPAN
         (
             echo yes && echo. && echo no && echo exit
-        ) | "!STOW_PERL!" %STOW_PERL_ARGS% -MCPAN -e "shell"
+        ) | "!STOW_PERL!" %STOW_PERL_ARGS% "%STOW_ROOT%\tools\initialize-cpan-config.pl"
         echo ::endgroup::
-
-        call :RunTaskGroup "!STOW_PERL!" %STOW_PERL_ARGS% "%STOW_ROOT%\tools\initialize-cpan-config.pl"
 
         :: Get current version of Stow using Perl helper utility
         call :StorePerlOutput "STOW_VERSION" "%STOW_ROOT%\tools\get-version"

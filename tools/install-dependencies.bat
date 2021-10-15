@@ -27,13 +27,17 @@ exit /b
 :InstallPerlDependencies
     setlocal EnableExtensions EnableDelayedExpansion
 
+    set _root=%~dp1
+    set _stow_root=%_root:~0,-1%
+
     rmdir /q /s "%USERPROFILE%\.cpan\CPAN" > nul 2>&1
     rmdir /q /s "%USERPROFILE%\.cpan\prefs" > nul 2>&1
     rmdir /q /s "%USERPROFILE%\.cpan-w64\CPAN" > nul 2>&1
     rmdir /q /s "%USERPROFILE%\.cpan-w64\prefs" > nul 2>&1
+    rmdir /q /s "%_stow_root%\.tmp\home\.cpan" > nul 2>&1
+    rmdir /q /s "%_stow_root%\.tmp\home\.cpan-w64" > nul 2>&1
 
-    set _root=%~dp1
-    call "%_root:~0,-1%\tools\stow-environment.bat" --refresh
+    call "%_stow_root%\tools\stow-environment.bat" --refresh
     if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
 
     :: First install 'local::lib' and then remaining libraries so that they can all be

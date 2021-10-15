@@ -103,9 +103,6 @@ EOF
 function test_perl_version() {
     _return_value=0
     _starting_directory="$(pwd)"
-    _test_result_output_path="$STOW_ROOT/$(
-        echo "test_results_${RUNNER_OS:-$(uname)}_${MSYSTEM:-default}.xml" | awk '{print tolower($0)}'
-    )"
 
     # Use the version of Perl passed in if 'perlbrew' is installed
     if [ -x "$(command -v perlbrew)" ]; then
@@ -115,6 +112,35 @@ function test_perl_version() {
     # Install Perl dependencies on this particular version of Perl in case
     # that has not been done yet.
     install_perl_dependencies
+
+    _perl_test_args=(-I "$STOW_PERL_LOCAL_LIB/lib/perl5")
+
+    if activate_local_perl_library; then
+        _perl_test_args+=(-Mlocal::lib="$STOW_PERL_LOCAL_LIB")
+    fi
+
+    _perl_version="0.0"
+
+    if ! _perl_version=$("$STOW_PERL" -e "print substr($^V, 1)" | sed 's#\.#_#g'); then
+        echo "Failed to get Perl version."
+        return 55
+    fi
+
+    if ! os_name="$(uname -s | sed 's#\.#_#g' | sed 's#-#_#g' | sed 's#/#_#g' | sed 's# #_#g' | awk '{print tolower($0)}')"; then
+        os_name="unknown"
+    fi
+
+    if [ -f "/.dockerenv" ]; then
+        os_name="docker_${os_name}"
+    elif grep -qEi "(Microsoft|WSL)" /proc/version &>/dev/null; then
+        os_name="wsl_${os_name}"
+    elif [ "$(uname -o)" = "Msys" ]; then
+        os_name="$(echo "msys_${os_name}" | awk '{print tolower($0)}')"
+    fi
+
+    _test_result_output_path="$STOW_ROOT/$(
+        echo "test_results_${os_name}_${_perl_version}.xml" | awk '{print tolower($0)}'
+    )"
 
     if [ -n "${GITHUB_ENV:-}" ]; then
         echo "STOW_TEST_RESULTS=$_test_result_output_path" >>"$GITHUB_ENV"
@@ -129,12 +155,6 @@ function test_perl_version() {
         fi
 
         echo "✔ Exported paths for GitHub Action jobs."
-    fi
-
-    _perl_test_args=(-I "$STOW_PERL_LOCAL_LIB/lib/perl5")
-
-    if activate_local_perl_library; then
-        _perl_test_args+=(-Mlocal::lib="$STOW_PERL_LOCAL_LIB")
     fi
 
     # Print first non-blank line of Perl version as it includes details of where it
