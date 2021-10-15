@@ -226,7 +226,7 @@ Function Get-File {
                 Write-Host "Downloaded file: '$FilePath'"
             }
             else {
-                throw "⚠ Failed to download file: $Url"
+                throw "Failed to download file: $Url"
             }
         }
     }
@@ -273,23 +273,30 @@ Function Get-TexLive {
         $env:TEXLIVE_INSTALL = "$tempTexTargetInstall"
 
         $TexLiveInstallRoot = "$script:StowTempDir\texlive"
-        $env:TEXDIR = "$TexLiveInstallRoot\tlpkg"
-        $env:TEXLIVE_BIN = "$TexLiveInstallRoot\bin\win32"
-        $env:TEXMFCONFIG = "$TexLiveInstallRoot\texmf-config"
-        $env:TEXMFHOME = "$TexLiveInstallRoot\texmf-local"
-        $env:TEXMFLOCAL = "$TexLiveInstallRoot\texmf-local"
-        $env:TEXMFSYSCONFIG = "$TexLiveInstallRoot\texmf-config"
-        $env:TEXMFSYSVAR = "$TexLiveInstallRoot\texmf-var"
-        $env:TEXMFVAR = "$TexLiveInstallRootR\texmf-var"
 
+        $env:TEXDIR = "$TexLiveInstallRoot\latest"
+        if ( -not(Test-Path -Path "$env:TEXDIR") ) {
+            New-Item -ItemType directory -Path "$env:TEXDIR" | Out-Null
+        }
+
+
+        # https://github.com/TeX-Live/installer/blob/master/install-tl
         $env:TEXLIVE_INSTALL_PREFIX = "$TexLiveInstallRoot"
         $env:TEXLIVE_INSTALL_TEXDIR = "$env:TEXDIR"
-        $env:TEXLIVE_INSTALL_TEXMFCONFIG = "$TexLiveInstallRoot\texmf-config"
-        $env:TEXLIVE_INSTALL_TEXMFHOME = "$TexLiveInstallRoot\texmf-local"
+        $env:TEXLIVE_INSTALL_TEXMFSYSCONFIG = "$env:TEXDIR\texmf-config"
+        $env:TEXLIVE_INSTALL_TEXMFSYSVAR = "$env:TEXDIR\texmf-var"
+        $env:TEXLIVE_INSTALL_TEXMFHOME = "$TexLiveInstallRoot\texmf"
         $env:TEXLIVE_INSTALL_TEXMFLOCAL = "$TexLiveInstallRoot\texmf-local"
-        $env:TEXLIVE_INSTALL_TEXMFSYSCONFIG = "$TexLiveInstallRoot\texmf-config"
-        $env:TEXLIVE_INSTALL_TEXMFSYSVAR = "$TexLiveInstallRoot\texmf-var"
         $env:TEXLIVE_INSTALL_TEXMFVAR = "$TexLiveInstallRoot\texmf-var"
+        $env:TEXLIVE_INSTALL_TEXMFCONFIG = "$TexLiveInstallRoot\texmf-config"
+
+        $env:TEXLIVE_BIN = "$env:TEXLIVE_INSTALL_PREFIX\bin\win32"
+        $env:TEXMFSYSCONFIG = "$env:TEXLIVE_INSTALL_TEXMFSYSCONFIG"
+        $env:TEXMFSYSVAR = "$env:TEXLIVE_INSTALL_TEXMFSYSVAR"
+        $env:TEXMFHOME = "$env:TEXLIVE_INSTALL_TEXMFHOME"
+        $env:TEXMFLOCAL = "$env:TEXLIVE_INSTALL_TEXMFLOCAL"
+        $env:TEXMFVAR = "$env:TEXLIVE_INSTALL_TEXMFVAR"
+        $env:TEXMFCONFIG = "$env:TEXLIVE_INSTALL_TEXMFCONFIG"
 
         $texLiveProfile = Join-Path -Path "$tempTexTargetFolder" -ChildPath "install-texlive.profile"
         Set-Content -Path "$texLiveProfile" -Value @"
@@ -335,7 +342,7 @@ tlpdbopt_w32_multi_user 0
         elseif ($IsWindows -or $ENV:OS) {
             # We redirect stderr to stdout because of a seemingly unavoidable error that we get during
             # install e.g. 'Use of uninitialized value $deftmflocal in string at C:\...\texlive-install\install-tl line 1364.'
-            & "$ENV:SystemRoot\System32\cmd.exe" /d /c "$env:TEXLIVE_INSTALL" -no-gui -portable -profile "$texLiveProfile" 2>&1
+            & "$ENV:SystemRoot\System32\cmd.exe" /d /c ""$env:TEXLIVE_INSTALL" -no-gui -portable -profile "$texLiveProfile" 2>&1"
         }
         else {
             Write-Host "TeX Live install process only supported on Windows."
@@ -392,7 +399,6 @@ Function Install-MSYS2 {
     $initializedFile = "$script:MsysTargetDir/initialized"
 
     if ((Test-Path -Path "$script:MsysTargetDir/usr/bin/bash.exe" -PathType Leaf) -and (-not((Test-Path -Path "$initializedFile" -PathType Leaf)))) {
-
         # Create a file that gets automatically called after installation which will silence the
         # clear that happens during a normal install. This may be useful for users by default but
         # this makes us lose the rest of the console log which is not great for our use case here.
@@ -402,7 +408,7 @@ MAYBE_FIRST_START=false
 echo '[stow] Post-install complete.'
 "@
 
-        if ($IsWindows -or $ENV:OS) {
+        if (($IsWindows -or $ENV:OS) -and [String]::IsNullOrEmpty("$env:MSYSTEM")) {
             # We run this here to ensure that the first run of msys2 is done before the 'setup.sh' call
             # as the initial upgrade of msys2 results in it shutting down the console.
             Write-Host "::group::Initialize MSYS2 Package Manager"
@@ -424,13 +430,17 @@ echo '[stow] Post-install complete.'
             if (Test-Path -Path "$postInstallScript" -PathType Leaf) {
                 Remove-Item -Force "$postInstallScript" | Out-Null
             }
+
+            Write-Host '[stow] Finished MSYS2 install.'
+
+            # Create initialized file to indicate we have done the initialization and do not need to
+            # go through these steps again.
+            Set-Content -Path "$initializedFile" -Value "$(Get-Date)"
+        } else {
+            Write-Host '[stow] Extracted MSYS2 but skipped install.'
         }
-
-        Write-Host '[stow] Finished MSYS2 install.'
-
-        # Create initialized file to indicate we have done the initialization and do not need to
-        # go through these steps again.
-        Set-Content -Path "$initializedFile" -Value "$(Get-Date)"
+    } else {
+        Write-Host '[stow] MSYS2 already installed and initialized.'
     }
 }
 
@@ -529,9 +539,10 @@ Function Install-Toolset {
     try {
         if (-Not (Test-Path -Path "$script:StowTempDir/perl/portableshell.bat" -PathType Leaf)) {
             $strawberryPerlVersion = "5.12.3.0"
-            $strawberyPerlUrl = "https://strawberryperl.com/download/$strawberryPerlVersion/strawberry-perl-$strawberryPerlVersion-64bit-portable.zip"
-            Get-File -Url "$strawberyPerlUrl" -Filename "$script:StowArchivesDir/strawberry-perl-$strawberryPerlVersion-64bit-portable.zip"
-            Expand-File -Path "$script:StowArchivesDir/strawberry-perl-$strawberryPerlVersion-64bit-portable.zip" -DestinationPath "$script:StowTempDir/perl"
+            $strawberryPerlArchive = "strawberry-perl-$strawberryPerlVersion-portable.zip"
+            $strawberyPerlUrl = "https://strawberryperl.com/download/$strawberryPerlVersion/$strawberryPerlArchive"
+            Get-File -Url "$strawberyPerlUrl" -Filename "$script:StowArchivesDir/$strawberryPerlArchive"
+            Expand-File -Path "$script:StowArchivesDir/$strawberryPerlArchive" -DestinationPath "$script:StowTempDir/perl"
         }
     }
     catch [Exception] {

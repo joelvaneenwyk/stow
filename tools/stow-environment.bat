@@ -55,8 +55,8 @@ exit /b
         set TMPDIR=%STOW_LOCAL_BUILD_ROOT%\temp
         if not exist "%TMPDIR%" mkdir "%TMPDIR%"
 
-        set TEX_DIR=%STOW_LOCAL_BUILD_ROOT%\texlive\bin\win32
-        set TEX=%TEX_DIR%\tex.exe
+        set TEXLIVE_BIN=%STOW_LOCAL_BUILD_ROOT%\texlive\bin\win32
+        set TEX=%TEXLIVE_BIN%\tex.exe
 
         set STOW_HOME=%STOW_LOCAL_BUILD_ROOT%\home
         if not exist "%STOW_HOME%" mkdir "%STOW_HOME%"
@@ -83,8 +83,8 @@ exit /b
         call :StoreCommandOutput "STOW_PERL_HASH" C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile "(Get-FileHash -Algorithm sha512 !STOW_PERL!).Hash.ToLower().Substring(0, 8)"
 
         set STOW_PERL_LOCAL_LIB=!STOW_LOCAL_BUILD_ROOT!\perllib\windows\!STOW_PERL_VERSION!.!STOW_PERL_HASH!
-        call :ConvertToUnixyPath "STOW_PERL_LOCAL_LIB_UNIX" "!STOW_PERL_LOCAL_LIB!"
         if not exist "!STOW_PERL_LOCAL_LIB!" mkdir "!STOW_PERL_LOCAL_LIB!"
+        call :ConvertToUnixyPath "STOW_PERL_LOCAL_LIB_UNIX" "!STOW_PERL_LOCAL_LIB!"
 
         set PERL5LIB=!STOW_PERL_LOCAL_LIB_UNIX!/lib
         set PERL_LOCAL_LIB_ROOT=!STOW_PERL_LOCAL_LIB_UNIX!
@@ -192,7 +192,7 @@ exit /b
         set "WIN_UNIX_DIR=%WIN_UNIX_DIR%"
         set "GUILE_LOAD_PATH=%GUILE_LOAD_PATH%"
         set "GUILE_LOAD_COMPILED_PATH=%GUILE_LOAD_COMPILED_PATH%"
-        set "TEX_DIR=%TEX_DIR%"
+        set "TEXLIVE_BIN=%TEXLIVE_BIN%"
         set "TEX=%TEX%"
     )
 

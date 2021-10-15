@@ -755,7 +755,10 @@ function update_stow_environment() {
 
         while [ ! "$_perl_bin" == "/" ] && [ -d "$_perl_bin/../" ]; do
             _perl_bin=$(cd "$_perl_bin" && cd .. && pwd)
-            if [ -f "$_perl_bin/c/bin/ld.exe" ]; then
+
+            # We need to check if already at root otherwise we end up with '//' which can take
+            # a long time to resolve the file test on some platforms.
+            if [ ! "$_perl_bin" = "/" ] && [ -f "$_perl_bin/c/bin/ld.exe" ]; then
                 export PERL_C_BIN="$_perl_bin/c/bin"
                 break
             fi
@@ -774,12 +777,12 @@ function update_stow_environment() {
     PERL="$STOW_PERL"
     export PERL
 
-    TEX_DIR=""
+    TEXLIVE_BIN=""
     if [ -f "$TEX" ]; then
-        TEX_DIR="$(dirname "$TEX")"
+        TEXLIVE_BIN="$(dirname "$TEX")"
     fi
 
-    PATH="${PERL_BIN:-}:${PERL_C_BIN:-}:$TEX_DIR:$PATH"
+    PATH="${PERL_BIN:-}:${PERL_C_BIN:-}:$TEXLIVE_BIN:$PATH"
     export PATH
 
     if [ ! "${STOW_ENVIRONMENT_INITIALIZED:-}" == "1" ]; then

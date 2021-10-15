@@ -140,10 +140,10 @@ endlocal & exit /b
 :MakeDocs
     setlocal EnableExtensions EnableDelayedExpansion
 
-    if exist "%TEX_DIR%\pdfetex.exe" (
+    if exist "%TEXLIVE_BIN%\pdfetex.exe" (
         set TEXMFOUTPUT="doc"
         set TEXINPUTS="%STOW_ROOT%\doc;%STOW_ROOT%;%TEXINPUTS%"
-        call :Run "%TEX_DIR%\pdfetex.exe" -output-directory="%STOW_ROOT%\doc" "%STOW_ROOT%\doc\stow.texi"
+        call :Run "%TEXLIVE_BIN%\pdfetex.exe" -output-directory="%STOW_ROOT%\doc" "%STOW_ROOT%\doc\stow.texi"
         move "%STOW_ROOT%\doc\stow.pdf" "%STOW_ROOT%\doc\manual.pdf"
     )
     del "%STOW_ROOT%\doc\stow.aux" > nul 2>&1

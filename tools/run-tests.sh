@@ -70,11 +70,13 @@ function initialize_environment() {
     fi
 
     # shellcheck source=tools/stow-environment.sh
-    source "$STOW_ROOT/tools/stow-environment.sh"
+    source "$STOW_ROOT/tools/stow-environment.sh" "$@"
 }
 
 function exit_handler() {
     _error=$?
+
+    trap - EXIT
 
     if [ ! "$_error" = "0" ]; then
         cat <<EOF
@@ -248,6 +250,14 @@ function test_perl_version() {
 }
 
 function run_stow_tests() {
+    initialize_environment "$@"
+
+    # Standard safety protocol but do this after we setup perlbrew otherwise
+    # we get errors with unbound variables
+    set -euo pipefail
+    shopt -s inherit_errexit nullglob >/dev/null 2>&1 || true
+    trap exit_handler EXIT
+
     _test_argument="${1:-}"
 
     LIST_PERL_VERSIONS=0
@@ -301,13 +311,4 @@ function run_stow_tests() {
     echo "✔ Tests succeeded."
 }
 
-initialize_environment
-
-# Standard safety protocol but do this after we setup perlbrew otherwise
-# we get errors with unbound variables
-set -euo pipefail
-shopt -s inherit_errexit nullglob >/dev/null 2>&1 || true
-trap exit_handler EXIT
-
 run_stow_tests "$@"
-trap - EXIT

@@ -24,25 +24,29 @@ exit /b
 
     set _root=%~dp1
     call "%_root:~0,-1%\tools\stow-environment.bat"
+    if not "%~2"=="--all" goto:$RemoveStandard
+        rmdir /q /s "%STOW_LOCAL_BUILD_ROOT%\texlive" > nul 2>&1
+        rmdir /q /s "%STOW_LOCAL_BUILD_ROOT%\texlive-install" > nul 2>&1
+        echo Removed local 'TexLive' install.
 
-    :: Shut down 'gpg-agent' otherwise some files can't be deleted from 'msys64' folder
-    if exist "%WIN_UNIX_DIR%\usr\bin\gpg-agent.exe" (
-        "%SystemRoot%\System32\wbem\wmic.exe" process where ExecutablePath='%WIN_UNIX_DIR%\usr\bin\gpg-agent.exe' delete > nul 2>&1
-    )
+        rmdir /q /s "%STOW_LOCAL_BUILD_ROOT%\perllib" > nul 2>&1
+        echo Removed local 'Perl' library folder.
 
-    :: Shut down 'dirmngr' otherwise some files can't be deleted from 'msys64' folder
-    if exist "%WIN_UNIX_DIR%\usr\bin\dirmngr.exe" (
-        "%SystemRoot%\System32\wbem\wmic.exe" process where ExecutablePath='%WIN_UNIX_DIR%\usr\bin\dirmngr.exe' delete > nul 2>&1
-    )
-
-    if "%~2"=="--all" (
-        del "%PERL_CPAN_CONFIG%" > nul 2>&1
+        if exist "%PERL_CPAN_CONFIG%" del "%PERL_CPAN_CONFIG%" > nul 2>&1
         echo Removed CPAN config: '%PERL_CPAN_CONFIG%'
+
+        :: Shut down 'gpg-agent' otherwise some files can't be deleted from 'msys64' folder
+        echo Terminate any 'gpg-agent' processes.
+        "%SystemRoot%\System32\wbem\wmic.exe" process where "ExecutablePath LIKE '%%gpg-agent.exe%%'" call terminate 2>&1
+
+        :: Shut down 'dirmngr' otherwise some files can't be deleted from 'msys64' folder
+        echo Terminate any 'dirmngr' processes.
+        "%SystemRoot%\System32\wbem\wmic.exe" process where "ExecutablePath LIKE '%%dirmngr.exe%%'" call terminate 2>&1
 
         rmdir /q /s "%WIN_UNIX_DIR%" > nul 2>&1
         echo Removed local 'MSYS2' install.
-    )
 
+    :$RemoveStandard
     del "\\?\%STOW_ROOT%\nul" > nul 2>&1
     del "%STOW_ROOT%\texput.log" > nul 2>&1
     del "%STOW_ROOT%\Build" > nul 2>&1

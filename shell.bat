@@ -47,7 +47,7 @@ endlocal & exit /b
 
     :: No need to update PATH when using 'minimal' so this is just here for when you want to enable
     :: the 'inherit' mode.
-    set "PATH=%TEX_DIR%;%PERL_BIN_DIR%;%PERL_BIN_C_DIR%;%PATH%"
+    set "PATH=%TEXLIVE_BIN%;%PERL_BIN_DIR%;%PERL_BIN_C_DIR%;%PATH%"
 
     set "STOW_PERL=%STOW_PERL_UNIX%"
     set "HOME=%STOW_HOME%"
