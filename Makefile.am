@@ -275,8 +275,8 @@ $(HTML): $(doc_deps)
 	[ -d doc ] || mkdir doc # required in vpath mode
 	-rm -f $@
 	$(MAKEINFOHTML) $(AM_MAKEINFOHTMLFLAGS) $(MAKEINFOFLAGS) -I doc -I $(srcdir)/doc \
-	    --set-`$(MAKEINFOHTML) --help 2>&1 | grep -q "set-customization-variable" && echo 'customization-variable' || echo 'init-variable'` USE_TITLEPAGE_FOR_TITLE=1 \
-	    --no-split -o "$@" \
+	    --no-split `$(MAKEINFO) --help | grep -q "set-customization-variable" && echo '--set-customization-variable USE_TITLEPAGE_FOR_TITLE=1'` \
+	    -o "$@" \
 	    `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi
 
 $(PDF): $(doc_deps) $(HTML) doc/stow.pdf

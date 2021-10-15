@@ -107,14 +107,23 @@ function use_perl_local_lib() {
     if "$STOW_PERL" "${_perl_local_args[@]}" -Mlocal::lib -le 1 2>/dev/null; then
         # shellcheck disable=SC2054
         _perl_local_args+=(-Mlocal::lib="$STOW_PERL_LOCAL_LIB")
+
+        #
+        # Get the environment setup and convert it to something that works in unix.
+        #
+        #   1. Convert drive to MSYS e.g., D:\ -> /d/
+        #   2. Convert variable references e.g., %MYVAR% -> ${MYVAR}
+        #   3. Convert backslashes to forward slashes e.g., ${HOME}\Is\The\Best -> ${HOME}/Is/The/Best
+        #
         _perl_local_setup="$(
             COMSPEC="" "$STOW_PERL" "${_perl_local_args[@]}" |
-                sed 's.\\./.g' |
-                sed 's.C:./c.g' |
-                sed 's.;.:.g' |
-                sed 's/\%\([^]]*\)\%/\${\1}/g'
+                sed 's.\([a-zA-Z]\):\\./\1/.g' |
+                sed 's/\%\([^]]*\)\%/\${\1}/g' |
+                perl -pe 's/\\(?!\")/\//g'
         )"
+
         echo "$_perl_local_setup"
+
         return 0
     fi
 
