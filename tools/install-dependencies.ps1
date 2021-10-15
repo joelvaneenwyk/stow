@@ -480,7 +480,8 @@ Function Install-Toolset {
 
     $script:StowRoot = Resolve-Path -Path "$PSScriptRoot/.."
 
-    $script:StowTempDir = Join-Path -Path "$script:StowRoot" -ChildPath ".tmp"
+    $script:TempDir = Join-Path -Path "$env:UserProfile" -ChildPath ".tmp"
+    $script:StowTempDir = Join-Path -Path "$script:TempDir" -ChildPath "stow"
     if ( -not(Test-Path -Path "$script:StowTempDir") ) {
         New-Item -ItemType directory -Path "$script:StowTempDir" | Out-Null
     }

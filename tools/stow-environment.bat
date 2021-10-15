@@ -44,7 +44,7 @@ exit /b
         set STOW_ROOT=%_root:~0,-1%
         call :ConvertToUnixyPath "STOW_ROOT_UNIX" "!STOW_ROOT!"
 
-        set STOW_LOCAL_BUILD_ROOT=!STOW_ROOT!\.tmp
+        set STOW_LOCAL_BUILD_ROOT=%USERPROFILE%\.tmp\stow
         set WIN_UNIX_SHELL=!STOW_LOCAL_BUILD_ROOT!\msys64\msys2_shell.cmd
         call :FindTool "WIN_UNIX_SHELL" "msys2_shell"
         call :GetDirectoryPath "WIN_UNIX_DIR" "!WIN_UNIX_SHELL!"

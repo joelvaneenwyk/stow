@@ -34,8 +34,6 @@ exit /b
     rmdir /q /s "%USERPROFILE%\.cpan\prefs" > nul 2>&1
     rmdir /q /s "%USERPROFILE%\.cpan-w64\CPAN" > nul 2>&1
     rmdir /q /s "%USERPROFILE%\.cpan-w64\prefs" > nul 2>&1
-    rmdir /q /s "%_stow_root%\.tmp\home\.cpan" > nul 2>&1
-    rmdir /q /s "%_stow_root%\.tmp\home\.cpan-w64" > nul 2>&1
 
     call "%_stow_root%\tools\stow-environment.bat" --refresh
     if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!

@@ -371,8 +371,8 @@ function initialize_perl() {
         rm -f "$_user_profile/.cpan/CPAN/MyConfig.pm" &>/dev/null
         rm -f "$_user_profile/.cpan-w64/CPAN/MyConfig.pm" &>/dev/null
     fi
-    rm -rf "$STOW_ROOT/.tmp/home/.cpan" &>/dev/null
-    rm -rf "$STOW_ROOT/.tmp/home/.cpan-w64" &>/dev/null
+    rm -rf "$STOW_LOCAL_BUILD_ROOT/home/.cpan" &>/dev/null
+    rm -rf "$STOW_LOCAL_BUILD_ROOT/home/.cpan-w64" &>/dev/null
     rm -rf "$HOME/.cpanm" &>/dev/null
 
     if "$STOW_PERL" -MCPAN -le 1 2>/dev/null; then
@@ -561,7 +561,7 @@ function update_stow_environment() {
     fi
     export STOW_ROOT
 
-    export STOW_LOCAL_BUILD_ROOT="$STOW_ROOT/.tmp"
+    export STOW_LOCAL_BUILD_ROOT="${USERPROFILE:-${TMPDIR:-STOW_ROOT}}/.tmp/stow"
     mkdir -p "$STOW_LOCAL_BUILD_ROOT"
 
     TEX=$(normalize_path "${TEX:-}")
