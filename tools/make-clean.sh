@@ -58,6 +58,7 @@ function remove_intermediate_files() {
     rm -f "$STOW_ROOT/doc/stow.dvi" >/dev/null 2>&1
     rm -f "$STOW_ROOT/doc/stow.toc" >/dev/null 2>&1
     rm -f "$STOW_ROOT/doc/version.texi" >/dev/null 2>&1
+    rm -f "$STOW_ROOT/.env" >/dev/null 2>&1
     rm -f "$STOW_ROOT/config."* >/dev/null 2>&1
     rm -f "$STOW_ROOT/stow."* >/dev/null 2>&1
     rm -f "$STOW_ROOT/"*.log >/dev/null 2>&1

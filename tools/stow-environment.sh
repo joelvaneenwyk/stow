@@ -117,8 +117,8 @@ function use_perl_local_lib() {
         #
         _perl_local_setup="$(
             COMSPEC="" "$STOW_PERL" "${_perl_local_args[@]}" |
-                sed 's.\([a-zA-Z]\):\\./\1/.g' |
-                sed 's/\%\([^]]*\)\%/\${\1}/g' |
+                sed 's#\([a-zA-Z]\):\\#/\1/#g' |
+                sed 's#\%\([^]]*\)\%#\${\1}#g' |
                 perl -pe 's/\\(?!\")/\//g'
         )"
 
@@ -132,6 +132,8 @@ function use_perl_local_lib() {
 
 function activate_local_perl_library() {
     if _perl_export=$(use_perl_local_lib); then
+        echo "Perl: '$STOW_PERL'"
+        echo "-------------"
         echo "$_perl_export"
         eval "$_perl_export"
 
@@ -146,9 +148,6 @@ function activate_local_perl_library() {
         PATH="/usr/local/opt/texinfo/bin:/Library/TeX/texbin/:$PERL_BIN:$PERL_C_BIN:$STOW_PERL_LOCAL_LIB/bin:$PATH"
         export PATH
         echo "PATH='$PATH'"
-
-        echo "-------------"
-        echo "Perl: '$STOW_PERL'"
 
         export PERL_LOCAL_LIB_ROOT="$STOW_PERL_LOCAL_LIB"
 

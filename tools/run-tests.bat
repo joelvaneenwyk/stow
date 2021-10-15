@@ -34,7 +34,7 @@ exit /b
 
     if "%GITHUB_ENV%"=="" goto:$SkipGitHubActionSetup
         echo STOW_TEST_RESULTS=%_result_filename% >>"%GITHUB_ENV%"
-        echo STOW_CPAN_LOGS=%USER_PROFILE%\.cpan*\work\**\*.log >>"%GITHUB_ENV%"
+        echo STOW_CPAN_LOGS=%USERPROFILE%\.cpan*\work\**\*.log >>"%GITHUB_ENV%"
 
     :$SkipGitHubActionSetup
     del "%STOW_ROOT%\Build" > nul 2>&1

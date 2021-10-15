@@ -124,6 +124,7 @@ test$
 ^local/
 \.log$
 ^ldeps/
+\.env$
 
 \B\.tmp\b
 \B\.build\b

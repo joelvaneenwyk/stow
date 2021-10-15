@@ -142,20 +142,26 @@ function test_perl_version() {
         echo "test_results_${os_name}_${_perl_version}.xml" | awk '{print tolower($0)}'
     )"
 
-    if [ -n "${GITHUB_ENV:-}" ]; then
-        echo "STOW_TEST_RESULTS=$_test_result_output_path" >>"$GITHUB_ENV"
+    _env=${GITHUB_ENV:-${STOW_ROOT}/.env}
+    _cpanm_root="$HOME/.cpanm/work"
+    _env_test_path="$_test_result_output_path"
 
-        if [ -n "${MSYSTEM:-}" ]; then
-            # https://github.com/msys2/setup-msys2/blob/master/main.js
-            # shellcheck disable=SC2028
-            echo 'STOW_CPAN_LOGS=C:\msys64\home\runneradmin\.cpanm\work\**\*.log' >>"$GITHUB_ENV"
-        else
-            # shellcheck disable=SC2016
-            echo "STOW_CPAN_LOGS=$HOME/.cpanm/work/**/*.log" >>"$GITHUB_ENV"
-        fi
-
-        echo "✔ Exported paths for GitHub Action jobs."
+    if [ -x "$(command -v cygpath)" ]; then
+        # https://github.com/msys2/setup-msys2/blob/master/main.js
+        _cpanm_root=$(cygpath --windows "$_cpanm_root")
+        _env_test_path=$(cygpath --windows "$_env_test_path")
     fi
+
+    _cpanm_logs="$_cpanm_root/.cpanm/work/**/*.log"
+
+    if [ -n "${MSYSTEM:-}" ]; then
+        _cpanm_logs="${_cpanm_logs//\//\\}"
+    fi
+
+    echo "STOW_CPAN_LOGS=${_cpanm_logs}" | tee --append "$_env"
+    echo "STOW_TEST_RESULTS=${_env_test_path}" | tee --append "$_env"
+
+    echo "✔ Exported paths for GitHub Action jobs."
 
     # Print first non-blank line of Perl version as it includes details of where it
     # was built e.g., 'x86_64-msys-thread-multi'
