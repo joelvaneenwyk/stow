@@ -26,7 +26,8 @@ function normalize_path {
         fi
     fi
 
-    echo "$input_path"
+    # shellcheck disable=SC2001
+    echo "$input_path" | sed 's:/*$::'
 
     return 0
 }
@@ -477,7 +478,8 @@ function update_stow_environment() {
     fi
     export STOW_ROOT
 
-    export STOW_LOCAL_BUILD_ROOT="${USERPROFILE:-${TMPDIR:-/var/tmp}}/.tmp/stow"
+    _tmp=$(normalize_path "${USERPROFILE:-${TMPDIR:-/var/tmp}}")
+    export STOW_LOCAL_BUILD_ROOT="${_tmp}/.tmp/stow"
     mkdir -p "$STOW_LOCAL_BUILD_ROOT"
 
     TEX=$(normalize_path "${TEX:-}")
