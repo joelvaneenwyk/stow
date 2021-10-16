@@ -279,7 +279,6 @@ Function Get-TexLive {
             New-Item -ItemType directory -Path "$env:TEXDIR" | Out-Null
         }
 
-
         # https://github.com/TeX-Live/installer/blob/master/install-tl
         $env:TEXLIVE_INSTALL_PREFIX = "$TexLiveInstallRoot"
         $env:TEXLIVE_INSTALL_TEXDIR = "$env:TEXDIR"
@@ -340,16 +339,21 @@ tlpdbopt_w32_multi_user 0
             Write-Host "Skipped install. TeX already exists: '$texExecutable'"
         }
         elseif ($IsWindows -or $ENV:OS) {
+            $errorPreference = $ErrorActionPreference
+            $ErrorActionPreference = 'SilentlyContinue'
+
             # We redirect stderr to stdout because of a seemingly unavoidable error that we get during
             # install e.g. 'Use of uninitialized value $deftmflocal in string at C:\...\texlive-install\install-tl line 1364.'
-            & "$ENV:SystemRoot\System32\cmd.exe" /d /c ""$env:TEXLIVE_INSTALL" -no-gui -portable -profile "$texLiveProfile" 2>&1"
+            & "$ENV:SystemRoot\System32\cmd.exe" /d /c "call "$env:TEXLIVE_INSTALL" -no-gui -portable -profile "$texLiveProfile"" 2>&1
+
+            $ErrorActionPreference = $errorPreference
         }
         else {
             Write-Host "TeX Live install process only supported on Windows."
         }
 
         if ($IsWindows -or $ENV:OS) {
-            & "$ENV:SystemRoot\System32\cmd.exe" /d /c "call $env:TEXLIVE_BIN/tlmgr.bat update -all"
+            & "$ENV:SystemRoot\System32\cmd.exe" /d /c "call "$env:TEXLIVE_BIN/tlmgr.bat" update -all"
         }
     }
     catch [Exception] {
@@ -480,7 +484,12 @@ Function Install-Toolset {
 
     $script:StowRoot = Resolve-Path -Path "$PSScriptRoot/.."
 
-    $script:TempDir = Join-Path -Path "$env:UserProfile" -ChildPath ".tmp"
+    $script:StowUserProfile = "$env:UserProfile"
+    if ([String]::IsNullOrEmpty("$script:StowUserProfile")) {
+        $script:StowUserProfile = "$env:HOME"
+    }
+
+    $script:TempDir = Join-Path -Path "$script:StowUserProfile" -ChildPath ".tmp"
     $script:StowTempDir = Join-Path -Path "$script:TempDir" -ChildPath "stow"
     if ( -not(Test-Path -Path "$script:StowTempDir") ) {
         New-Item -ItemType directory -Path "$script:StowTempDir" | Out-Null
