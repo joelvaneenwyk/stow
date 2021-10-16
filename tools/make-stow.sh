@@ -127,6 +127,7 @@ function make_stow() {
     edit "$STOW_ROOT/bin/stow"
     edit "$STOW_ROOT/lib/Stow.pm"
     edit "$STOW_ROOT/lib/Stow/Util.pm"
+    cat "$STOW_ROOT/default-ignore-list" >>"$STOW_ROOT/lib/Stow.pm"
 
     if [ -x "$(command -v autoreconf)" ]; then
         cd "$STOW_ROOT" || true
