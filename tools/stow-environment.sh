@@ -478,8 +478,13 @@ function update_stow_environment() {
     fi
     export STOW_ROOT
 
-    _tmp=$(normalize_path "${USERPROFILE:-${TMPDIR:-/var/tmp}}")
-    export STOW_LOCAL_BUILD_ROOT="${_tmp}/.tmp/stow"
+    _tmp="${HOME:-${USERPROFILE:-}}"
+    if [ -n "$_tmp" ]; then
+        _tmp="$(normalize_path "$_tmp")/.tmp"
+    else
+        _tmp=$(normalize_path "${TMPDIR:-/var/tmp}")
+    fi
+    export STOW_LOCAL_BUILD_ROOT="${_tmp}/stow"
     mkdir -p "$STOW_LOCAL_BUILD_ROOT"
 
     TEX=$(normalize_path "${TEX:-}")
@@ -542,7 +547,7 @@ function update_stow_environment() {
 
         line=$(normalize_path "$line")
 
-        if [ -f "$line" ] && [[ ! "$line" == "$MSYSTEM_PREFIX"* ]] && [[ ! "$line" == /usr/* ]]; then
+        if [ -f "$line" ] && [[ ! "$line" == "${MSYSTEM_PREFIX:-}"* ]] && [[ ! "$line" == /usr/* ]]; then
             PERL_LOCAL="$line"
             break
         fi
