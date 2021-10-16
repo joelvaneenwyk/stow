@@ -95,6 +95,7 @@ exit /b
     rmdir /q /s "%STOW_ROOT%\blib\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\doc\manual-split\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\doc\manual.t2d\" > nul 2>&1
+    rmdir /q /s "%STOW_ROOT%\doc\stow.t2p\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\stow\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\cover_db\" > nul 2>&1
     rmdir /q /s "%STOW_ROOT%\tmp-testing-trees\" > nul 2>&1
