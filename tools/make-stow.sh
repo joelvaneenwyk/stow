@@ -26,6 +26,52 @@ function edit() {
         -e "s|[@]USE_LIB_PMDIR[@]|$USE_LIB_PMDIR|g" "$input_file" >"$output_file"
 }
 
+function make_docs() {
+    if [ -e "$STOW_ROOT/.git" ] && [ -x "$(command -v git)" ]; then
+        (
+            git -C "$STOW_ROOT" log \
+                --format="format:%ad  %aN <%aE>%n%n    * %w(70,0,4)%s%+b%n" \
+                --name-status \
+                v2.0.2..HEAD | sed 's/^\([A-Z]\)\t/      \1 /'
+            cat "$STOW_ROOT/doc/ChangeLog.OLD"
+        ) >"$STOW_ROOT/ChangeLog"
+        echo "Rebuilt 'ChangeLog' from git commit history."
+    else
+        echo "Not in a git repository; can't update ChangeLog."
+    fi
+
+    if [ -f "$STOW_ROOT/automake/mdate-sh" ]; then
+        # We intentionally want splitting so that each space separated part of the
+        # date goes into a different argument.
+        # shellcheck disable=SC2046
+        set $("$STOW_ROOT/automake/mdate-sh" "$STOW_ROOT/doc/stow.texi")
+    fi
+
+    (
+        printf "@set UPDATED %s %s %s\n" "${1:-0}" "${2:-0}" "${3:-0}"
+        echo "@set UPDATED-MONTH ${2:-0} ${3:-0}"
+        echo "@set EDITION $STOW_VERSION"
+        echo "@set VERSION $STOW_VERSION"
+    ) >"$STOW_ROOT/doc/version.texi"
+
+    if [ -x "$(command -v makeinfo)" ]; then
+        # Generate 'doc/stow.info' file needed for generating documentation. The makefile version
+        # of this adds the "$STOW_ROOT/automake/missing" prefix to provide additional information
+        # if it is unavailable but we skip that here since we do not assume you have already
+        # executed 'autoreconf' so the 'missing' tool does not yet exist.
+        makeinfo -I "$STOW_ROOT/doc/" -o "$STOW_ROOT/doc/" "$STOW_ROOT/doc/stow.texi"
+    fi
+
+    if [ -x "$(command -v pdfetex)" ]; then
+        (
+            cd "$STOW_ROOT/doc" || true
+            TEXINPUTS="../;." run_command_group pdfetex "./stow.texi"
+            mv "./stow.pdf" "./manual.pdf"
+        )
+        echo "✔ Used 'doc/stow.texi' to generate 'doc/manual.pdf'"
+    fi
+}
+
 function make_stow() {
     set -e
 
@@ -48,8 +94,39 @@ function make_stow() {
             _perl_make_args+=(-I "$STOW_PERL_LOCAL_LIB/lib/perl5" -Mlocal::lib="$STOW_PERL_LOCAL_LIB")
         fi
     else
-        return $?
+        _return_value=$?
+        echo "Failed to install Perl dependencies."
+        return $_return_value
     fi
+
+    PMDIR="$STOW_ROOT/lib"
+
+    if ! PERL5LIB=$(
+        "$STOW_PERL" -V |
+            awk '/@INC:/ {p=1; next} (p==1) {print $1}' |
+            sed 's/\\/\//g' |
+            grep "$PMDIR" |
+            head -n 1
+    ); then
+        echo "INFO: Target '$PMDIR' is not in standard include so will be inlined."
+    fi
+
+    if [ -n "$PERL5LIB" ]; then
+        PERL5LIB=$(normalize_path "$PERL5LIB")
+        USE_LIB_PMDIR=""
+        echo "Module directory is listed in standard @INC, so everything"
+        echo "should work fine with no extra effort."
+    else
+        USE_LIB_PMDIR="use lib \"$PMDIR\";"
+        echo "This is *not* in the built-in @INC, so the"
+        echo "front-end scripts will have an appropriate \"use lib\""
+        echo "line inserted to compensate."
+    fi
+
+    edit "$STOW_ROOT/bin/chkstow"
+    edit "$STOW_ROOT/bin/stow"
+    edit "$STOW_ROOT/lib/Stow.pm"
+    edit "$STOW_ROOT/lib/Stow/Util.pm"
 
     if [ -x "$(command -v autoreconf)" ]; then
         cd "$STOW_ROOT" || true
@@ -65,40 +142,19 @@ function make_stow() {
         run_command autoreconf --install --verbose
         run_command ./configure --prefix="${STOW_SITE_PREFIX:-}" --with-pmdir="$PERL5LIB"
         run_command make bin/stow bin/chkstow lib/Stow.pm lib/Stow/Util.pm
-    else
-        PMDIR="$STOW_ROOT/lib"
-
-        if ! PERL5LIB=$(
-            "$STOW_PERL" -V |
-                awk '/@INC:/ {p=1; next} (p==1) {print $1}' |
-                sed 's/\\/\//g' |
-                grep "$PMDIR" |
-                head -n 1
-        ); then
-            echo "INFO: Target '$PMDIR' is not in standard include so will be inlined."
-        fi
-
-        if [ -n "$PERL5LIB" ]; then
-            PERL5LIB=$(normalize_path "$PERL5LIB")
-            USE_LIB_PMDIR=""
-            echo "Module directory is listed in standard @INC, so everything"
-            echo "should work fine with no extra effort."
-        else
-            USE_LIB_PMDIR="use lib \"$PMDIR\";"
-            echo "This is *not* in the built-in @INC, so the"
-            echo "front-end scripts will have an appropriate \"use lib\""
-            echo "line inserted to compensate."
-        fi
-
-        edit "$STOW_ROOT/bin/chkstow"
-        edit "$STOW_ROOT/bin/stow"
-        edit "$STOW_ROOT/lib/Stow.pm"
-        edit "$STOW_ROOT/lib/Stow/Util.pm"
     fi
+
     echo "✔ Generated Stow binaries and libraries."
 
-    _perl_make_args+=(-I "$STOW_ROOT/lib" -I "$STOW_ROOT/bin")
-    run_command "$STOW_PERL" "${_perl_make_args[@]}" "$STOW_ROOT/bin/stow" --version
+    if run_command "$STOW_PERL" "${_perl_make_args[@]}" \
+        -I "$STOW_ROOT/lib" -I "$STOW_ROOT/bin" \
+        "$STOW_ROOT/bin/stow" --version; then
+        echo "✔ Validated generated 'stow' binary."
+    else
+        _return_value=$?
+        echo "Failed to run generated 'stow' binary."
+        return $_return_value
+    fi
 
     # Revert build changes and remove intermediate files
     git -C "$STOW_ROOT" restore aclocal.m4 >/dev/null 2>&1 || true
@@ -106,6 +162,8 @@ function make_stow() {
         "$STOW_ROOT/nul" "$STOW_ROOT/configure~" \
         "$STOW_ROOT/Build.bat" "$STOW_ROOT/Build" >/dev/null 2>&1 || true
     echo "✔ Removed intermediate output files."
+
+    make_docs
 }
 
 make_stow "$@"

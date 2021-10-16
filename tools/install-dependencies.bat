@@ -61,20 +61,6 @@ exit /b
 :: Local helper functions
 ::
 
-:RunTaskGroup
-    for /F "tokens=*" %%i in ('echo %*') do set _cmd=%%i
-    echo ::group::%_cmd%
-    echo [command]%_cmd%
-    %*
-    echo ::endgroup::
-exit /b
-
-:RunCommand
-    for /F "tokens=*" %%i in ('echo %*') do set _cmd=%%i
-    echo [command]%_cmd%
-    %*
-exit /b
-
 :InstallPerlModules
     cd /d "!STOW_ROOT!"
 
@@ -139,3 +125,17 @@ exit /b
 
     set PERL5_CPAN_IS_RUNNING=
 exit /b !_cmd_return!
+
+:RunTaskGroup
+    for /F "tokens=*" %%i in ('echo %*') do set _cmd=%%i
+    echo ::group::%_cmd%
+    echo [command]%_cmd%
+    %*
+    echo ::endgroup::
+exit /b
+
+:RunCommand
+    for /F "tokens=*" %%i in ('echo %*') do set _cmd=%%i
+    echo [command]%_cmd%
+    %*
+exit /b

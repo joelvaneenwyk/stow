@@ -63,11 +63,16 @@ EOL
     echo "[stow] Initialized package manager."
 }
 
-STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && cd ../ && pwd -P)"
-source "$STOW_ROOT/tools/stow-environment.sh" "$@"
+function install_dependencies() {
+    STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && cd ../ && pwd -P)"
+    source "$STOW_ROOT/tools/stow-environment.sh" "$@"
 
-if [ -f '/etc/post-install/09-stow.post' ]; then
-    initialize_package_manager
-else
-    install_dependencies
-fi
+    if [ -f '/etc/post-install/09-stow.post' ]; then
+        initialize_package_manager
+    else
+        install_system_dependencies
+        install_perl_dependencies
+    fi
+}
+
+install_dependencies "$@"

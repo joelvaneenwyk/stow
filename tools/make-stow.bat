@@ -16,104 +16,103 @@
 :: along with this program. If not, see https://www.gnu.org/licenses/.
 ::
 
-call :MakeStow "%~dp0..\" %*
+setlocal EnableExtensions EnableDelayedExpansion
 
+call "%~dp0stow-environment.bat" %2 %3 %4 %5 %6 %7 %8 %9
+if not "!ERRORLEVEL!"=="0" (
+    echo [ERROR] Environment setup failed.
+    exit /b !ERRORLEVEL!
+)
+
+call "%STOW_ROOT%\tools\make-clean.bat"
+
+set USE_LIB_PMDIR=
+set PMDIR=%STOW_ROOT%\lib
+set PMDIR=%PMDIR:\=/%
+
+set _found=X
+echo !STOW_PERL! !PMDIR!
+for /f "tokens=* usebackq" %%a in (`!STOW_PERL! -V`) do (
+    set "_include=%%a"
+    if exist "%%a" (
+        echo "!_include!" | "%SystemRoot%\System32\find.exe" /I "!PMDIR!" >nul
+        if "!ERRORLEVEL!"=="!_found!" (
+            set _found=X
+            set "PERL5LIB=!_include!"
+            echo Target folder '!PMDIR!' is part of built-in @INC, so everything
+            echo should work fine with no extra include statements.
+        )
+    )
+    if [!_include!]==[@INC:] (
+        set _found=0
+    )
+)
+:$PerlModuleCheckDone
+
+if not "!PERL5LIB!"=="" goto:$InitializedPerlModuleDir
+    set USE_LIB_PMDIR=use lib "%PMDIR%";
+    set PERL5LIB=!PMDIR!
+    echo Target folder is not part of built-in @INC, so the
+    echo front-end scripts will add an appropriate "use lib" line
+    echo to compensate.
+    echo ----------------------------------------
+    echo PERL5LIB: '!PERL5LIB!'
+:$InitializedPerlModuleDir
+
+call :ReplaceVariables "%STOW_ROOT%\bin\chkstow"
+call :ReplaceVariables "%STOW_ROOT%\bin\stow"
+call :ReplaceVariables "%STOW_ROOT%\lib\Stow\Util.pm"
+call :ReplaceVariables "%STOW_ROOT%\lib\Stow.pm"
+
+:: Append ignore list to the end of the Stow library
+type "%STOW_ROOT%\default-ignore-list" >>"%STOW_ROOT%\lib\Stow.pm"
+
+call :Run "%PERL_BIN_DIR%\pod2man.bat" --name stow --section 8 "%STOW_ROOT%\bin\stow" >"%STOW_ROOT%\doc\stow.8"
+if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
+echo Created 'stow.8' with 'pod2man' Perl script.
+
+:: Remove all intermediate files before running Stow for the first time
+rmdir /q /s "%STOW_ROOT%\_Inline\" > nul 2>&1
+rmdir /q /s "%STOW_ROOT%\bin\_Inline\" > nul 2>&1
+rmdir /q /s "%STOW_ROOT%\tools\_Inline\" > nul 2>&1
+
+set _cpanm=%PERL_BIN_DIR%\cpanm.bat
+if exist "%_cpanm%" (
+    call "%PERL_BIN_DIR%\cpanm.bat" --installdeps .
+)
+
+:: Make sure that 'stow' was successfully compiled by printing out the version.
+cd /d "%STOW_ROOT%"
+call :Run "%STOW_PERL%" %STOW_PERL_ARGS% -I "%STOW_ROOT%\lib" "%STOW_ROOT%\bin\stow" --version
+if not "!ERRORLEVEL!"=="0" exit /b
+
+call :CreateVersionTexi
+
+:: Exeute 'Build.PL' to generate build scripts: 'Build' and 'Build.bat'
+cd /d "%STOW_ROOT%"
+call :Run "%STOW_PERL%" %STOW_PERL_ARGS% -I "%STOW_ROOT%\lib" -I "%STOW_ROOT%\bin" "%STOW_ROOT%\Build.PL"
+if not "!ERRORLEVEL!"=="0" exit /b
+
+:: Generate documentation using 'bash' and associated unix tools which
+:: are required due to reliance on autoconf.
+call :MakeDocs
+
+:$MakeEnd
+    :: Remove leftover files so that 'Build distcheck' succeeds
+    del "%STOW_ROOT%\doc\stow.log" > nul 2>&1
+    del "%STOW_ROOT%\doc\texput.log" > nul 2>&1
+    rmdir /q /s "%STOW_ROOT%\doc\manual.t2d\" > nul 2>&1
+    rmdir /q /s "%STOW_ROOT%\_Inline\" > nul 2>&1
+    rmdir /q /s "%STOW_ROOT%\bin\_Inline\" > nul 2>&1
+    rmdir /q /s "%STOW_ROOT%\tools\_Inline\" > nul 2>&1
+
+    :: Restore original directory
+    cd /d "%STARTING_DIR%"
 exit /b
 
 ::
 :: Local functions
 ::
-
-:MakeStow
-    setlocal EnableExtensions EnableDelayedExpansion
-
-    set _root=%~dp1
-    call "%_root:~0,-1%\tools\stow-environment.bat" %2 %3 %4 %5 %6 %7 %8 %9
-    if not "!ERRORLEVEL!"=="0" (
-        echo [ERROR] Environment setup failed.
-        exit /b !ERRORLEVEL!
-    )
-
-    call "%_root:~0,-1%\tools\make-clean.bat"
-
-    set USE_LIB_PMDIR=
-    set PMDIR=%STOW_ROOT%\lib
-    set PMDIR=%PMDIR:\=/%
-
-    set _found=X
-    echo !STOW_PERL! !PMDIR!
-    for /f "tokens=* usebackq" %%a in (`!STOW_PERL! -V`) do (
-        set "_include=%%a"
-        if exist "%%a" (
-            echo "!_include!" | "%SystemRoot%\System32\find.exe" /I "!PMDIR!" >nul
-            if "!ERRORLEVEL!"=="!_found!" (
-                set _found=X
-                set "PERL5LIB=!_include!"
-                echo Target folder '!PMDIR!' is part of built-in @INC, so everything
-                echo should work fine with no extra include statements.
-            )
-        )
-        if [!_include!]==[@INC:] (
-            set _found=0
-        )
-    )
-    :$PerlModuleCheckDone
-
-    if not "!PERL5LIB!"=="" goto:$InitializedPerlModuleDir
-        set USE_LIB_PMDIR=use lib "%PMDIR%";
-        set PERL5LIB=!PMDIR!
-        echo Target folder is not part of built-in @INC, so the
-        echo front-end scripts will add an appropriate "use lib" line
-        echo to compensate.
-        echo ----------------------------------------
-        echo PERL5LIB: '!PERL5LIB!'
-    :$InitializedPerlModuleDir
-
-    call :ReplaceVariables "%STOW_ROOT%\bin\chkstow"
-    call :ReplaceVariables "%STOW_ROOT%\bin\stow"
-    call :ReplaceVariables "%STOW_ROOT%\lib\Stow\Util.pm"
-    call :ReplaceVariables "%STOW_ROOT%\lib\Stow.pm"
-
-    :: Append ignore list to the end of the Stow library
-    type "%STOW_ROOT%\default-ignore-list" >> "%STOW_ROOT%\lib\Stow.pm"
-
-    call :Run "%PERL_BIN_DIR%\pod2man.bat" --name stow --section 8 "%STOW_ROOT%\bin\stow" > "%STOW_ROOT%\doc\stow.8"
-    if not "!ERRORLEVEL!"=="0" exit /b
-    echo Created 'stow.8' with 'pod2man' Perl script.
-
-    :: Remove all intermediate files before running Stow for the first time
-    rmdir /q /s "%STOW_ROOT%\_Inline\" > nul 2>&1
-    rmdir /q /s "%STOW_ROOT%\bin\_Inline\" > nul 2>&1
-    rmdir /q /s "%STOW_ROOT%\tools\_Inline\" > nul 2>&1
-
-    :: Make sure that 'stow' was successfully compiled by printing out the version.
-    cd /d "%STOW_ROOT%"
-    call :Run "%STOW_PERL%" %STOW_PERL_ARGS% -I "%STOW_ROOT%\lib" "%STOW_ROOT%\bin\stow" --version
-    if not "!ERRORLEVEL!"=="0" exit /b
-
-    call :CreateVersionTexi
-
-    :: Exeute 'Build.PL' to generate build scripts: 'Build' and 'Build.bat'
-    cd /d "%STOW_ROOT%"
-    call :Run "%STOW_PERL%" %STOW_PERL_ARGS% -I "%STOW_ROOT%\lib" -I "%STOW_ROOT%\bin" "%STOW_ROOT%\Build.PL"
-    if not "!ERRORLEVEL!"=="0" exit /b
-
-    :: Generate documentation using 'bash' and associated unix tools which
-    :: are required due to reliance on autoconf.
-    call :MakeDocs
-
-    :$MakeEnd
-        :: Remove leftover files so that 'Build distcheck' succeeds
-        del "%STOW_ROOT%\doc\stow.log" > nul 2>&1
-        del "%STOW_ROOT%\doc\texput.log" > nul 2>&1
-        rmdir /q /s "%STOW_ROOT%\doc\manual.t2d\" > nul 2>&1
-        rmdir /q /s "%STOW_ROOT%\_Inline\" > nul 2>&1
-        rmdir /q /s "%STOW_ROOT%\bin\_Inline\" > nul 2>&1
-        rmdir /q /s "%STOW_ROOT%\tools\_Inline\" > nul 2>&1
-
-        :: Restore original directory
-        cd /d "%STARTING_DIR%"
-exit /b
 
 :ReplaceVariables
     setlocal EnableExtensions EnableDelayedExpansion
@@ -122,7 +121,7 @@ exit /b
     set output_file=%~1
 
     :: This is more explicit and reliable than the config file trick
-    set perl_command=%STOW_PERL% -p
+    set perl_command="%STOW_PERL%" -p
     set perl_command=!perl_command! -e "s/\@PERL\@/$ENV{STOW_PERL_UNIX}/g;"
     set perl_command=!perl_command! -e "s/\@VERSION\@/$ENV{STOW_VERSION}/g;"
     set perl_command=!perl_command! -e "s/\@USE_LIB_PMDIR\@/$ENV{USE_LIB_PMDIR}/g;"
@@ -154,12 +153,15 @@ exit /b
     if exist "%STOW_GIT%" (
         "%STOW_GIT%" log --format="format:%%ad  %%aN <%%aE>%%n%%n    * %%w(70,0,4)%%s%%+b%%n" --name-status v2.0.2..HEAD >"%STOW_ROOT%\ChangeLog"
         type "%STOW_ROOT%\doc\ChangeLog.OLD" >>"%STOW_ROOT%\ChangeLog"
+        echo Generated ChangeLog using 'git' history: '%STOW_ROOT%\ChangeLog'
+    ) else (
+        echo WARNING: Skipped log generatation as 'git' not found: '%STOW_GIT%'
     )
 
     if not exist "%WIN_UNIX_DIR%\usr\bin\bash.exe" (
-        echo ERROR: Skipped making documentation. Missing unix tools. Please install dependencies first.
+        echo WARNING: Skipped making documentation. Missing unix tools. Please install dependencies first.
         echo ----------------------------------------
-        exit /b 5
+        exit /b 0
     )
 
     set "MSYSTEM=MSYS"

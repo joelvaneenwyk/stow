@@ -16,9 +16,14 @@
 # along with this program. If not, see https://www.gnu.org/licenses/.
 #
 
-# Standard safety protocol
-set -euo pipefail
+# Disable 'unbound variable' errors since 'perlbrew' setup will error
+# out if they are enabled.
+set +o nounset
 
+# Standard safety protocol.
+set -eo pipefail
+
+STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && cd ../ && pwd -P)"
 PERLBREW_ROOT="${PERLBREW_ROOT:-/usr/local/perlbrew}"
 
 if [ ! -f "$PERLBREW_ROOT/etc/bashrc" ]; then
@@ -31,8 +36,9 @@ if [ -f "$_perlbrew_setup" ]; then
     # Load perlbrew environment
     # shellcheck disable=SC1090
     source "$_perlbrew_setup"
+    echo "Initialized 'perlbrew' environment."
 else
-    echo "ERROR: Failed to find perlbrew setup: '$_perlbrew_setup'"
+    echo "ERROR: Failed to find 'perlbrew' setup: '$_perlbrew_setup'"
     return 5
 fi
 
@@ -42,10 +48,8 @@ for p_version in $(perlbrew list | sed 's/ //g' | sed 's/\*//g'); do
     perlbrew use "$p_version"
 
     # Install the needed modules.
-    "$PERLBREW_ROOT/bin/cpanm" --notest \
-        Carp IO::Scalar Inline::C \
-        Devel::Cover::Report::Coveralls \
-        Test::More Test::Output Test::Exception
+    "$PERLBREW_ROOT/bin/cpanm" --installdeps \
+        --notest --with-recommends --with-suggests "$STOW_ROOT"
 done
 
 # Cleanup to remove any temporary files.

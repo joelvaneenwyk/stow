@@ -43,6 +43,8 @@ exit /b
         rmdir /q /s "%WIN_UNIX_DIR%" > nul 2>&1
         echo Removed local 'MSYS2' install.
 
+        del "%STOW_ROOT%\test_results*.xml" > nul 2>&1
+
     :$RemoveStandard
     del "\\?\%STOW_ROOT%\nul" > nul 2>&1
     del "%STOW_ROOT%\texput.log" > nul 2>&1
