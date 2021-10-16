@@ -478,7 +478,10 @@ function update_stow_environment() {
     fi
     export STOW_ROOT
 
-    _tmp="${HOME:-${USERPROFILE:-}}"
+    # We intentionally favor Windows user profile for MSYS2 over local path
+    # since it will be more performant for MSYS2 for temporary files to be
+    # outside the root directory of MSYS2.
+    _tmp="${USERPROFILE:-${HOME:-}}"
     if [ -n "$_tmp" ]; then
         _tmp="$(normalize_path "$_tmp")/.tmp"
     else
