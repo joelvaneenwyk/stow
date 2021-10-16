@@ -30,8 +30,12 @@ rmdir /q /s "%USERPROFILE%\.cpan\CPAN" > nul 2>&1
 rmdir /q /s "%USERPROFILE%\.cpan\prefs" > nul 2>&1
 rmdir /q /s "%USERPROFILE%\.cpan-w64\CPAN" > nul 2>&1
 rmdir /q /s "%USERPROFILE%\.cpan-w64\prefs" > nul 2>&1
+echo Removed intermediate CPAN files.
 
-call "%~dp0tools\stow-environment.bat" --refresh %*
+rmdir /q /s "%USERPROFILE%\.cpanm" > nul 2>&1
+echo Removed intermediate CPANM files.
+
+call "%~dp0stow-environment.bat" --refresh %*
 if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
 
 :: First install 'local::lib' and then remaining libraries so that they can all be
