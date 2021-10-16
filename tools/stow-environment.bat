@@ -127,6 +127,17 @@ exit /b
             set "PERL_CPAN_CONFIG=%PERL_LIB%\CPAN\Config.pm"
         )
 
+        set _cpanm=!PERL_BIN_DIR!\cpanm.bat
+        if not exist "!_cpanm!" goto:$InitializeEnvironment
+        for /f "tokens=* usebackq" %%a in (`!_cpanm! Carp --scandeps --verbose 2^>^&1`) do (
+            set "str1=%%a"
+            set str2=!str1:Work directory is =!
+            if not "x!str2!"=="x!str1!" (
+                set _cpanm=!str2!
+            )
+        )
+        call :GetDirectoryPath "PERL_CPANM_CONFIG_DIR" "!_cpanm!/../../"
+
         :$InitializeEnvironment
             echo ------------------
             echo Stow Root: '!STOW_ROOT!'
@@ -184,6 +195,7 @@ exit /b
         set "PERL_SITE_BIN_DIR=%PERL_SITE_BIN_DIR%"
         set "PERL_LIB=%PERL_LIB%"
         set "PERL_CPAN_CONFIG=%PERL_CPAN_CONFIG%"
+        set "PERL_CPANM_CONFIG_DIR=%PERL_CPANM_CONFIG_DIR%"
         set "PERL5LIB=%PERL5LIB%"
         set "STOW_HOME=%STOW_HOME%"
         set "STARTING_DIR=%STARTING_DIR%"
@@ -337,7 +349,7 @@ exit /b
         echo [command]!_cmd! %_args%
     )
     call %*
-endlocal & exit /b
+exit /b
 
 :RunTaskGroup
     for /F "tokens=*" %%i in ('echo %*') do set _cmd=%%i

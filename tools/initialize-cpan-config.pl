@@ -22,16 +22,24 @@ sub normalize_path {
     my ($path) = @_;
     my $normalized = $path;
     $normalized =~ s#\\#/#g;
-    print $normalized;
     return $normalized;
 }
 
 sub initialize_config {
+    my $initialized = 0;
+
+    # Hook the print function to allow quiet mode
+    *CPAN::Shell::myprint = sub {
+        my($self, $what) = @_;
+        print $what if $initialized;
+    };
+
     my $config = CPAN::HandleConfig;
 
     $config->load(doit => 1, autoconfig => 1);
 
     print "Config: " . $config->require_myconfig_or_config() . "\n";
+    $initialized = 1;
 
     $config->edit(auto_commit => 'yes');
     $config->edit(prerequisites_policy => 'follow');

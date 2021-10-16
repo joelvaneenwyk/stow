@@ -113,7 +113,7 @@ exit /b
 
         :: Restore original directory
         cd /d "%STARTING_DIR%"
-endlocal & exit /b
+exit /b
 
 :ReplaceVariables
     setlocal EnableExtensions EnableDelayedExpansion
@@ -135,7 +135,7 @@ endlocal & exit /b
     )
     call !perl_command! >"%output_file%"
     echo Generated output: '%output_file%'
-endlocal & exit /b
+exit /b
 
 :MakeDocs
     setlocal EnableExtensions EnableDelayedExpansion
@@ -256,4 +256,4 @@ exit /b 0
         echo [command]%*
     )
     call %*
-endlocal & exit /b
+exit /b

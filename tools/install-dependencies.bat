@@ -18,44 +18,44 @@
 
 setlocal EnableExtensions EnableDelayedExpansion
 
-call :RunCommand "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -Command "Set-ExecutionPolicy RemoteSigned -scope CurrentUser;"
-call :RunCommand "%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile -File "%~dp0install-dependencies.ps1"
+set _pwsh="%SystemRoot%\System32\WindowsPowerShell\v1.0\powershell.exe" -NoLogo -NoProfile
 
-call :InstallPerlDependencies "%~dp0..\"
+call :RunCommand %_pwsh% -Command "Set-ExecutionPolicy RemoteSigned -scope CurrentUser;"
+if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
+
+call :RunCommand %_pwsh% -File "%~dp0install-dependencies.ps1"
+if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
+
+rmdir /q /s "%USERPROFILE%\.cpan\CPAN" > nul 2>&1
+rmdir /q /s "%USERPROFILE%\.cpan\prefs" > nul 2>&1
+rmdir /q /s "%USERPROFILE%\.cpan-w64\CPAN" > nul 2>&1
+rmdir /q /s "%USERPROFILE%\.cpan-w64\prefs" > nul 2>&1
+
+call "%~dp0tools\stow-environment.bat" --refresh %*
+if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
+
+:: First install 'local::lib' and then remaining libraries so that they can all be
+:: stored in the local modules path.
+call :InstallPerlModules "LWP::Protocol::https" "local::lib" "App::cpanminus"
+if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
+
+:: Install dependencies. Note that 'Inline::C' requires 'make' and 'gcc' to be installed. It
+:: is recommended to install MSYS2 packages for copmiling (e.g. mingw-w64-x86_64-make) but
+:: many/most Perl distributions already come with the required tools for compiling.
+call :InstallPerlModules ^
+    "YAML" "ExtUtils::Config" ^
+    "LWP::Protocol::https" "IO::Socket::SSL" "Net::SSLeay" ^
+    "Carp" "Module::Build" "Module::Build::Tiny" "IO::Scalar" ^
+    "Test::Harness" "Test::Output" "Test::More" "Test::Exception" ^
+    "ExtUtils::PL2Bat" "Inline::C" "Win32::Mutex" ^
+    "Devel::Cover" "Devel::Cover::Report::Coveralls" ^
+    "TAP::Formatter::JUnit"
+
 exit /b
 
-:InstallPerlDependencies
-    setlocal EnableExtensions EnableDelayedExpansion
-
-    set _root=%~dp1
-    set _stow_root=%_root:~0,-1%
-
-    rmdir /q /s "%USERPROFILE%\.cpan\CPAN" > nul 2>&1
-    rmdir /q /s "%USERPROFILE%\.cpan\prefs" > nul 2>&1
-    rmdir /q /s "%USERPROFILE%\.cpan-w64\CPAN" > nul 2>&1
-    rmdir /q /s "%USERPROFILE%\.cpan-w64\prefs" > nul 2>&1
-
-    call "%_stow_root%\tools\stow-environment.bat" --refresh
-    if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
-
-    :: First install 'local::lib' and then remaining libraries so that they can all be
-    :: stored in the local modules path.
-    call :InstallPerlModules "LWP::Protocol::https" "local::lib" "App::cpanminus"
-    if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
-
-    :: Install dependencies. Note that 'Inline::C' requires 'make' and 'gcc' to be installed. It
-    :: is recommended to install MSYS2 packages for copmiling (e.g. mingw-w64-x86_64-make) but
-    :: many/most Perl distributions already come with the required tools for compiling.
-    call :InstallPerlModules ^
-        "YAML" "ExtUtils::Config" ^
-        "LWP::Protocol::https" "IO::Socket::SSL" "Net::SSLeay" ^
-        "Carp" "Module::Build" "Module::Build::Tiny" "IO::Scalar" ^
-        "Test::Harness" "Test::Output" "Test::More" "Test::Exception" ^
-        "ExtUtils::PL2Bat" "Inline::C" "Win32::Mutex" ^
-        "Devel::Cover" "Devel::Cover::Report::Coveralls" ^
-        "TAP::Formatter::JUnit"
-    :$InstallDone
-exit /b
+::
+:: Local helper functions
+::
 
 :RunTaskGroup
     for /F "tokens=*" %%i in ('echo %*') do set _cmd=%%i

@@ -16,26 +16,18 @@
 :: along with this program. If not, see https://www.gnu.org/licenses/.
 ::
 
-call :SetupStow "%~dp0"
+setlocal EnableExtensions EnableDelayedExpansion
+
+call "%~dp0tools\stow-environment.bat"
+if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
+
+call "%STOW_ROOT%\tools\make-clean.bat"
+if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
+
+call "%STOW_ROOT%\tools\install-dependencies.bat"
+if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
+
+call "%STOW_ROOT%\tools\make-stow.bat"
+if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
 
 exit /b
-
-::
-:: Local functions
-::
-
-:SetupStow
-    setlocal EnableExtensions EnableDelayedExpansion
-
-    set _root=%~dp1
-    set _stow_root=%_root:~0,-1%
-
-    call "%_stow_root%\tools\make-clean.bat"
-    if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
-
-    call "%_stow_root%\tools\install-dependencies.bat"
-    if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
-
-    call "%_stow_root%\tools\make-stow.bat"
-    if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
-endlocal & exit /b

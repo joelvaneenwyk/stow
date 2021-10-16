@@ -32,9 +32,6 @@ exit /b
         rmdir /q /s "%STOW_LOCAL_BUILD_ROOT%\perllib" > nul 2>&1
         echo Removed local 'Perl' library folder.
 
-        if exist "%PERL_CPAN_CONFIG%" del "%PERL_CPAN_CONFIG%" > nul 2>&1
-        echo Removed CPAN config: '%PERL_CPAN_CONFIG%'
-
         :: Shut down 'gpg-agent' otherwise some files can't be deleted from 'msys64' folder
         echo Terminate any 'gpg-agent' processes.
         "%SystemRoot%\System32\wbem\wmic.exe" process where "ExecutablePath LIKE '%%gpg-agent.exe%%'" call terminate 2>&1

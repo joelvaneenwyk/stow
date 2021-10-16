@@ -31,7 +31,7 @@ exit /b
         echo [command]%*
     )
     call %*
-endlocal & exit /b
+exit /b
 
 :StartShell
     setlocal EnableExtensions EnableDelayedExpansion
