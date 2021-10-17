@@ -458,7 +458,7 @@ Function Install-MSYS2 {
     }
 
     $postInstallScript = "$script:MsysTargetDir/etc/post-install/09-stow.post"
-    $initializedFile = "$script:MsysTargetDir/initialized"
+    $initializedFile = "$script:MsysTargetDir/.initialized"
 
     if ((Test-Path -Path "$script:MsysTargetDir/usr/bin/bash.exe" -PathType Leaf) -and (-not((Test-Path -Path "$initializedFile" -PathType Leaf)))) {
         # Create a file that gets automatically called after installation which will silence the
@@ -498,10 +498,12 @@ echo '[stow] Post-install complete.'
             # Create initialized file to indicate we have done the initialization and do not need to
             # go through these steps again.
             Set-Content -Path "$initializedFile" -Value "$(Get-Date)"
-        } else {
+        }
+        else {
             Write-Host '[stow] Extracted MSYS2 but skipped install.'
         }
-    } else {
+    }
+    else {
         Write-Host '[stow] MSYS2 already installed and initialized.'
     }
 }

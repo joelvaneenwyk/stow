@@ -18,10 +18,13 @@
 
 setlocal EnableExtensions EnableDelayedExpansion
 
+set _return_code=0
+
 call "%~dp0stow-environment.bat" %2 %3 %4 %5 %6 %7 %8 %9
 if not "!ERRORLEVEL!"=="0" (
+    set _return_code=!ERRORLEVEL!
     echo [ERROR] Environment setup failed.
-    exit /b !ERRORLEVEL!
+    goto:$MakeEnd
 )
 
 call "%STOW_ROOT%\tools\make-clean.bat"
@@ -68,7 +71,10 @@ call :ReplaceVariables "%STOW_ROOT%\lib\Stow.pm"
 type "%STOW_ROOT%\default-ignore-list" >>"%STOW_ROOT%\lib\Stow.pm"
 
 call :Run "%PERL_BIN_DIR%\pod2man.bat" --name stow --section 8 "%STOW_ROOT%\bin\stow" >"%STOW_ROOT%\doc\stow.8"
-if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
+if not "!ERRORLEVEL!"=="0" (
+    set _return_code=!ERRORLEVEL!
+    goto:$MakeEnd
+)
 echo Created 'stow.8' with 'pod2man' Perl script.
 
 :: Remove all intermediate files before running Stow for the first time
@@ -78,24 +84,35 @@ rmdir /q /s "%STOW_ROOT%\tools\_Inline\" > nul 2>&1
 
 set _cpanm=%PERL_BIN_DIR%\cpanm.bat
 if exist "%_cpanm%" (
-    call "%PERL_BIN_DIR%\cpanm.bat" --installdeps .
+    cd /d "%STOW_ROOT%"
+    call "%PERL_BIN_DIR%\cpanm.bat" --installdeps --notest .
+)
+if not "!ERRORLEVEL!"=="0" (
+    set _return_code=!ERRORLEVEL!
+    goto:$MakeEnd
 )
 
 :: Make sure that 'stow' was successfully compiled by printing out the version.
 cd /d "%STOW_ROOT%"
 call :Run "%STOW_PERL%" %STOW_PERL_ARGS% -I "%STOW_ROOT%\lib" "%STOW_ROOT%\bin\stow" --version
-if not "!ERRORLEVEL!"=="0" exit /b
+if not "!ERRORLEVEL!"=="0" (
+    set _return_code=!ERRORLEVEL!
+    goto:$MakeEnd
+)
 
 call :CreateVersionTexi
-
-:: Exeute 'Build.PL' to generate build scripts: 'Build' and 'Build.bat'
-cd /d "%STOW_ROOT%"
-call :Run "%STOW_PERL%" %STOW_PERL_ARGS% -I "%STOW_ROOT%\lib" -I "%STOW_ROOT%\bin" "%STOW_ROOT%\Build.PL"
-if not "!ERRORLEVEL!"=="0" exit /b
 
 :: Generate documentation using 'bash' and associated unix tools which
 :: are required due to reliance on autoconf.
 call :MakeDocs
+
+:: Exeute 'Build.PL' to generate build scripts: 'Build' and 'Build.bat'
+cd /d "%STOW_ROOT%"
+call :Run "%STOW_PERL%" %STOW_PERL_ARGS% -I "%STOW_ROOT%\lib" -I "%STOW_ROOT%\bin" "%STOW_ROOT%\Build.PL"
+if not "!ERRORLEVEL!"=="0" (
+    set _return_code=!ERRORLEVEL!
+    goto:$MakeEnd
+)
 
 :$MakeEnd
     :: Remove leftover files so that 'Build distcheck' succeeds
@@ -108,7 +125,7 @@ call :MakeDocs
 
     :: Restore original directory
     cd /d "%STARTING_DIR%"
-exit /b
+exit /b !_return_code!
 
 ::
 :: Local functions
