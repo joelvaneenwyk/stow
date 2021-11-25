@@ -118,7 +118,7 @@ function test_perl_version() {
     _perl_test_args=(-I "$STOW_PERL_LOCAL_LIB/lib/perl5")
 
     if activate_local_perl_library; then
-        _perl_test_args+=(-Mlocal::lib="$STOW_PERL_LOCAL_LIB")
+        _perl_test_args+=("-Mlocal::lib=""$STOW_PERL_LOCAL_LIB")
     fi
 
     _perl_version="0.0"

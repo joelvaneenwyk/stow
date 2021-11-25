@@ -107,7 +107,7 @@ function use_perl_local_lib() {
 
     if "$STOW_PERL" "${_perl_local_args[@]}" -Mlocal::lib -le 1 2>/dev/null; then
         # shellcheck disable=SC2054
-        _perl_local_args+=(-Mlocal::lib="$STOW_PERL_LOCAL_LIB")
+        _perl_local_args+=("-Mlocal::lib=""$STOW_PERL_LOCAL_LIB")
 
         #
         # Get the environment setup and convert it to something that works in unix.
@@ -214,7 +214,7 @@ function install_perl_modules() {
 
         if [ "$_use_local_lib" = "0" ] && activate_local_perl_library; then
             _use_local_lib=1
-            _perl_install_args+=(-I "$STOW_PERL_LOCAL_LIB/lib/perl5" -Mlocal::lib="$STOW_PERL_LOCAL_LIB")
+            _perl_install_args+=(-I "$STOW_PERL_LOCAL_LIB/lib/perl5" "-Mlocal::lib=""$STOW_PERL_LOCAL_LIB")
         fi
 
         if [ "$_use_local_lib" = "1" ] && run_command "${_perl_install_args[@]}" -MApp::cpanminus -le 1 &>/dev/null; then
@@ -529,12 +529,12 @@ function update_stow_environment() {
         fi
     fi
 
-    if [ ! -f "$TEX" ] && _tex="$(which tex 2>/dev/null)"; then
+    if [ ! -f "$TEX" ] && _tex="$(command -v tex 2>/dev/null)"; then
         TEX=$_tex
     fi
     export TEX
 
-    if [ ! -f "$PDFTEX" ] && _pdftex="$(which pdfetex 2>/dev/null)"; then
+    if [ ! -f "$PDFTEX" ] && _pdftex="$(command -v pdfetex 2>/dev/null)"; then
         PDFTEX=$_pdftex
     fi
     export PDFTEX

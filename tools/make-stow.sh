@@ -91,7 +91,7 @@ function make_stow() {
 
     if install_perl_dependencies; then
         if activate_local_perl_library; then
-            _perl_make_args+=(-I "$STOW_PERL_LOCAL_LIB/lib/perl5" -Mlocal::lib="$STOW_PERL_LOCAL_LIB")
+            _perl_make_args+=(-I "$STOW_PERL_LOCAL_LIB/lib/perl5" "-Mlocal::lib=""$STOW_PERL_LOCAL_LIB")
         fi
     else
         _return_value=$?
