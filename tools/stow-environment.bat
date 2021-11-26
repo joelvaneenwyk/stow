@@ -80,7 +80,9 @@ exit /b
             goto:$InitializeEnvironment
         )
 
-        call :StoreCommandOutput "STOW_PERL_HASH" C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -NoProfile "(Get-FileHash -Algorithm sha512 !STOW_PERL!).Hash.ToLower().Substring(0, 8)"
+        call :GetDirectoryPath "PERL_BIN_DIR" "!STOW_PERL!"
+        call :GetDirectoryPath "STOW_PERL_ROOT" "!PERL_BIN_DIR!\..\..\DISTRIBUTIONS.txt"
+        call :StorePerlOutput "STOW_PERL_HASH" -MDigest::SHA1"=sha1_hex" -le "print substr^(^(sha1_hex $ARGV[1]^), 0, 8^)" "!STOW_PERL!"
 
         set STOW_PERL_LOCAL_LIB=!STOW_LOCAL_BUILD_ROOT!\perllib\windows\!STOW_PERL_VERSION!.!STOW_PERL_HASH!
         if not exist "!STOW_PERL_LOCAL_LIB!" mkdir "!STOW_PERL_LOCAL_LIB!"
@@ -99,9 +101,6 @@ exit /b
             echo ##[cmd] "!STOW_PERL!" -Mlocal::lib="!STOW_PERL_LOCAL_LIB_UNIX!"
             "!STOW_PERL!" -Mlocal::lib="!STOW_PERL_LOCAL_LIB_UNIX!" >"!STOW_PERL_INIT!"
         :$PerlLocalLibInitialized
-
-        call :GetDirectoryPath "PERL_BIN_DIR" "!STOW_PERL!"
-        call :GetDirectoryPath "STOW_PERL_ROOT" "!PERL_BIN_DIR!\..\..\DISTRIBUTIONS.txt"
 
         set PERL_SITE_BIN_DIR=!STOW_PERL_ROOT!\perl\site\bin
         set PERL_BIN_C_DIR=!STOW_PERL_ROOT!\c\bin
@@ -241,8 +240,10 @@ exit /b
         set "_args=%1"
         shift
         :$GetPerlArgs
-            if "%~1"=="" goto:$ExecutePerlCommand
-            set "_args=%_args% %1"
+            set "_arg=%~1"
+            if "!_arg!"=="" goto:$ExecutePerlCommand
+            set "_arg=%1"
+            set "_args=%_args% !_arg!"
             shift
         goto:$GetPerlArgs
         :$ExecutePerlCommand
