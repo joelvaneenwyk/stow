@@ -433,6 +433,42 @@ function install_perl_dependencies() {
     fi
 }
 
+function _find_local_perl() {
+    (
+        # We manually try to find the version of Perl installed since it is not necessarily
+        # automatically added to the PATH.
+        _tool_cache="${RUNNER_TOOL_CACHE:-"/c/hostedtoolcache/windows"}"
+        _root=$(normalize_path "$_tool_cache/strawberry-perl")
+        echo "$_root"
+        if [ -d "$_root" ]; then
+            find "$_root" -maxdepth 1 -mindepth 1 -type d | (
+                while read -r perl_dir; do
+                    for variant in "perl/bin/perl.exe" "x64/perl/bin/perl.exe" "x64/perl/bin/perl"; do
+                        _perl_path="$perl_dir/$variant"
+                        if [ -e "$_perl_path" ]; then
+                            echo "$_perl_path"
+                        fi
+                    done
+                done
+            )
+        fi
+
+        _where="$(normalize_path "${WINDIR:-}\\system32\\where.exe")"
+        if [ -f "$_where" ]; then
+            "$_where" perl
+        fi
+
+        echo "$STOW_LOCAL_BUILD_ROOT/perl/perl/bin/perl.exe"
+    ) | while read -r line; do
+        line=$(normalize_path "$line")
+
+        if [ -f "$line" ] && [[ ! "$line" == "${MSYSTEM_PREFIX:-}"* ]] && [[ ! "$line" == /usr/* ]]; then
+            echo "$line"
+            break
+        fi
+    done
+}
+
 function update_stow_environment() {
     # Clear out TMP as TEMP may come from Windows and we do not want tools confused
     # if they find both.
@@ -540,46 +576,7 @@ function update_stow_environment() {
     export PDFTEX
 
     # Find the local Windows install if it exists
-    PERL_LOCAL="${PERL_LOCAL:-}"
-
-    (
-        # We manually try to find the version of Perl installed since it is not necessarily
-        # automatically added to the PATH.
-        _tool_cache="${RUNNER_TOOL_CACHE:-"/c/hostedtoolcache/windows"}"
-        _root=$(normalize_path "$_tool_cache/strawberry-perl")
-        echo "$_root"
-        if [ -d "$_root" ]; then
-            find "$_root" -maxdepth 1 -mindepth 1 -type d | (
-                while read -r perl_dir; do
-                    for variant in "perl/bin/perl.exe" "x64/perl/bin/perl.exe" "x64/perl/bin/perl"; do
-                        _perl_path="$perl_dir/$variant"
-                        if [ -e "$_perl_path" ]; then
-                            echo "$_perl_path"
-                        fi
-                    done
-                done
-            )
-        fi
-
-        _where="$(normalize_path "${WINDIR:-}\\system32\\where.exe")"
-        if [ -f "$_where" ]; then
-            "$_where" perl
-        fi
-
-        echo "$STOW_LOCAL_BUILD_ROOT/perl/perl/bin/perl.exe"
-    ) | while read -r line; do
-        # Only print output first time around
-        if [ ! "${STOW_ENVIRONMENT_INITIALIZED:-}" == "1" ]; then
-            echo "[where.perl] $line"
-        fi
-
-        line=$(normalize_path "$line")
-
-        if [ -f "$line" ] && [[ ! "$line" == "${MSYSTEM_PREFIX:-}"* ]] && [[ ! "$line" == /usr/* ]]; then
-            PERL_LOCAL="$line"
-            break
-        fi
-    done
+    PERL_LOCAL="$(_find_local_perl)"
     export PERL_LOCAL
 
     # Only favor local Perl install if running on CI
