@@ -63,71 +63,113 @@ Function Expand-File {
         # Extract previous version of 7zip first
         if (Test-Path -Path "$7za920zip" -PathType Leaf) {
             if (-not(Test-Path -Path "$7za920/7za.exe" -PathType Leaf)) {
-                $ProgressPreference = 'SilentlyContinue'
-                Expand-Archive -Path "$7za920zip" -DestinationPath "$7za920"
+                if ( -not(Test-Path -Path "$7za920") ) {
+                    New-Item -ItemType directory -Path "$7za920" | Out-Null
+                }
+
+                # We use this approach as it is compatible with PowerShell 2.0 as opposed to
+                # Expand-Archive which requires .NET 4
+                $shell = New-Object -ComObject Shell.Application
+                $zip = $shell.NameSpace("$7za920zip")
+                $targetFolder = $shell.Namespace("$7za920")
+                foreach ($item in $zip.items()) {
+                    $targetFolder.CopyHere($item, 1564)
+                }
             }
         }
 
         # If older vresion is available, download and extract latest
         if (Test-Path -Path "$7za920/7za.exe" -PathType Leaf) {
-            $7z2103zip = Join-Path -Path "$script:StowArchivesDir" -ChildPath "7z2103-extra.7z"
-            $7z2103 = Join-Path -Path "$script:StowTempDir" -ChildPath "7z2103"
+            $7z2201zip = Join-Path -Path "$script:StowArchivesDir" -ChildPath "7z2201-extra.7z"
+            $7z2201 = Join-Path -Path "$script:StowTempDir" -ChildPath "7z2201"
 
             # Download latest version of 7zip
-            if (-not(Test-Path -Path "$7z2103zip" -PathType Leaf)) {
-                Get-File -Url "https://www.7-zip.org/a/7z2103-extra.7z" -Filename "$7z2103zip"
+            if (-not(Test-Path -Path "$7z2201zip" -PathType Leaf)) {
+                Get-File -Url "https://www.7-zip.org/a/7z2201-extra.7z" -Filename "$7z2201zip"
             }
 
             # Extract latest vesrion using old version
-            if (Test-Path -Path "$7z2103zip" -PathType Leaf) {
-                if (-not(Test-Path -Path "$7z2103/7za.exe" -PathType Leaf)) {
-                    & "$7za920/7za.exe" x "$7z2103zip" -aoa -o"$7z2103" -r -y | Out-Default
+            if (Test-Path -Path "$7z2201zip" -PathType Leaf) {
+                if ( -not(Test-Path -Path "$7z2201") ) {
+                    New-Item -ItemType directory -Path "$7z2201" | Out-Null
+                }
+
+                if (-not(Test-Path -Path "$7z2201/7za.exe" -PathType Leaf)) {
+                    Write-Host "$7za920/7za.exe x $7z2201zip -aoa -o$7z2201 -r -y"
+                    & "$7za920/7za.exe" @(
+                        "x", "$7z2201zip", "-aoa", "-o$7z2201", "-r", "-y")
+                    Write-Host "Extracted archive: '$7z2201'"
                 }
             }
         }
 
         # Specify latest version of 7zip so that we can use it below
-        if (Test-Path -Path "$7z2103/x64/7za.exe" -PathType Leaf) {
-            $7zip = "$7z2103/x64/7za.exe"
+        if (Test-Path -Path "$7z2201/x64/7za.exe" -PathType Leaf) {
+            $7zip = "$7z2201/x64/7za.exe"
         }
     }
     else {
-        $7z2103zip = Join-Path -Path "$script:StowArchivesDir" -ChildPath "7z2103-linux-x64.tar.xz"
-        $7z2103 = Join-Path -Path "$script:StowTempDir" -ChildPath "7z2103"
+        $7z2201zip = Join-Path -Path "$script:StowArchivesDir" -ChildPath "7z2201-linux-x64.tar.xz"
+        $7z2201 = Join-Path -Path "$script:StowTempDir" -ChildPath "7z2201"
 
         # Download 7zip that was stored in a zip file so that we can extract the latest version stored in 7z format
-        if (-not(Test-Path -Path "$7z2103zip" -PathType Leaf)) {
-            Get-File -Url "https://www.7-zip.org/a/7z2103-linux-x64.tar.xz" -Filename "$7z2103zip"
+        if (-not(Test-Path -Path "$7z2201zip" -PathType Leaf)) {
+            Get-File -Url "https://www.7-zip.org/a/7z2201-linux-x64.tar.xz" -Filename "$7z2201zip"
         }
 
         # Extract previous version of 7zipTempDir first
-        if (Test-Path -Path "$7z2103zip" -PathType Leaf) {
-            if ( -not(Test-Path -Path "$7z2103") ) {
-                New-Item -ItemType directory -Path "$7z2103" | Out-Null
+        if (Test-Path -Path "$7z2201zip" -PathType Leaf) {
+            if ( -not(Test-Path -Path "$7z2201") ) {
+                New-Item -ItemType directory -Path "$7z2201" | Out-Null
             }
 
-            if (-not(Test-Path -Path "$7z2103/7zz" -PathType Leaf)) {
-                tar -xvf "$7z2103zip" -C "$7z2103"
+            if (-not(Test-Path -Path "$7z2201/7zz" -PathType Leaf)) {
+                tar -xvf "$7z2201zip" -C "$7z2201"
             }
         }
 
-        if (Test-Path -Path "$7z2103/7zz" -PathType Leaf) {
-            $7zip = "$7z2103/7zz"
+        if (Test-Path -Path "$7z2201/7zz" -PathType Leaf) {
+            $7zip = "$7z2201/7zz"
         }
     }
 
     try {
         Write-Host "Extracting archive: '$Path'"
-        if (Test-Path -Path "$7zip" -PathType Leaf) {
-            & "$7zip" x "$Path" -aoa -o"$DestinationPath" -r -y | Out-Default
+        if ($Path -match '\.sfx\.exe$') {
+            & "$Path" @(
+                "x", "-o$DestinationPath", "-y")
+        }
+        elseif (Test-Path -Path "$7zip" -PathType Leaf) {
+            & "$7zip" @(
+                "x", "$Path", "-aoa", "-o$DestinationPath", "-r", "-y")
         }
         else {
+            Write-Host "7-zip not found: '$7zip'"
+
             $ProgressPreference = 'SilentlyContinue'
-            Expand-Archive -Path "$Path" -DestinationPath "$DestinationPath" -Force
+
+            if ($IsWindows -or $ENV:OS) {
+                if ( -not(Test-Path -Path "$DestinationPath") ) {
+                    New-Item -ItemType directory -Path "$DestinationPath" | Out-Null
+                }
+
+                # We use this approach as it is compatible with PowerShell 2.0 as opposed to
+                # Expand-Archive which requires .NET 4
+                $shell = New-Object -ComObject Shell.Application
+                $zip = $shell.NameSpace("$Path")
+                $targetFolder = $shell.Namespace("$DestinationPath")
+                foreach ($item in $zip.items()) {
+                    $targetFolder.CopyHere($item, 1564)
+                }
+            }
+            else {
+                Expand-Archive -Path "$Path" -DestinationPath "$DestinationPath" -Force
+            }
         }
         Write-Host "Extracted archive to target: '$DestinationPath'"
     }
-    catch {
+    catch [Exception] {
+        Write-Host $_.Exception.GetType().FullName, $_.Exception.Message
         throw "Failed to extract archive: $Path"
     }
 }
