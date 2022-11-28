@@ -44,6 +44,7 @@ sub initialize_config {
     $config->edit(auto_commit => 'yes');
     $config->edit(prerequisites_policy => 'follow');
     $config->edit(build_requires_install_policy => 'yes');
+    $config->edit(inactivity_timeout => 30);
 
     $config->edit(build_dir => normalize_path($CPAN::Config->{build_dir}));
     $config->edit(bzip2 => normalize_path($CPAN::Config->{bzip2}));
@@ -61,6 +62,15 @@ sub initialize_config {
     $config->edit(unzip => normalize_path($CPAN::Config->{unzip}));
     $config->edit(wget => normalize_path($CPAN::Config->{wget}));
     $config->edit(prefs_dir => normalize_path($CPAN::Config->{prefs_dir}));
+    $config->edit(urllist => (
+        q[http://cpan.cpantesters.org/],
+        q[http://httpupdate3.cpanel.net/CPAN/],
+        q[http://httpupdate23.cpanel.net/CPAN/],
+        q[http://mirrors.servercentral.net/CPAN/],
+        q[ftp://cpan.cse.msu.edu/],
+        q[https://cpan.metacpan.org/],
+        q[http://mirrors.sonic.net/cpan/]
+    ));
 }
 
 initialize_config
