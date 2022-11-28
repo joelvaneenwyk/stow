@@ -35,9 +35,9 @@ jobs:
 
 
   perl_test_matrix:
+    needs: lint
     name: "[${{ matrix.msys && 'windows-msys-latest' || matrix.platform }}] Perl v${{ matrix.perl }}"
     runs-on: ${{ matrix.platform }}
-    if: always()
 
     strategy:
       fail-fast: false
@@ -71,7 +71,6 @@ jobs:
 
       # Default paths but these should be overridden by test scripts
       STOW_TEST_RESULTS: ${{ github.workspace }}/test_results*.xml
-      STOW_CPAN_LOGS: ${{ matrix.msys && 'C:\msys64\home\runneradmin\.cpan*\work\**\*.log' || format('{0}/*.log', github.workspace) }}
 
       # Define variants by platform
       script_extension: ${{ (startsWith(matrix.platform, 'windows') && !matrix.msys) && '.bat' || '.sh' }}
@@ -155,16 +154,20 @@ jobs:
           ./Build build
           ./Build distcheck
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         if: always()
         name: Upload Logs
         with:
           name: cpanm-logs
-          path: ${{ env.STOW_CPAN_LOGS }}
+          if-no-files-found: ignore
+          path: |
+            ${{ github.workspace }}/*.log
+            ${{ matrix.msys && 'C:\msys64\home\runneradmin\.cpan*\work\**\*.log' }}
+            ${{ startsWith(matrix.platform, 'windows') && C:\HOSTED~1\windows\STRAWB~1\**\.cpanm\*.* }}
 
       - name: Upload Unit Test Results
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: Test Results
           path: ${{ env.STOW_TEST_RESULTS }}
