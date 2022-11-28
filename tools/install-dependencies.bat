@@ -30,25 +30,29 @@ rmdir /q /s "%USERPROFILE%\.cpan\CPAN" > nul 2>&1
 rmdir /q /s "%USERPROFILE%\.cpan\prefs" > nul 2>&1
 rmdir /q /s "%USERPROFILE%\.cpan-w64\CPAN" > nul 2>&1
 rmdir /q /s "%USERPROFILE%\.cpan-w64\prefs" > nul 2>&1
-echo Removed intermediate CPAN files.
+echo Removed intermediate CPAN files: "%USERPROFILE%\.cpan*"
 
 rmdir /q /s "%USERPROFILE%\.cpanm" > nul 2>&1
-echo Removed intermediate CPANM files.
+echo Removed intermediate CPANM files: "%USERPROFILE%\.cpanm"
+if not exist "%USERPROFILE%\.cpanm" mkdir "%USERPROFILE%\.cpanm"
 
 call "%~dp0stow-environment.bat" --refresh %*
 if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
 
 :: First install 'local::lib' and then remaining libraries so that they can all be
 :: stored in the local modules path.
-call :InstallPerlModules "LWP::Protocol::https" "local::lib" "App::cpanminus"
+call :InstallPerlModules "LWP::Protocol::https" "local::lib"
 if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
+
+:: Optional install.
+:: call :InstallPerlModules "App::cpanminus"
 
 :: Install dependencies. Note that 'Inline::C' requires 'make' and 'gcc' to be installed. It
 :: is recommended to install MSYS2 packages for copmiling (e.g. mingw-w64-x86_64-make) but
 :: many/most Perl distributions already come with the required tools for compiling.
 call :InstallPerlModules ^
     "YAML" "ExtUtils::Config" ^
-    "LWP::Protocol::https" "IO::Socket::SSL" "Net::SSLeay" ^
+    "IO::Socket::SSL" "Net::SSLeay" ^
     "Carp" "Module::Build" "Module::Build::Tiny" "IO::Scalar" ^
     "Test::Harness" "Test::Output" "Test::More" "Test::Exception" ^
     "ExtUtils::PL2Bat" "Inline::C" "Win32::Mutex" ^
@@ -62,64 +66,77 @@ exit /b
 ::
 
 :InstallPerlModules
+    setlocal EnableDelayedExpansion
     cd /d "!STOW_ROOT!"
 
     set _cmd_return=0
-    set _cmd_base="%STOW_PERL%" -I "%STOW_PERL_LOCAL_LIB_UNIX%/lib/perl5"
+    set _perl_cmd="%STOW_PERL%" -I "%STOW_PERL_LOCAL_LIB_UNIX%/lib/perl5"
 
     :: Since we call CPAN manually it is not always set, but there are some libraries
     :: like IO::Socket::SSL use this to determine whether or not to prompt for next
     :: steps e.g., see https://github.com/gbarr/perl-libnet/blob/master/Makefile.PL
     set PERL5_CPAN_IS_RUNNING=1
     set NO_NETWORK_TESTING=1
+    set LOCALTESTS_ONLY=1
+    set PERL_MM_USE_DEFAULT=1
 
     :$Install
         if "%~1"=="" goto:$Done
 
-        set _cmd=%_cmd_base%
-        !_cmd! -Mlocal::lib -le 1 > nul 2>&1
+        set _install_cmd=%_perl_cmd%
+        !_install_cmd! -Mlocal::lib -le 1 > nul 2>&1
         if "!ERRORLEVEL!"=="0" (
-            set _cmd=!_cmd! -Mlocal::lib="%STOW_PERL_LOCAL_LIB_UNIX%"
-            if not exist "%STOW_PERL_INIT%" !_cmd! >"%STOW_PERL_INIT%"
+            set _local=1
+            set _install_cmd=!_install_cmd! -Mlocal::lib="%STOW_PERL_LOCAL_LIB_UNIX%"
+            if not exist "%STOW_PERL_INIT%" !_install_cmd! >"%STOW_PERL_INIT%"
         )
         if exist "%STOW_PERL_INIT%" call "%STOW_PERL_INIT%"
 
         set _cpanm=0
-        !_cmd! -MApp::cpanminus -le 1 > nul 2>&1
+        !_install_cmd! -MApp::cpanminus -le 1 > nul 2>&1
         if "!ERRORLEVEL!"=="0" set _cpanm=1
-
-        set _modules=%~1
-        shift
-        if "!_cpanm!"=="0" goto:$UseCpan
-        :$GetModulesLoop
-            if "%~1"=="" goto:$UseCpanm
-            set _modules=!_modules! %~1
-            shift
-        goto:$GetModulesLoop
+        if "!_cpanm!"=="1" goto:$UseCpanm
 
         :$UseCpan
-            set _cmd=!_cmd! -MCPAN -e "CPAN::Shell->notest('install', '!_modules!')"
-            goto:$RunCommand
+            set _install_cmd=!_install_cmd! -MCPAN -e
+            goto:$GetModulesLoop
 
         :$UseCpanm
-            !_cmd! -MApp::cpanminus::fatscript -le 1 > nul 2>&1
+            !_install_cmd! -MApp::cpanminus::fatscript -le 1 > nul 2>&1
             if "!ERRORLEVEL!"=="0" (
-                set _cmd=!_cmd! -MApp::cpanminus::fatscript -le
-                set _cmd=!_cmd! "my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;" --
+                set _install_cmd=!_install_cmd! -MApp::cpanminus::fatscript -le
+                set _install_cmd=!_install_cmd! "my $c = App::cpanminus::script->new; $c->parse_options(@ARGV); $c->doit;" --
             ) else (
-                set _cmd=!_cmd! "%PERL_BIN_DIR%\cpanm"
+                set _install_cmd=!_install_cmd! "%PERL_BIN_DIR%\cpanm"
             )
-            set _cmd=!_cmd! --local-lib "%STOW_PERL_LOCAL_LIB_UNIX%" --notest
-            set _cmd=!_cmd! !_modules!
-            goto:$RunCommand
+            set _install_cmd=!_install_cmd! --local-lib "%STOW_PERL_LOCAL_LIB_UNIX%" --notest
+            goto:$GetModulesLoop
 
-        :$RunCommand
+        :$GetModulesLoop
+            if "%~1"=="" goto:$InstallModules
+            set _module=%~1
+            shift
+            if "!_local! !_module!"=="1 local::lib" goto:$GetModulesLoop
+            if "!_cpanm! !_module!"=="1 App::cpanminus" goto:$GetModulesLoop
+            if "!_modules!"=="" (
+                set _modules=!_module!
+            ) else (
+                set _modules=!_modules! !_module!
+            )
+            set _module=
+        :: We can only do one package at a time with CPAN
+        if not "!_cpanm!"=="0" goto:$GetModulesLoop
+
+        :$InstallModules
+            if "!_modules!"=="" goto:$Done
             echo ::group::Install Module(s): '!_modules!'
-            echo [command]!_cmd!
-            !_cmd!
+            if "!_cpanm!"=="1" set _full_cmd=!_install_cmd! !_modules!
+            if "!_cpanm!"=="0" set _full_cmd=!_install_cmd! "CPAN::Shell->notest('install', '!_modules!')"
+            set _modules=
+            echo [command]!_full_cmd!
+            !_full_cmd!
             set _cmd_return=!ERRORLEVEL!
             echo ::endgroup::
-
     if "!_cmd_return!"=="0" goto:$Install
     :$Done
 
