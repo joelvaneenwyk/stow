@@ -174,6 +174,7 @@ function install_perl_modules() {
     export PERL5_CPAN_IS_RUNNING=1
     export NO_NETWORK_TESTING=1
     export LOCALTESTS_ONLY=1
+    export PERL_MM_USE_DEFAULT=1
 
     _return_value=0
     _use_local_lib=0
@@ -225,8 +226,10 @@ function install_perl_modules() {
                 _perl_install_args=("$STOW_PERL" "$_cpanm")
             fi
 
-            if ! run_named_command_group "Install Module(s): '$*'" \
-                "${_perl_install_args[@]}" --local-lib "$STOW_PERL_LOCAL_LIB" --notest "$@"; then
+            if
+                ! run_named_command_group "Install Module(s): '$*'" \
+                    "${_perl_install_args[@]}" --local-lib "$STOW_PERL_LOCAL_LIB" --notest "$@"
+            then
                 echo "❌ Failed to install modules with CPANM."
                 _return_value=99
             fi
@@ -238,8 +241,10 @@ function install_perl_modules() {
         fi
 
         if ! "${_perl_install_args[@]}" -M"$package" -le 1 2>/dev/null; then
-            if ! run_named_command_group "Install '$package'" \
-                "${_perl_install_args[@]}" -MCPAN -e "CPAN::Shell->notest('install', '$package')"; then
+            if
+                ! run_named_command_group "Install '$package'" \
+                    "${_perl_install_args[@]}" -MCPAN -e "CPAN::Shell->notest('install', '$package')"
+            then
                 echo "❌ Failed to install '$package' module with CPAN."
                 _return_value=88
                 break
@@ -411,7 +416,7 @@ function install_perl_dependencies() {
     # possible including MSYS, cygwin, Ubuntu, Alpine, etc. The more libraries we add here the more
     # seemingly obscure issues you could run into e.g., missing 'cc1' or 'poll.h' even when they are
     # in fact installed.
-    modules=(
+    modules+=(
         local::lib App::cpanminus
         YAML Carp Scalar::Util IO::Scalar Module::Build
         IO::Socket::SSL Net::SSLeay
