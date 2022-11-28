@@ -42,27 +42,27 @@ jobs:
       fail-fast: false
       matrix:
         platform:
-          # - ubuntu-22.04
-          # - macos-12
+          - ubuntu-22.04
+          - macos-12
           - windows-2022
 
         perl:
           # - '5.32'
           - '5.14'
 
-        #include:
-        #  - platform: ubuntu-22.04
-        #    perl: '5.34'
-        #
-        #  - platform: ubuntu-22.04
-        #    perl: '5.18'
-        #
-        #  - platform: ubuntu-22.04
-        #    perl: '5.16'
-        #
-        #  - platform: windows-2022
-        #    perl: '5.28'
-        #    msys: true
+        include:
+          - platform: ubuntu-22.04
+            perl: '5.34'
+
+          - platform: ubuntu-22.04
+            perl: '5.18'
+
+          - platform: ubuntu-22.04
+            perl: '5.16'
+
+          - platform: windows-2022
+            perl: '5.28'
+            msys: true
 
     env:
       # https://cygwin.com/cygwin-ug-net/using-cygwinenv.html
