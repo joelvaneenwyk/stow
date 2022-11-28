@@ -31,8 +31,7 @@ jobs:
         env:
           SHELLCHECK_OPTS: --external-sources
         with:
-          ignore: bin doc
-
+          ignore_paths: bin doc
 
   perl_test_matrix:
     needs: lint
@@ -156,14 +155,14 @@ jobs:
 
       - uses: actions/upload-artifact@v3
         if: ${{ startsWith(matrix.platform, 'windows') }}
-        name: Upload Logs
+        name: Upload Windows Logs
         with:
           name: cpanm-logs-windows
           if-no-files-found: ignore
           # NOTE: Might be able to replace 'C:\hostedtoolcache' with '${{env.RUNNER_TOOL_CACHE}}''
           path: |
-            ${{ startsWith(matrix.platform, 'windows') && 'C:\hostedtoolcache\windows\strawberry-perl\**\.cpanm\*.log' }}
-            ${{ matrix.msys && 'C:\msys64\home\runneradmin\.cpan*\work\**\*.log' }}
+            C:\hostedtoolcache\windows\strawberry-perl\**\.cpanm\*.log
+            C:\msys64\home\runneradmin\.cpan*\work\**\*.log
 
       # Workspace might be on a separate drive so we upload the workspace log separately otherwise we can
       # get an error like:
