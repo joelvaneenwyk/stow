@@ -163,7 +163,7 @@ jobs:
           path: |
             ${{ github.workspace }}/*.log
             ${{ matrix.msys && 'C:\msys64\home\runneradmin\.cpan*\work\**\*.log' }}
-            ${{ startsWith(matrix.platform, 'windows') && env.RUNNER_TOOL_CACHE\windows\STRAWB*\.cpanm\*.* }}
+            ${{ startsWith(matrix.platform, 'windows') && '${{env.RUNNER_TOOL_CACHE}}'\windows\STRAWB*\.cpanm\*.* }}
 
       - name: Upload Unit Test Results
         if: always()
