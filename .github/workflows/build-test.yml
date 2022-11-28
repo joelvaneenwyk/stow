@@ -157,7 +157,7 @@ jobs:
         if: always()
         name: Upload Windows Logs
         with:
-          name: cpanm-logs-windows
+          name: logs-cpan-${{ matrix.platform }}-${{ matrix.perl }}
           if-no-files-found: ignore
           # NOTE: Might be able to replace 'C:\hostedtoolcache' with '${{env.RUNNER_TOOL_CACHE}}''
           path: |
@@ -171,7 +171,7 @@ jobs:
         if: always()
         name: Upload Logs
         with:
-          name: cpanm-logs
+          name: logs-${{ matrix.platform }}-${{ matrix.perl }}
           if-no-files-found: ignore
           path: |
             ${{ github.workspace }}/*.log
@@ -180,7 +180,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v3
         with:
-          name: Test Results
+          name: test-results
           path: ${{ env.STOW_TEST_RESULTS }}
 
   public_test_results:
