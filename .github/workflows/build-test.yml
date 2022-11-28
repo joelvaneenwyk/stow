@@ -75,7 +75,7 @@ jobs:
       # Define variants by platform
       script_extension: ${{ (startsWith(matrix.platform, 'windows') && !matrix.msys) && '.bat' || '.sh' }}
 
-      script_tool: ${{ (startsWith(matrix.platform, 'windows') && !matrix.msys) && 'tools\\' || './tools/' }}
+      script_tool: ${{ (startsWith(matrix.platform, 'windows') && !matrix.msys) && 'tools\' || './tools/' }}
 
       # Need to specify 'strawberry' on Windows. Can pass 'strawberry' to other platforms as it just falls
       # back to default but it does generate a warning.
@@ -160,10 +160,11 @@ jobs:
         with:
           name: cpanm-logs
           if-no-files-found: ignore
+          # NOTE: Might be able to replace 'C:\hostedtoolcache' with '${{env.RUNNER_TOOL_CACHE}}''
           path: |
             ${{ github.workspace }}/*.log
             ${{ matrix.msys && 'C:\msys64\home\runneradmin\.cpan*\work\**\*.log' }}
-            ${{ startsWith(matrix.platform, 'windows') && '${{env.RUNNER_TOOL_CACHE}}\windows\STRAWB*\.cpanm\*.*' }}
+            ${{ startsWith(matrix.platform, 'windows') && 'C:\hostedtoolcache\windows\strawberry-perl\**\.cpanm\*.log' }}
 
       - name: Upload Unit Test Results
         if: always()
