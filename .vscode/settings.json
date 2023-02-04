@@ -3,12 +3,14 @@
         "editor.formatOnSave": true,
         "files.eol": "\n"
     },
-
+    "bashIde.explainshellEndpoint": "http://localhost:5000",
+    "bashIde.includeAllWorkspaceSymbols": true,
     "shellcheck.enable": true,
     "shellcheck.enableQuickFix": true,
-    "shellcheck.customArgs": ["--external-sources"],
+    "shellcheck.customArgs": [
+        "--external-sources"
+    ],
     "shellcheck.useWorkspaceRootAsCwd": true,
-
     "files.exclude": {
         "**/.git": true,
         "**/.svn": true,
@@ -21,7 +23,6 @@
         "_Inline/**": true,
         "blib/**": true
     },
-
     "files.associations": {
         "*.in": "perl",
         "stow": "perl",
@@ -31,19 +32,19 @@
         "MANIFEST": "plaintext",
         "MANIFEST.SKIP": "plaintext"
     },
-
     "perl.enable": true,
     "perl.perlInc": [
         "${workspaceFolder}/lib",
         "${workspaceFolder}/bin",
         "${workspaceFolder}/t"
     ],
-
     "terminal.integrated.defaultProfile.windows": "Command Prompt",
     "terminal.integrated.profiles.windows": {
         "PowerShell": {
             "source": "PowerShell",
-            "args": ["-nologo"],
+            "args": [
+                "-nologo"
+            ],
             "icon": "terminal-powershell"
         },
         "Command Prompt": {
@@ -61,7 +62,8 @@
                 "${env:USERPROFILE}\\msys64\\usr\\bin\\bash.exe"
             ],
             "args": [
-                "--login", "-i"
+                "--login",
+                "-i"
             ],
             "env": {
                 "MSYSTEM": "MINGW64",
@@ -75,7 +77,8 @@
                 "${env:USERPROFILE}\\msys64\\usr\\bin\\fish.exe"
             ],
             "args": [
-                "--login", "-i"
+                "--login",
+                "-i"
             ],
             "env": {
                 "MSYSTEM": "MSYS2",
