@@ -265,8 +265,9 @@ function test_perl_version() {
     if install_perl_dependencies; then
         echo "Installed dependencies."
     else
-        return $?
+        install_result=$?
         echo "Failed to install dependencies."
+        return $install_result
     fi
 
     _perl_test_args=(-I "$STOW_PERL_LOCAL_LIB/lib/perl5")
