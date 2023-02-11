@@ -24,11 +24,19 @@
         "blib/**": true
     },
     "files.associations": {
+        ".proverc": "plaintext",
+        "_proverc": "plaintext",
         "*.in": "perl",
+        "default-ignore-list": "perl",
         "stow": "perl",
         "chkstow": "perl",
         "get-version": "perl",
         "cpanfile": "perl",
+        "AUTHORS": "plaintext",
+        "NEWS": "plaintext",
+        "THANKS": "plaintext",
+        "TODO": "plaintext",
+        "COPYING": "plaintext",
         "MANIFEST": "plaintext",
         "MANIFEST.SKIP": "plaintext"
     },

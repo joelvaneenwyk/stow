@@ -1,4 +1,5 @@
 .dockerignore
+.editorconfig
 .proverc
 _proverc
 AUTHORS

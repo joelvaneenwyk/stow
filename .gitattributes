@@ -2,3 +2,5 @@
 *.sh=lf
 setup=lf
 pre-commit=lf
+get-version=lf
+*.pl=lf

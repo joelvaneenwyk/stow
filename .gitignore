@@ -3,6 +3,7 @@ Build
 Build.bat
 ChangeLog
 MYMETA.json
+MYMETA.json.lock
 MYMETA.yml
 Makefile
 Makefile.in
