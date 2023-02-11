@@ -1,4 +1,3 @@
-@echo off
 ::
 :: This file is part of GNU Stow.
 ::
@@ -15,8 +14,8 @@
 :: You should have received a copy of the GNU General Public License
 :: along with this program. If not, see https://www.gnu.org/licenses/.
 ::
-
-setlocal EnableExtensions EnableDelayedExpansion
+@echo off
+setlocal EnableDelayedExpansion
 
 call "%~dp0tools\stow-environment.bat"
 if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!

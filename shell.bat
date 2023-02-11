@@ -1,4 +1,3 @@
-@echo off
 ::
 :: This file is part of GNU Stow.
 ::
@@ -15,6 +14,7 @@
 :: You should have received a copy of the GNU General Public License
 :: along with this program. If not, see https://www.gnu.org/licenses/.
 ::
+@echo off
 
 call :StartShell "%~dp0" %*
 
@@ -33,6 +33,11 @@ exit /b
     call %*
 exit /b
 
+:: Start a local MSYS2 shell. Alternatively, you could run a Docker instance that has
+:: Perl pre-installed e.g.,
+::
+::   > docker run --rm -it -v %CD%:/workspace -w /workspace perl:5.36 bash
+::
 :StartShell
     setlocal EnableExtensions EnableDelayedExpansion
 

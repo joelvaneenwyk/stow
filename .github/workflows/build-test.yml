@@ -1,4 +1,4 @@
-name: 'Build and Test'
+name: "Build and Test"
 
 # Controls when the workflow will run
 on:
@@ -31,13 +31,12 @@ jobs:
         env:
           SHELLCHECK_OPTS: --external-sources
         with:
-          ignore: bin doc
-
+          ignore_paths: bin doc
 
   perl_test_matrix:
+    needs: lint
     name: "[${{ matrix.msys && 'windows-msys-latest' || matrix.platform }}] Perl v${{ matrix.perl }}"
     runs-on: ${{ matrix.platform }}
-    if: always()
 
     strategy:
       fail-fast: false
@@ -48,21 +47,21 @@ jobs:
           - windows-2022
 
         perl:
-          - '5.32'
-          - '5.14'
+          # - '5.32'
+          - "5.14"
 
         include:
           - platform: ubuntu-22.04
-            perl: '5.34'
+            perl: "5.34"
 
           - platform: ubuntu-22.04
-            perl: '5.18'
+            perl: "5.18"
 
           - platform: ubuntu-22.04
-            perl: '5.16'
+            perl: "5.16"
 
           - platform: windows-2022
-            perl: '5.28'
+            perl: "5.28"
             msys: true
 
     env:
@@ -71,12 +70,11 @@ jobs:
 
       # Default paths but these should be overridden by test scripts
       STOW_TEST_RESULTS: ${{ github.workspace }}/test_results*.xml
-      STOW_CPAN_LOGS: ${{ matrix.msys && 'C:\msys64\home\runneradmin\.cpan*\work\**\*.log' || format('{0}/*.log', github.workspace) }}
 
       # Define variants by platform
       script_extension: ${{ (startsWith(matrix.platform, 'windows') && !matrix.msys) && '.bat' || '.sh' }}
 
-      script_tool: ${{ (startsWith(matrix.platform, 'windows') && !matrix.msys) && 'tools\\' || './tools/' }}
+      script_tool: ${{ (startsWith(matrix.platform, 'windows') && !matrix.msys) && 'tools\' || './tools/' }}
 
       # Need to specify 'strawberry' on Windows. Can pass 'strawberry' to other platforms as it just falls
       # back to default but it does generate a warning.
@@ -155,18 +153,34 @@ jobs:
           ./Build build
           ./Build distcheck
 
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
+        if: always()
+        name: Upload Windows Logs
+        with:
+          name: logs-cpan-${{ matrix.platform }}-${{ matrix.perl }}
+          if-no-files-found: ignore
+          # NOTE: Might be able to replace 'C:\hostedtoolcache' with '${{env.RUNNER_TOOL_CACHE}}''
+          path: |
+            C:\hostedtoolcache\windows\strawberry-perl\**\.cpanm\*.log
+            C:\msys64\home\runneradmin\.cpan*\work\**\*.log
+
+      # Workspace might be on a separate drive so we upload the workspace log separately otherwise we can
+      # get an error like:
+      #   ... rootDirectory: "D:\a\stow\stow" is not a parent directory of the file: "C:\hostedtoolcache\**\build.log"
+      - uses: actions/upload-artifact@v3
         if: always()
         name: Upload Logs
         with:
-          name: cpanm-logs
-          path: ${{ env.STOW_CPAN_LOGS }}
+          name: logs-${{ matrix.platform }}-${{ matrix.perl }}
+          if-no-files-found: ignore
+          path: |
+            ${{ github.workspace }}/*.log
 
       - name: Upload Unit Test Results
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
-          name: Test Results
+          name: test-results
           path: ${{ env.STOW_TEST_RESULTS }}
 
   public_test_results:
@@ -174,6 +188,7 @@ jobs:
     runs-on: ubuntu-22.04
     needs:
       - perl_test_matrix
+      - lint
 
     # The other jobs might be skipped, we don't need to run this job then
     if: success() || failure()
@@ -184,7 +199,7 @@ jobs:
           submodules: recursive
 
       - name: Download Artifacts
-        uses: actions/download-artifact@v2
+        uses: actions/download-artifact@v3
         with:
           path: artifacts
 
