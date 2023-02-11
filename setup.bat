@@ -17,13 +17,13 @@
 @echo off
 setlocal EnableDelayedExpansion
 
+call "%~dp0tools\install-dependencies.bat"
+if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
+
 call "%~dp0tools\stow-environment.bat"
 if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
 
 call "%STOW_ROOT%\tools\make-clean.bat"
-if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
-
-call "%STOW_ROOT%\tools\install-dependencies.bat"
 if not "!ERRORLEVEL!"=="0" exit /b !ERRORLEVEL!
 
 call "%STOW_ROOT%\tools\make-stow.bat"
