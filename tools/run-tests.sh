@@ -255,21 +255,6 @@ function test_perl_version() {
     _return_value=0
     _starting_directory="$(pwd)"
 
-    # Use the version of Perl passed in if 'perlbrew' is installed
-    if [ -x "$(command -v perlbrew)" ]; then
-        perlbrew use "$1"
-    fi
-
-    # Install Perl dependencies on this particular version of Perl in case
-    # that has not been done yet.
-    if install_perl_dependencies; then
-        echo "Installed dependencies."
-    else
-        install_result=$?
-        echo "Failed to install dependencies."
-        return $install_result
-    fi
-
     _perl_test_args=(-I "$STOW_PERL_LOCAL_LIB/lib/perl5")
 
     if activate_local_perl_library; then
@@ -327,79 +312,89 @@ function test_perl_version() {
     # Remove all intermediate files before we start to ensure a clean test
     run_command_group "$STOW_ROOT/tools/make-clean.sh"
 
-    if cd "$STOW_ROOT"; then
-        # Run auto reconfigure ('autoreconf') to generate 'configure' script
-        run_command_group autoreconf --install --verbose
+    if ! cd "$STOW_ROOT"; then
+        echo "ERROR: Failed to change directory to '$STOW_ROOT'"
+        return 1
+    fi
 
-        # Run 'configure' to generate Makefile
-        run_command_group ./configure --prefix="" --with-pmdir="$STOW_PERL_LOCAL_LIB"
+    # Run auto reconfigure ('autoreconf') to generate 'configure' script
+    if ! run_command_group autoreconf --install --verbose; then
+        echo "ERROR: Failed to run 'autoreconf' to generate 'configure' script."
+        return 2
+    fi
 
-        run_command_group make
+    # Run 'configure' to generate Makefile
+    run_command_group ./configure --prefix="" --with-pmdir="$STOW_PERL_LOCAL_LIB"
 
-        # shellcheck disable=SC2016
-        if run_command_output_file "$_test_result_output_path" \
-            "$STOW_PERL" "${_perl_test_args[@]}" -MApp::Prove \
-            -le 'my $c = App::Prove->new; $c->process_args(@ARGV); $c->run;' -- \
-            --formatter "TAP::Formatter::JUnit" \
-            --norc --timer --verbose --normalize --parse \
-            -I "$STOW_PERL_LOCAL_LIB/lib/perl5" \
-            -I t/ -I lib/ -I bin/ \
-            "$STOW_ROOT/t"; then
-            # If file is empty, tests failed so report an error
-            if [ ! -s "$_test_result_output_path" ]; then
-                echo "❌ Tests failed. Test result file empty: '$_test_result_output_path"
-                _return_value=77
-            else
-                echo "✔ Generated test results: '$_test_result_output_path'"
+    run_command_group make
 
-                # Reset to default Perl install
-                unset PERL5LIB PERL_MB_OPT PERL_MM_OPT PERL_LOCAL_LIB_ROOT
+    # shellcheck disable=SC2016
+    if run_command_output_file "$_test_result_output_path" \
+        "$STOW_PERL" "${_perl_test_args[@]}" -MApp::Prove \
+        -le 'my $c = App::Prove->new; $c->process_args(@ARGV); $c->run;' -- \
+        --formatter "TAP::Formatter::JUnit" \
+        --norc --timer --verbose --normalize --parse \
+        -I "$STOW_PERL_LOCAL_LIB/lib/perl5" \
+        -I t/ -I lib/ -I bin/ \
+        "$STOW_ROOT/t"; then
+        # If file is empty, tests failed so report an error
+        if [ ! -s "$_test_result_output_path" ]; then
+            echo "❌ Tests failed. Test result file empty: '$_test_result_output_path"
+            _return_value=77
+        else
+            echo "✔ Generated test results: '$_test_result_output_path'"
 
-                # Remove the local library path
-                _local_bin="$STOW_PERL_LOCAL_LIB/bin"
-                PATH=":$PATH:"
-                PATH="${PATH//:$_local_bin:/:}"
-                PATH="${PATH#:}"
-                PATH="${PATH%:}"
-                export PATH
+            # Reset to default Perl install
+            unset PERL5LIB PERL_MB_OPT PERL_MM_OPT PERL_LOCAL_LIB_ROOT
 
-                export PERL="$STOW_PERL"
+            # Remove the local library path
+            _local_bin="$STOW_PERL_LOCAL_LIB/bin"
+            PATH=":$PATH:"
+            PATH="${PATH//:$_local_bin:/:}"
+            PATH="${PATH#:}"
+            PATH="${PATH%:}"
+            export PATH
 
-                run_command_group make cpanm
+            export PERL="$STOW_PERL"
 
-                rm -f "$STOW_ROOT/Build" "$STOW_ROOT/Build.bat" >/dev/null 2>&1
+            run_command_group make cpanm
 
-                # Ignore line that contains 'Unsuccessful stat on filename' as the error is sometimes not avoidable depending
-                # on files in the project folder.
-                run_command_group "$PERL" "${_perl_test_args[@]}" Build.PL 2>&1 | "$PERL" -ne 'print unless /Unsuccessful stat on filename/'
+            rm -f "$STOW_ROOT/Build" "$STOW_ROOT/Build.bat" >/dev/null 2>&1
+
+            # Ignore line that contains 'Unsuccessful stat on filename' as the error is sometimes not avoidable depending
+            # on files in the project folder.
+            if run_command_group "$PERL" "${_perl_test_args[@]}" Build.PL 2>&1 | "$PERL" -ne 'print unless /Unsuccessful stat on filename/'; then
                 run_command_group ./Build build
                 run_command_group ./Build distcheck
-
-                if [ -f "$STOW_PERL_LOCAL_LIB/bin/cover" ]; then
-                    _cover="$STOW_PERL_LOCAL_LIB/bin/cover"
-                else
-                    _cover="$(command -v cover)"
-                fi
-
-                if [ -f "$_cover" ]; then
-                    if [ -z "${GITHUB_ENV:-}" ]; then
-                        run_command_group "$STOW_PERL" "${_perl_test_args[@]}" "$_cover" -test
-                    else
-                        run_command_group "$STOW_PERL" "${_perl_test_args[@]}" "$_cover" -test -report coveralls
-                    fi
-                else
-                    echo "Failed to run cover. Missing binary: '$_cover'"
-                fi
-
-                run_command_group make distcheck
+            else
+                echo "❌ Failed to run 'Build.PL'"
+                return 77
             fi
-        else
-            _return_value=$?
-            echo "❌ Tests failed. Test result file empty: '$_test_result_output_path"
-        fi
 
-        cd "$_starting_directory" || true
+            if [ -f "$STOW_PERL_LOCAL_LIB/bin/cover" ]; then
+                _cover="$STOW_PERL_LOCAL_LIB/bin/cover"
+            else
+                _cover="$(command -v cover)"
+            fi
+
+            if [ -f "$_cover" ]; then
+                if [ -z "${GITHUB_ENV:-}" ]; then
+                    run_command_group "$STOW_PERL" "${_perl_test_args[@]}" "$_cover" -test
+                else
+                    run_command_group "$STOW_PERL" "${_perl_test_args[@]}" "$_cover" -test -report coveralls
+                fi
+            else
+                echo "WARNING: Missing 'cover' binary: '$_cover'"
+            fi
+
+            run_command_group make distcheck
+        fi
+    else
+        _return_value=$?
+        echo "❌ Tests failed. Test result file empty: '$_test_result_output_path"
     fi
+
+    cd "$_starting_directory" || true
 
     return $_return_value
 }
@@ -407,15 +402,36 @@ function test_perl_version() {
 function run_stow_tests() {
     initialize_environment "$@"
 
-    # Standard safety protocol but do this after we setup perlbrew otherwise
-    # we get errors with unbound variables
-    set -euo pipefail
-    shopt -s inherit_errexit nullglob >/dev/null 2>&1 || true
-    trap exit_handler EXIT
-
-    __set_debug_trap
-
-    _test_argument="${1:-}"
+    local POSITIONAL=()
+    while [[ $# -gt 0 ]]; do
+        key="$1"
+        case $key in
+        -f | --force)
+            echo "Forcefully re-installing 'perlbrew' versions."
+            shift
+            perlbrew_force=1
+            ;;
+        -b | --bootstrap-only)
+            perlbrew_bootstrap_only=1
+            shift
+            ;;
+        list)
+            # List available Perl versions
+            LIST_PERL_VERSIONS=1
+            shift
+            ;;
+        --no-install)
+            no_install=1
+            shift
+            ;;
+        *) # unknown option
+            # Interactive run for testing / debugging a particular version
+            PERL_VERSION="${PERL_VERSION:-${1:-}}"
+            POSITIONAL+=("$1") # save it in an array for later
+            shift              # past argument
+            ;;
+        esac
+    done
 
     LIST_PERL_VERSIONS=0
     PERL_VERSION=""
@@ -427,15 +443,7 @@ function run_stow_tests() {
     fi
     export STOW_PERL
 
-    if [ "$_test_argument" == "list" ]; then
-        # List available Perl versions
-        LIST_PERL_VERSIONS=1
-    elif [ -n "$_test_argument" ]; then
-        # Interactive run for testing / debugging a particular version
-        PERL_VERSION="$_test_argument"
-    fi
-
-    if [ ! "$LIST_PERL_VERSIONS" == "1" ] && [ ! "$_test_argument" == "--no-install" ]; then
+    if [ ! "$LIST_PERL_VERSIONS" == "1" ] && [ ! "$no_install" == "1" ]; then
         if install_system_dependencies; then
             echo "Finished installation of system dependencies."
         else
@@ -446,31 +454,120 @@ function run_stow_tests() {
         echo "Skipped install of system dependencies."
     fi
 
+    # Disable 'unbound variable' errors since 'perlbrew' setup will error
+    # out if they are enabled.
+    set +o nounset
+
+    # Standard safety protocol.
+    set -eo pipefail
+
+    perlbrew_rc="etc/bashrc"
+
+    PERLBREW_ROOT="${PERLBREW_ROOT:-/usr/local/perlbrew}"
+    if [ ! -f "$PERLBREW_ROOT/$perlbrew_rc" ]; then
+        PERLBREW_ROOT=~/perl5/perlbrew
+    fi
+
+    if [ ! -f "$PERLBREW_ROOT/$perlbrew_rc" ]; then
+        curl -k -L https://install.perlbrew.pl | bash
+
+        PERLBREW_ROOT="${PERLBREW_ROOT:-/usr/local/perlbrew}"
+        if [ ! -f "$PERLBREW_ROOT/$perlbrew_rc" ]; then
+            PERLBREW_ROOT=~/perl5/perlbrew
+        fi
+
+        if [ ! -f "$PERLBREW_ROOT/$perlbrew_rc" ]; then
+            # We want this to output $PERLBREW_ROOT without expansion
+            # shellcheck disable=SC2016
+            echo "source \"$PERLBREW_ROOT/$perlbrew_rc\"" >>~/.bash_profile
+        fi
+    fi
+
+    if [ -f "$PERLBREW_ROOT/$perlbrew_rc" ]; then
+        # Load perlbrew environment
+        # shellcheck disable=SC1090
+        source "$PERLBREW_ROOT/$perlbrew_rc"
+
+        if [ -x "$(command -v perlbrew)" ]; then
+            export PATH=$PATH:$PERLBREW_ROOT/binfi
+        fi
+
+        if [ -z "$(perlbrew list)" ] || [ "${perlbrew_force:-}" = "1" ]; then
+            perlbrew init
+            perlbrew --yes install-cpanm
+            perlbrew --yes install-patchperl
+            perlbrew --yes install-multiple -j 4 --notest \
+                perl-5.14.4 \
+                perl-5.34.0
+
+            # Cleanup to remove any temporary files.
+            perlbrew clean
+        fi
+
+        echo "Initialized 'perlbrew' environment: '$PERLBREW_ROOT/$perlbrew_rc'"
+    else
+        echo "ERROR: Failed to find 'perlbrew' setup: '$PERLBREW_ROOT/$perlbrew_rc'"
+        return 5
+    fi
+
+    # Standard safety protocol but do this after we setup perlbrew otherwise
+    # we get errors with unbound variables
+    set -euo pipefail
+    shopt -s inherit_errexit nullglob >/dev/null 2>&1 || true
+    trap exit_handler EXIT
+
+    __set_debug_trap
+
     if [ "$LIST_PERL_VERSIONS" == "1" ]; then
         echo "Listing Perl versions available from perlbrew ..."
         perlbrew list
-    elif [ -z "$PERL_VERSION" ] && [ -x "$(command -v perlbrew)" ]; then
-        echo "Testing all Perl versions"
+    else
+        versions=()
 
-        for input_perl_version in $(perlbrew list | sed 's/ //g' | sed 's/\*//g'); do
+        if [ -n "${PERL_VERSION// /}" ]; then
+            # Test a specific version requested via $PERL_VERSION environment
+            # variable.  Make sure set -e doesn't cause us to bail on failure
+            # before we start an interactive shell.
+            echo "Testing Perl version: $PERL_VERSION"
+            versions=("$PERL_VERSION")
+        else
+            while IFS='' read -r line; do
+                versions+=("$line")
+            done < <(perlbrew list | sed 's/ //g' | sed 's/\*//g')
+            echo "Testing all versions from 'perlbrew' list: ${versions[*]}"
+        fi
+
+        for input_perl_version in "${versions[@]}"; do
+            # Use the version of Perl passed in if 'perlbrew' is installed
+            if [ -x "$(command -v perlbrew)" ]; then
+                perlbrew use "$1"
+            fi
+
+            # Install Perl dependencies on this particular version of Perl in case
+            # that has not been done yet.
+            if install_perl_dependencies; then
+                echo "Installed dependencies: $input_perl_version"
+            else
+                install_result=$?
+                echo "Failed to install dependencies."
+                return $install_result
+            fi
+
+            if [ "${perlbrew_bootstrap_only:-}" = "1" ]; then
+                echo "Skipped testing for bootstrap: $input_perl_version"
+                continue
+            fi
+
             if ! test_perl_version "$input_perl_version"; then
                 return 4
             fi
+
+            # We intentionally do not 'make distclean' if testing a specific version since
+            # we probably want to debug this Perl version interactively.
+            if [ ! "${perlbrew_bootstrap_only:-}" = "1" ] && [ -z "$PERL_VERSION" ] && [ -z "${GITHUB_ENV:-}" ]; then
+                run_command_group make distclean
+            fi
         done
-
-        if [ -z "${GITHUB_ENV:-}" ]; then
-            run_command_group make distclean
-        fi
-    else
-        # Test a specific version requested via $PERL_VERSION environment
-        # variable.  Make sure set -e doesn't cause us to bail on failure
-        # before we start an interactive shell.
-        if ! test_perl_version "$PERL_VERSION"; then
-            return 5
-        fi
-
-        # We intentionally do not 'make distclean' since we probably want to
-        # debug this Perl version interactively.
     fi
 
     echo "✔ Tests succeeded."

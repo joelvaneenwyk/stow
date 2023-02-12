@@ -62,7 +62,6 @@ t/unstow.t
 t/unstow_orig.t
 THANKS
 TODO
-tools/bootstrap-perls.sh
 tools/get-version
 tools/initialize-cpan-config.pl
 tools/install-dependencies.bat

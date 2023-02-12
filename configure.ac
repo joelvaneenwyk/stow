@@ -102,11 +102,11 @@ EOF
   if test -n "$missing_test_deps"; then
     cat <<EOF >&2
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! WARNING!  $PERL was missing modules:
+! WARNING!  $PERL missing test modules:
 !
 !   $missing_test_deps
 !
-! The test suite will fail.  'make install' may still render
+! The test suite will fail. 'make install' may still render
 ! a working installation, but this cannot be guaranteed.
 !
 ! Please (re-)read INSTALL, then install the missing modules
