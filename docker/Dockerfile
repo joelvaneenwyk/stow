@@ -16,7 +16,7 @@
 # Build docker image: `docker build -t stowtest`
 # Run tests: (from stow src directory)
 #    `docker run --rm -it -v $(pwd):$(pwd) -w $(pwd) stowtest`
-ARG DEBIAN_VERSION=stretch
+ARG DEBIAN_VERSION=bullseye-slim
 FROM debian:${DEBIAN_VERSION}
 
 RUN DEBIAN_FRONTEND=noninteractive apt-get update
@@ -38,7 +38,7 @@ ENV PATH="${PERLBREW_ROOT_DEFAULT}:${PERLBREW_PATH}:${PATH}"
 RUN mkdir -p "$HOME" "$PERLBREW_ROOT_DEFAULT" "$PERLBREW_ROOT"
 
 RUN curl -k -L https://install.perlbrew.pl | bash
-RUN echo 'source "$PERLBREW_ROOT/etc/bashrc"' >>".bash_profile"
+RUN echo 'source "$PERLBREW_ROOT/etc/bashrc"' >>~/.bash_profile
 
 RUN perlbrew init
 RUN perlbrew --yes install-cpanm
@@ -56,6 +56,7 @@ RUN perlbrew --yes install-multiple -j 4 --notest \
 RUN perlbrew clean
 
 ENV STOW_ROOT=/stow
+RUN mkdir -p "${STOW_ROOT}"
 
 WORKDIR ${STOW_ROOT}
 
@@ -63,11 +64,14 @@ WORKDIR ${STOW_ROOT}
 # us re-bootstrapping all Perl versions if we modify another script.
 COPY ./tools/bootstrap-perls.sh ./tools/
 
+# We need 'cpanfile' to know which dependencies to install
+COPY ./cpanfile ./cpanfile
+
 # Bootstrap the perl environments
 RUN ./tools/bootstrap-perls.sh
 
 # Now copy over the rest
-COPY ./tools/run-tests.sh ./tools/
+COPY . .
 
 # Clean up at the end after we bootstrap
 RUN apt-get clean \
