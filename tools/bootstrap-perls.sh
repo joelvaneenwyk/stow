@@ -16,41 +16,60 @@
 # along with this program. If not, see https://www.gnu.org/licenses/.
 #
 
-# Disable 'unbound variable' errors since 'perlbrew' setup will error
-# out if they are enabled.
-set +o nounset
+function setup_perlbrew() {
+    # Disable 'unbound variable' errors since 'perlbrew' setup will error
+    # out if they are enabled.
+    set +o nounset
 
-# Standard safety protocol.
-set -eo pipefail
+    # Standard safety protocol.
+    set -eo pipefail
 
-STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && cd ../ && pwd -P)"
-PERLBREW_ROOT="${PERLBREW_ROOT:-/usr/local/perlbrew}"
+    STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && cd ../ && pwd -P)"
+    PERLBREW_ROOT="${PERLBREW_ROOT:-/usr/local/perlbrew}"
 
-if [ ! -f "$PERLBREW_ROOT/etc/bashrc" ]; then
-    PERLBREW_ROOT="$HOME/perl5/perlbrew"
-fi
+    if [ ! -f "$PERLBREW_ROOT/etc/bashrc" ]; then
+        PERLBREW_ROOT="$HOME/perl5/perlbrew"
+    fi
 
-_perlbrew_setup="$PERLBREW_ROOT/etc/bashrc"
+    _perlbrew_setup="$PERLBREW_ROOT/etc/bashrc"
 
-if [ -f "$_perlbrew_setup" ]; then
-    # Load perlbrew environment
-    # shellcheck disable=SC1090
-    source "$_perlbrew_setup"
-    echo "Initialized 'perlbrew' environment."
-else
-    echo "ERROR: Failed to find 'perlbrew' setup: '$_perlbrew_setup'"
-    return 5
-fi
+    if [ ! -f "$_perlbrew_setup" ]; then
+        curl -k -L https://install.perlbrew.pl | bash
 
-# For each Perl version install required modules.
-for p_version in $(perlbrew list | sed 's/ //g' | sed 's/\*//g'); do
-    # Switch to it.
-    perlbrew use "$p_version"
+        # We want this to output $PERLBREW_ROOT without expansion
+        # shellcheck disable=SC2016
+        echo 'source "$PERLBREW_ROOT/etc/bashrc"' >>~/.bash_profile
 
-    # Install the needed modules.
-    "$PERLBREW_ROOT/bin/cpanm" --installdeps \
-        --notest --with-recommends --with-suggests "$STOW_ROOT"
-done
+        perlbrew init
+        perlbrew --yes install-cpanm
+        perlbrew --yes install-patchperl
+        perlbrew --yes install-multiple -j 4 --notest \
+            perl-5.14.4 \
+            perl-5.34.0
+    fi
 
-# Cleanup to remove any temporary files.
-perlbrew clean
+    if [ -f "$_perlbrew_setup" ]; then
+        # Load perlbrew environment
+        # shellcheck disable=SC1090
+        source "$_perlbrew_setup"
+        echo "Initialized 'perlbrew' environment."
+    else
+        echo "ERROR: Failed to find 'perlbrew' setup: '$_perlbrew_setup'"
+        return 5
+    fi
+
+    # For each Perl version install required modules.
+    for p_version in $(perlbrew list | sed 's/ //g' | sed 's/\*//g'); do
+        # Switch to it.
+        perlbrew use "$p_version"
+
+        # Install the needed modules.
+        "$PERLBREW_ROOT/bin/cpanm" --installdeps \
+            --notest --with-recommends --with-suggests "$STOW_ROOT"
+    done
+
+    # Cleanup to remove any temporary files.
+    perlbrew clean
+}
+
+setup_perlbrew "$@"

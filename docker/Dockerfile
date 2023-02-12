@@ -41,12 +41,12 @@ RUN curl -k -L https://install.perlbrew.pl | bash
 RUN echo 'source "$PERLBREW_ROOT/etc/bashrc"' >>".bash_profile"
 
 RUN perlbrew init
-RUN perlbrew install-cpanm
-RUN perlbrew install-patchperl
+RUN perlbrew --yes install-cpanm
+RUN perlbrew --yes install-patchperl
 
 # Archive of old versions which we install first so that we have to rebuild
 # these infrequently
-RUN perlbrew install-multiple -j 4 --notest \
+RUN perlbrew --yes install-multiple -j 4 --notest \
     perl-5.14.4 \
     perl-5.16.3 \
     perl-5.18.4 \
@@ -71,7 +71,7 @@ COPY ./tools/run-tests.sh ./tools/
 
 # Clean up at the end after we bootstrap
 RUN apt-get clean \
-&& rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*
 
 ENTRYPOINT [ "/bin/bash", "-c" ]
 CMD ["${STOW_ROOT}/tools/run-tests.sh"]
