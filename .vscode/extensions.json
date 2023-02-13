@@ -1,6 +1,7 @@
 {
     "recommendations": [
         "maelvalais.autoconf",
-        "james-yu.latex-workshop"
+        "james-yu.latex-workshop",
+        "ms-vscode.makefile-tools"
     ]
 }
