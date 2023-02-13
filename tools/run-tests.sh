@@ -402,6 +402,10 @@ function test_perl_version() {
 function run_stow_tests() {
     initialize_environment "$@"
 
+    LIST_PERL_VERSIONS=0
+    PERL_VERSION=""
+    no_install=""
+
     local POSITIONAL=()
     while [[ $# -gt 0 ]]; do
         key="$1"
@@ -432,27 +436,6 @@ function run_stow_tests() {
             ;;
         esac
     done
-
-    LIST_PERL_VERSIONS=0
-    PERL_VERSION=""
-
-    if [ -x "$(command -v perlbrew)" ]; then
-        STOW_PERL=perl
-    else
-        STOW_PERL="${STOW_PERL:-${PERL:-perl}}"
-    fi
-    export STOW_PERL
-
-    if [ ! "$LIST_PERL_VERSIONS" == "1" ] && [ ! "$no_install" == "1" ]; then
-        if install_system_dependencies; then
-            echo "Finished installation of system dependencies."
-        else
-            echo "Failed to install dependencies."
-            return 4
-        fi
-    else
-        echo "Skipped install of system dependencies."
-    fi
 
     # Disable 'unbound variable' errors since 'perlbrew' setup will error
     # out if they are enabled.
@@ -487,12 +470,17 @@ function run_stow_tests() {
         # Load perlbrew environment
         # shellcheck disable=SC1090
         source "$PERLBREW_ROOT/$perlbrew_rc"
+    fi
 
-        if [ -x "$(command -v perlbrew)" ]; then
-            export PATH=$PATH:$PERLBREW_ROOT/binfi
-        fi
+    if [ -x "$PERLBREW_ROOT/bin/perlbrew" ] && [ -z "$(command -v perlbrew)" ]; then
+        export PATH=$PERLBREW_ROOT/bin:/usr/bin:$PATH
+        echo "Added 'perlbrew' to path."
+    fi
 
-        if [ -z "$(perlbrew list)" ] || [ "${perlbrew_force:-}" = "1" ]; then
+    perlbrew list
+
+    if perlbrew_list="$(perlbrew list)"; then
+        if [ -z "$perlbrew_list" ] || [ "${perlbrew_force:-}" = "1" ]; then
             perlbrew init
             perlbrew --yes install-cpanm
             perlbrew --yes install-patchperl
@@ -506,7 +494,7 @@ function run_stow_tests() {
 
         echo "Initialized 'perlbrew' environment: '$PERLBREW_ROOT/$perlbrew_rc'"
     else
-        echo "ERROR: Failed to find 'perlbrew' setup: '$PERLBREW_ROOT/$perlbrew_rc'"
+        echo "ERROR: Failed to find 'perlbrew' binary: '$PERLBREW_ROOT'"
         return 5
     fi
 
@@ -517,6 +505,24 @@ function run_stow_tests() {
     trap exit_handler EXIT
 
     __set_debug_trap
+
+    if [ -x "$(command -v perlbrew)" ]; then
+        STOW_PERL=perl
+    else
+        STOW_PERL="${STOW_PERL:-${PERL:-perl}}"
+    fi
+    export STOW_PERL
+
+    if [ ! "$LIST_PERL_VERSIONS" == "1" ] && [ ! "$no_install" == "1" ]; then
+        if install_system_dependencies; then
+            echo "Finished installation of system dependencies."
+        else
+            echo "Failed to install dependencies."
+            return 4
+        fi
+    else
+        echo "Skipped install of system dependencies."
+    fi
 
     if [ "$LIST_PERL_VERSIONS" == "1" ]; then
         echo "Listing Perl versions available from perlbrew ..."
@@ -538,10 +544,21 @@ function run_stow_tests() {
         fi
 
         for input_perl_version in "${versions[@]}"; do
+            printf "\n==========================================\n"
+            echo "Test version: $input_perl_version"
+
             # Use the version of Perl passed in if 'perlbrew' is installed
-            if [ -x "$(command -v perlbrew)" ]; then
-                perlbrew use "$1"
+            if [ -n "$(command -v perlbrew)" ]; then
+                # Disable 'unbound variable' errors since 'perlbrew' setup will error
+                # out if they are enabled.
+                set +o nounset
+
+                perlbrew use "$input_perl_version"
             fi
+
+            perl -V:version
+            command -v perl
+            printf "==========================================\n\n"
 
             # Install Perl dependencies on this particular version of Perl in case
             # that has not been done yet.
@@ -558,7 +575,9 @@ function run_stow_tests() {
                 continue
             fi
 
-            if ! test_perl_version "$input_perl_version"; then
+            if test_perl_version "$input_perl_version"; then
+                echo "Finished testing version: $input_perl_version"
+            else
                 return 4
             fi
 
