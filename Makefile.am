@@ -21,6 +21,7 @@ dist_man_MANS = doc/stow.8
 
 PDF = doc/manual.pdf
 HTML = doc/manual-single.html
+PERL = perl
 
 dist_doc_DATA = \
 	README.md INSTALL.md \

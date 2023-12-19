@@ -57,7 +57,11 @@ function run_command() {
         echo "##[cmd] $command_display"
     fi
 
-    "$@"
+    if "$@"; then
+        return 0
+    else
+        return $?
+    fi
 }
 
 function run_named_command_group() {
@@ -72,9 +76,9 @@ function run_named_command_group() {
         echo "==----------------------"
     fi
 
-    return_code=0
     timestamp
     if run_command "$@"; then
+        return_code=0
         echo "✔ Command succeeded."
     else
         return_code=$?
@@ -94,7 +98,7 @@ function run_command_group() {
 }
 
 function use_sudo {
-    if [ -x "$(command -v sudo)" ] && [ ! -x "$(command -v cygpath)" ]; then
+    if [ -x "$(command -v sudo)" ] && [ ! -x "$(command -v cygpath)" ] && [ ! -x "$(command -v wslpath)" ]; then
         sudo "$@"
     else
         "$@"
@@ -215,7 +219,8 @@ function install_perl_modules() {
 
         if [ "$_use_local_lib" = "0" ] && activate_local_perl_library; then
             _use_local_lib=1
-            _perl_install_args+=(-I "$STOW_PERL_LOCAL_LIB/lib/perl5" "-Mlocal::lib=""$STOW_PERL_LOCAL_LIB")
+            PERL5LIB=$PERL5LIB:$STOW_PERL_LOCAL_LIB
+            _perl_install_args+=(-I "$STOW_PERL_LOCAL_LIB/lib/perl5" "-Mlocal::lib=$STOW_PERL_LOCAL_LIB")
         fi
 
         if [ "$_use_local_lib" = "1" ] && run_command "${_perl_install_args[@]}" -MApp::cpanminus -le 1 &>/dev/null; then
@@ -226,12 +231,11 @@ function install_perl_modules() {
                 _perl_install_args=("$STOW_PERL" "$_cpanm")
             fi
 
-            if
-                ! run_named_command_group "Install Module(s): '$*'" \
-                    "${_perl_install_args[@]}" --local-lib "$STOW_PERL_LOCAL_LIB" --notest "$@"
-            then
+            if run_named_command_group "Install Module(s): '$*'" "${_perl_install_args[@]}" --local-lib "$STOW_PERL_LOCAL_LIB" --notest "$@"; then
+                :
+            else
+                _return_value=$?
                 echo "❌ Failed to install modules with CPANM."
-                _return_value=99
             fi
 
             break
@@ -372,11 +376,14 @@ function initialize_perl() {
         return 2
     fi
 
-    if [ -n "${USERPROFILE:-}" ]; then
+    if [ -x "$(command -v cygpath)" ] && [ -n "${USERPROFILE:-}" ]; then
         _user_profile=$(cygpath "${USERPROFILE}")
-        rm -f "$_user_profile/.cpan/CPAN/MyConfig.pm" &>/dev/null
-        rm -f "$_user_profile/.cpan-w64/CPAN/MyConfig.pm" &>/dev/null
+    elif [ -x "$(command -v wslpath)" ] && [ -n "${USERPROFILE:-}" ]; then
+        _user_profile=$(wslpath "${USERPROFILE}")
     fi
+
+    rm -f "${_user_profile:-}/.cpan/CPAN/MyConfig.pm" &>/dev/null
+    rm -f "${_user_profile:-}/.cpan-w64/CPAN/MyConfig.pm" &>/dev/null
     rm -rf "$STOW_LOCAL_BUILD_ROOT/home/.cpan" &>/dev/null
     rm -rf "$STOW_LOCAL_BUILD_ROOT/home/.cpan-w64" &>/dev/null
     rm -rf "$HOME/.cpanm" &>/dev/null
@@ -391,17 +398,17 @@ function initialize_perl() {
     fi
 
     # Depending on install order it is possible in an MSYS environment to get errors about
-    # the 'pl2bat' file being missing. Workaround here is to ensure ExtUtils::MakeMaker is
-    # installed and then calling 'pl2bat' to generate it. It should be located under bin
+    # the 'pl2bat' file being missing. Workaround here is to ensure 'ExtUtils::MakeMaker' is
+    # installed and then calling 'pl2bat' to generate launch script. It should be located in 'bin'
     # folder at '/mingw64/bin/core_perl/pl2bat.bat'
     if [ -n "${MSYSTEM:-}" ]; then
         if [ ! "${MSYSTEM:-}" = "MSYS" ]; then
             export PATH="$PATH:$MSYSTEM_PREFIX/bin:$MSYSTEM_PREFIX/bin/core_perl"
         fi
 
-        # We intentionally use 'which' here as we are on Windows
         # shellcheck disable=SC2230
         if [ -x "$(command -v pl2bat)" ]; then
+            # We intentionally use 'which' here since this path is only run on Windows
             pl2bat "$(which pl2bat 2>/dev/null)" 2>/dev/null || true
         fi
     fi
@@ -413,11 +420,11 @@ function install_perl_dependencies() {
     modules=()
 
     # We intentionally install as little as possible here to support as many system combinations as
-    # possible including MSYS, cygwin, Ubuntu, Alpine, etc. The more libraries we add here the more
+    # possible including MSYS, Cygwin, Ubuntu, Alpine, etc. The more libraries we add here the more
     # seemingly obscure issues you could run into e.g., missing 'cc1' or 'poll.h' even when they are
     # in fact installed.
     modules+=(
-        local::lib App::cpanminus
+        local::lib App::cpanminus ExtUtils::Config
         YAML Carp Scalar::Util IO::Scalar Module::Build
         IO::Socket::SSL Net::SSLeay
         Moose TAP::Harness TAP::Harness::Env
@@ -431,11 +438,14 @@ function install_perl_dependencies() {
     fi
 
     if install_perl_modules "${modules[@]}"; then
+        _return_value=0
         echo "Installed required Perl dependencies."
     else
+        _return_value=88
         echo "Failed to install Perl modules."
-        return 88
     fi
+
+    return $_return_value
 }
 
 function _find_local_perl() {

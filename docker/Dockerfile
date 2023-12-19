@@ -62,13 +62,13 @@ WORKDIR ${STOW_ROOT}
 
 # Only copy the one script we need here instead of all files to prevent
 # us re-bootstrapping all Perl versions if we modify another script.
-COPY ./tools/bootstrap-perls.sh ./tools/
+COPY ./tools/ ./tools/
 
 # We need 'cpanfile' to know which dependencies to install
 COPY ./cpanfile ./cpanfile
 
 # Bootstrap the perl environments
-RUN ./tools/bootstrap-perls.sh
+RUN ./tools/run-tests.sh --bootstrap-only
 
 # Now copy over the rest
 COPY . .
