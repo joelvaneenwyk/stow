@@ -31,6 +31,7 @@ require 'stow';
 # .stowrc files used for testing, relative to run_from/
 my $CWD_RC_FILE = ".stowrc";
 my $HOME_RC_FILE = "../.stowrc";
+
 # Take the safe route and cowardly refuse to continue if there's
 # already a file at $HOME_RC_FILE.
 if (-e $HOME_RC_FILE) {

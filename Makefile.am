@@ -18,8 +18,11 @@
 bin_SCRIPTS = bin/stow bin/chkstow
 info_TEXINFOS = doc/stow.texi
 dist_man_MANS = doc/stow.8
+
 PDF = doc/manual.pdf
 HTML = doc/manual-single.html
+PERL = perl
+
 dist_doc_DATA = \
 	README.md INSTALL.md \
 	$(PDF) $(HTML) doc/version.texi \
@@ -32,9 +35,13 @@ pmstowdir = $(pmdir)/Stow
 pm_DATA = lib/Stow.pm
 pmstow_DATA = lib/Stow/Util.pm
 
-TEXINFO_TEX = doc/texinfo.tex
-export TEXI2DVI_BUILD_MODE = clean
-AM_MAKEINFOFLAGS = -I $(srcdir)
+is_msys = { \
+    if test -n '$(MSYSTEM)'; then \
+        true; \
+    else \
+        false; \
+    fi; \
+}
 
 # We require this -I parameter to ensure that the include of the
 # default ignore list in the manual works.  Unfortunately this is
@@ -44,14 +51,28 @@ AM_MAKEINFOFLAGS = -I $(srcdir)
 #
 # even though it annoyingly produces a warning with the -Wall option
 # to AM_INIT_AUTOMAKE which has to be silenced via -Wno-override.
+AM_MAKEINFOFLAGS = -I $(srcdir) -I $(srcdir)/doc -I $(srcdir)/automake
+
+#  `local' compile in the current directory, leaving all the auxiliary
+#          files around.  This is the traditional TeX use.
+#  `tidy'  compile in a local *.t2d directory, where the auxiliary files
+#          are left.  Output files are copied back to the original file.
+#  `clean' same as `tidy', but remove the auxiliary directory afterwards.
+#          Every compilation therefore requires the full cycle.
+export TEXI2DVI_BUILD_MODE = clean
+
+# Add '--debug' to get a very detailed output log (equivalent to 'set -x')
 TEXI2DVI = texi2dvi $(AM_MAKEINFOFLAGS)
+
+# Specifically used when converting from '.texi' to '.pdf'
+TEXI2PDF = $(TEXI2DVI) --pdf
 
 doc_deps = $(info_TEXINFOS) doc/version.texi
 
 DEFAULT_IGNORE_LIST = $(srcdir)/default-ignore-list
 
 TESTS_DIR = $(srcdir)/t
-TESTS_OUT = tmp-testing-trees
+TESTS_OUT = tmp-testing-trees _test
 TESTS_ENVIRONMENT = $(PERL) -Ibin -Ilib -I$(TESTS_DIR)
 
 # This is a kind of hack; TESTS needs to be set to ensure that the
@@ -99,35 +120,36 @@ EXTRA_DIST = \
 	$(DEFAULT_IGNORE_LIST) \
 	$(CPAN_FILES)
 CLEANFILES = $(bin_SCRIPTS) $(pm_DATA) $(pmstow_DATA)
-DISTCLEANFILES = Makefile.in configure Build MYMETA.*
+DISTCLEANFILES = Makefile.in configure Build MYMETA.* $(PDF)
 MAINTAINERCLEANFILES = $(dist_man_MANS) $(HTML) $(PDF) ChangeLog
 
 # clean up auto-generated files
 clean-local:
-	-rm -rf $(TESTS_OUT)
+	-rm -rf $(TESTS_OUT) _Inline _build
 maintainer-clean-local:
 	-rm -rf doc/manual-split cover_db
 
 # this is more explicit and reliable than the config file trick
-edit = sed -e 's|[@]PERL[@]|$(PERL)|g'       \
+edit = sed -e 's|[@]PERL[@]|$(PERL)|g' \
 	   -e 's|[@]VERSION[@]|$(VERSION)|g' \
 	   -e "s|[@]USE_LIB_PMDIR[@]|$$use_lib_pmdir|g"
 
 pmdir_in_INC = \
 	PERL5LIB= $(PERL) -V | \
-	    awk '/@INC/ {p=1; next} p==1 {print $$1}' | \
-	    grep -q "$(pmdir)"
+	    awk '/@INC:/ {p=1; next} p==1 {print $$1}' | \
+	    sed 's/\\/\//g' | \
+	    grep -q "`$(CYGPATH_P) '$(pmdir)'`"
 
 calc_use_lib_pmdir = \
 	if $(pmdir_in_INC); then \
 	    use_lib_pmdir=""; \
 	else \
-	    use_lib_pmdir="use lib \"$(pmdir)\";"; \
+	    use_lib_pmdir="use lib \"`$(CYGPATH_P) '$(pmdir)'`\";"; \
 	fi
 
 check_pmdir = \
 	echo; \
-	echo "\# Perl modules will be installed to $(pmdir)"; \
+	echo "\# Perl modules will be installed to `$(CYGPATH_P) '$(pmdir)'`"; \
 	echo "\# "; \
 	if $(pmdir_in_INC); then \
 	    echo "\# This is in $(PERL)'s built-in @INC, so everything"; \
@@ -168,7 +190,16 @@ lib/Stow/Util.pm: lib/Stow/Util.pm.in Makefile.am
 ##############################################################################
 
 cpanm:
-	cpanm --quiet --installdeps --notest .; \
+	( \
+	    echo "yes"     \
+	    echo ""        \
+	    echo "no"      \
+	    echo "exit"    \
+	) | COMSPEC="" "$(PERL)" "./tools/initialize-cpan-config.pl" || true; \
+	"$(PERL)" -MCPAN -e "CPAN::Shell->notest('install', 'App::cpanminus')" 2>&1; \
+	"$(PERL)" -MApp::cpanminus::fatscript \
+	    -le 'my $$c = App::cpanminus::script->new; $$c->parse_options(@ARGV); $$c->doit;' -- \
+	    --installdeps --notest --with-recommends --with-suggests . 2>&1; \
 	CPANM_RESULT=$$?; \
 	if [ $$CPANM_RESULT != 0 ]; then \
 	    echo ---------------------------------------------------; \
@@ -196,32 +227,46 @@ doc/stow.8: bin/stow.in Makefile.am
 # install-data-hook to rename from stow.pdf to manual.pdf etc. on
 # install.  Instead, by overriding the built-in rules with modified
 # versions, we can kill both birds with one stone.
-
-# Generating the single-page HTML version used to be done with the old
-# texi2html, which is no longer maintained.  This rule is not used,
-# but is kept to allow comparing of results during the transition, and
-# potentially longer for posterity.
-doc/manual-single-old-texi2html.html: $(doc_deps)
-	texi2html --P=$(srcdir) --output=$@ -expandinfo -menu -monolithic -verbose $<
-
-# One alternative to the old texi2html approach is to use the texi2html
-# wrapper around texi2any which is provided as a partial drop-in replacement:
-#
-# https://www.gnu.org/software/texinfo/manual/texinfo/html_node/texi2html.html#texi2html
-#
-# Differences to the old texi2html:
-#
-#   - Doesn't wrap @file{foo} paths with quotes, which looks better.
-#   - Missing certain sections
-doc/manual-single-texi2html-wrapper.html: $(doc_deps)
-	texi2any -P $(srcdir) --output=$@ --verbose \
-		-c TEXI2HTML=1 -c SHOW_MENU=1 -c MONOLITHIC=1 $<
-
 .PHONY: manual-single-html-all
+
+doc/stow.dvi: doc/stow.texi $(srcdir)/doc/version.texi doc/$(am__dirstamp)
+	[ -d doc ] || mkdir doc # required in vpath mode
+	if $(is_msys); then \
+	    TEXMFOUTPUT="doc" \
+	    TEXINPUTS="`$(CYGPATH_P) '$(STOW_ROOT)'`/doc$(PATH_SEPARATOR)$(srcdir)$(PATH_SEPARATOR)$(srcdir)/doc$(PATH_SEPARATOR)$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
+	    pdfetex \
+	        --output-format dvi -output-directory=`test -f 'doc/stow.texi' || echo '$(srcdir)/'`/doc \
+	        `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi </dev/null; \
+	    rm -rf \
+	        "doc/stow.aux" "doc/stow.cp" \
+	        "doc/stow.log" "doc/stow.toc"; \
+	else \
+	    $(AM_V_TEXI2DVI)TEXINPUTS="$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
+	    MAKEINFO='$(MAKEINFO) $(AM_MAKEINFOFLAGS) $(MAKEINFOFLAGS) -I doc -I $(srcdir)/doc' \
+	    $(TEXI2DVI) $(AM_V_texinfo) --build-dir=$(@:.dvi=.t2d) -o $@ $(AM_V_texidevnull) \
+	    `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi; \
+	fi
+
+doc/stow.pdf: doc/stow.texi $(srcdir)/doc/version.texi doc/$(am__dirstamp)
+	[ -d doc ] || mkdir doc # required in vpath mode
+	if $(is_msys); then \
+	    TEXMFOUTPUT="doc" \
+	    TEXINPUTS="`$(CYGPATH_P) '$(STOW_ROOT)'`/doc$(PATH_SEPARATOR)$(srcdir)$(PATH_SEPARATOR)$(srcdir)/doc$(PATH_SEPARATOR)$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
+	    pdfetex \
+	        -output-directory=`test -f 'doc/stow.texi' || echo '$(srcdir)/'`/doc \
+	        `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi </dev/null; \
+	    rm -rf \
+	        "doc/stow.aux" "doc/stow.cp" \
+	        "doc/stow.log" "doc/stow.toc"; \
+	else \
+	    $(AM_V_TEXI2PDF)TEXINPUTS="$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
+	    MAKEINFO='$(MAKEINFO) $(AM_MAKEINFOFLAGS) $(MAKEINFOFLAGS) -I doc -I $(srcdir)/doc' \
+	    $(TEXI2PDF) $(AM_V_texinfo) --build-dir=$(@:.pdf=.t2p) -o $@ $(AM_V_texidevnull) \
+	    `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi; \
+	fi
+
 manual-single-html-all: \
-	$(HTML) \
-	doc/manual-single-texi2html-wrapper.html \
-	doc/manual-single-old-texi2html.html
+	$(HTML)
 
 # Modern approach using $(MAKEINFOHTML) --no-split
 # Differences to the older two approaches:
@@ -231,24 +276,25 @@ $(HTML): $(doc_deps)
 	[ -d doc ] || mkdir doc # required in vpath mode
 	-rm -f $@
 	$(MAKEINFOHTML) $(AM_MAKEINFOHTMLFLAGS) $(MAKEINFOFLAGS) -I doc -I $(srcdir)/doc \
-		-c USE_TITLEPAGE_FOR_TITLE=1 --no-split -o $@ \
-		`test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi
+	    --no-split `$(MAKEINFO) --help | grep -q "set-customization-variable" && echo '--set-customization-variable USE_TITLEPAGE_FOR_TITLE=1'` \
+	    -o "$@" \
+	    `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi
 
-$(PDF): $(doc_deps)
-	TEXINPUTS="$(am__TEXINFO_TEX_DIR)$(PATH_SEPARATOR)$$TEXINPUTS" \
-	MAKEINFO='$(MAKEINFO) $(AM_MAKEINFOFLAGS) $(MAKEINFOFLAGS) -I doc -I $(srcdir)/doc' \
-	$(TEXI2PDF) -o $@ `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi
+$(PDF): $(doc_deps) $(HTML) doc/stow.pdf
+	[ -d doc ] || mkdir doc # required in vpath mode
+	mv `test -f 'doc/stow.pdf' || echo '$(srcdir)/'`doc/stow.pdf "$@"
 
 doc/manual-split: $(doc_deps)
 	rm -rf $@.new
-	if $(MAKEINFOHTML) $(AM_MAKEINFOHTMLFLAGS) $(MAKEINFOFLAGS) -I doc -I $(srcdir)/doc \
-	 -o $@.new `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi; \
+	if $(MAKEINFOHTML) $(AM_MAKEINFOHTMLFLAGS) $(MAKEINFOFLAGS) \
+	    -I $(srcdir) -I doc -I $(srcdir)/doc \
+	    -o $@.new `test -f 'doc/stow.texi' || echo '$(srcdir)/'`doc/stow.texi; \
 	then \
-	  rm -rf $@; \
-	  mv $@.new $@; \
+	    rm -rf $@; \
+	    mv $@.new $@; \
 	else \
-	  rm -Rf $@.new $@; \
-	  exit 1; \
+	    rm -Rf $@.new $@; \
+	    exit 1; \
 	fi
 
 # The split version of the manual is copied to $(docdir)/manual-split
@@ -262,8 +308,9 @@ install-data-hook: doc/manual-split
 	cp -r $(srcdir)/doc/manual-split $(DESTDIR)$(docdir)
 
 uninstall-hook:
-	chmod u+w -R $(DESTDIR)$(docdir)/manual-split
+	chmod -R u+w $(DESTDIR)$(docdir)/manual-split
 	rm -rf $(DESTDIR)$(docdir)/manual-split
+	rm -f $(DESTDIR)/info/dir
 
 # Using install-data-hook has the slightly annoying disadvantage that
 # by default the split version of the manual isn't automatically
@@ -277,25 +324,24 @@ $(HTML): doc/manual-split
 dist-hook: doc/manual-split
 
 dist-hook: $(dist_man_MANS)
-## If we are creating a distribution from a git checkout, ensure
-## the ChangeLog file is in sync the git repository.
-	if test -d $(top_srcdir)/.git; then \
-	  rm -f ChangeLog \
-	    && $(MAKE) $(AM_MAKEFLAGS) ChangeLog \
-	    && cp -f ChangeLog $(distdir)/ChangeLog; \
+	## If we are creating a distribution from a git checkout, ensure
+	## the ChangeLog file is in sync the git repository.
+	if test -e "$(srcdir)/.git"; then \
+	    rm -f ChangeLog \
+	        && $(MAKE) $(AM_MAKEFLAGS) ChangeLog \
+	        && cp -f ChangeLog $(distdir)/ChangeLog; \
 	fi
 
 ChangeLog: doc/ChangeLog.OLD
-	@if [ -d .git ]; then \
+	if [ -e "$(srcdir)/.git" ]; then \
 	    ( \
 	        git log \
-		    --format="format:%ad  %aN <%aE>%n%n    * %w(70,0,4)%s%+b%n" \
-		    --name-status \
-		    v2.0.2..HEAD \
-                | sed 's/^\([A-Z]\)\t/      \1 /'; \
-	        cat $< \
-	    ) > $@; \
-	    echo "Rebuilt $@ from git commit history."; \
+	            --format="format:%ad  %aN <%aE>%n%n    * %w(70,0,4)%s%+b%n" \
+	            --name-status \
+	            v2.0.2..HEAD | sed 's/^\([A-Z]\)\t/      \1 /'; \
+	        cat "$<" \
+	    ) > "$(srcdir)/$@"; \
+	    echo "Rebuilt '$@' from git commit history."; \
 	else \
 	    echo "Not in a git repository; can't update ChangeLog."; \
 	fi

@@ -54,7 +54,7 @@ Release procedure
 
     - Check META.yml and META.json have the new version number.
       They already should if the final step of this document was
-      carried out after the previous release was publised, but
+      carried out after the previous release was published, but
       if not:
 
         git commit -m "Bump version to $version"
@@ -66,8 +66,8 @@ Release procedure
 
 - Run the tests on various Perl versions via Docker:
 
-    ./build-docker.sh
-    ./test-docker.sh
+    ./docker/docker-build.sh
+    ./docker/docker-test.sh
 
   Obviously if there are any failures, they will need to be fixed
   first, and then repeat the above steps.

@@ -46,8 +46,8 @@ make_link('bin1/file1','../../stow/pkg1/bin1/file1');
 is( $stow->foldable('bin1'), '../stow/pkg1/bin1' => q(can fold a simple tree) );
 
 #
-# can't fold an empty directory 
-# 
+# can't fold an empty directory
+#
 
 make_path('../stow/pkg2/bin2');
 make_file('../stow/pkg2/bin2/file2');

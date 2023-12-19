@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 #
 # This file is part of GNU Stow.
 #
@@ -14,17 +14,28 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program. If not, see https://www.gnu.org/licenses/.
+#
 
-# Load perlbrew environment
-. /usr/local/perlbrew/etc/bashrc
+# Standard safety protocol
+set -eu
 
-# For each perl version installed.
-for p_version in $(perlbrew list | sed 's/ //g'); do
-    # Switch to it.
-    perlbrew use $p_version
-    # and install the needed modules.
-    /usr/local/perlbrew/bin/cpanm -n Devel::Cover::Report::Coveralls Test::More Test::Output
-done
+if [ -n "${BASH_VERSION:-}" ]; then
+    echo "Bash v$BASH_VERSION"
 
-# Cleanup to remove any temp files.
-perlbrew clean
+    # shellcheck disable=SC3028,SC3054,SC2039
+    STOW_ROOT="$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
+    # shellcheck source=tools/stow-environment.sh
+    . "$STOW_ROOT/tools/stow-environment.sh"
+
+    stow_setup
+else
+    STOW_ROOT="$(cd -P -- "$(dirname -- "$0")" && pwd)"
+
+    if [ -x "$(command -v apk)" ] && [ ! -x "$(command -v bash)" ]; then
+        apk update
+        apk add bash
+    fi
+
+    bash "$STOW_ROOT/setup.sh"
+fi

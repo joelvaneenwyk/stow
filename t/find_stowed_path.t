@@ -30,7 +30,7 @@ use Stow::Util qw(set_debug_level);
 init_test_dirs();
 
 my $stow = new_Stow(dir => "$TEST_DIR/stow");
-#set_debug_level(4);
+set_debug_level(4);
 
 my ($path, $stow_path, $package) =
     $stow->find_stowed_path("$TEST_DIR/target/a/b/c", "../../../stow/a/b/c");

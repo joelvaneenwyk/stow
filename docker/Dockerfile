@@ -16,48 +16,66 @@
 # Build docker image: `docker build -t stowtest`
 # Run tests: (from stow src directory)
 #    `docker run --rm -it -v $(pwd):$(pwd) -w $(pwd) stowtest`
-FROM debian:jessie
-RUN printf "deb http://archive.debian.org/debian/ jessie main\ndeb-src http://archive.debian.org/debian/ jessie main\ndeb http://security.debian.org jessie/updates main\ndeb-src http://security.debian.org jessie/updates main" > /etc/apt/sources.list
-RUN DEBIAN_FRONTEND=noninteractive \
-apt-get update -qq && \
-apt-get install -y -q \
-    autoconf \
-    bzip2 \
-    cpanminus \
-    gawk \
-    git \
-	libssl-dev \
-    make \
-	patch \
-    perlbrew \
-    texinfo \
-    texlive \
-    texi2html \
-&& apt-get clean \
-&& rm -rf /var/lib/apt/lists/*
+ARG DEBIAN_VERSION=bullseye-slim
+FROM debian:${DEBIAN_VERSION}
 
-# Set up perlbrew
-ENV HOME=/root \
-    PERLBREW_ROOT=/usr/local/perlbrew \
-    PERLBREW_HOME=/root/.perlbrew \
-    PERLBREW_PATH=/usr/local/perlbrew/bin
-RUN mkdir -p /usr/local/perlbrew /root \
-    && perlbrew init \
-    && perlbrew install-cpanm \
-    && perlbrew install-patchperl
-RUN perlbrew install-multiple -j 4 --notest \
-        perl-5.22.2 \
-        perl-5.20.3 \
-        perl-5.18.4 \
-        perl-5.16.3 \
-        perl-5.14.4 \
-&& perlbrew clean
+RUN DEBIAN_FRONTEND=noninteractive apt-get update
+RUN DEBIAN_FRONTEND=noninteractive apt-get -y install --no-install-recommends \
+    vim nano \
+    sudo bzip2 gawk git curl wget ca-certificates patch \
+    build-essential make autotools-dev automake autoconf libssl-dev libz-dev \
+    perl cpanminus \
+    texinfo texlive texi2html
+
+# Set up perlbrew environment
+ENV HOME=/root
+ENV PERLBREW_HOME=${HOME}/.perlbrew
+ENV PERLBREW_ROOT_DEFAULT=${HOME}/perl5/perlbrew
+ENV PERLBREW_ROOT=/usr/local/perlbrew
+ENV PERLBREW_PATH=${PERLBREW_ROOT}/bin
+ENV PATH="${PERLBREW_ROOT_DEFAULT}:${PERLBREW_PATH}:${PATH}"
+
+RUN mkdir -p "$HOME" "$PERLBREW_ROOT_DEFAULT" "$PERLBREW_ROOT"
+
+RUN curl -k -L https://install.perlbrew.pl | bash
+RUN echo 'source "$PERLBREW_ROOT/etc/bashrc"' >>~/.bash_profile
+
+RUN perlbrew init
+RUN perlbrew --yes install-cpanm
+RUN perlbrew --yes install-patchperl
+
+# Archive of old versions which we install first so that we have to rebuild
+# these infrequently
+RUN perlbrew --yes install-multiple -j 4 --notest \
+    perl-5.14.4 \
+    perl-5.16.3 \
+    perl-5.18.4 \
+    perl-5.28.0 \
+    perl-5.34.0
+
+RUN perlbrew clean
+
+ENV STOW_ROOT=/stow
+RUN mkdir -p "${STOW_ROOT}"
+
+WORKDIR ${STOW_ROOT}
+
+# Only copy the one script we need here instead of all files to prevent
+# us re-bootstrapping all Perl versions if we modify another script.
+COPY ./tools/ ./tools/
+
+# We need 'cpanfile' to know which dependencies to install
+COPY ./cpanfile ./cpanfile
 
 # Bootstrap the perl environments
-COPY ./bootstrap-perls.sh /bootstrap-perls.sh
-RUN /bootstrap-perls.sh && rm /bootstrap-perls.sh
+RUN ./tools/run-tests.sh --bootstrap-only
 
-# Add test script to container filesystem
-COPY ./run-stow-tests.sh /run-stow-tests.sh
+# Now copy over the rest
+COPY . .
 
-ENTRYPOINT ["/run-stow-tests.sh"]
+# Clean up at the end after we bootstrap
+RUN apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+ENTRYPOINT [ "/bin/bash", "-c" ]
+CMD ["${STOW_ROOT}/tools/run-tests.sh"]
