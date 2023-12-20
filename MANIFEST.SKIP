@@ -109,6 +109,7 @@
 ^doc/stow.cp$
 ^doc/stow.toc$
 ^doc/stow.dvi$
+^doc/stow-troubleshooting.md$
 
 # Avoid test files
 tmp-testing-trees
