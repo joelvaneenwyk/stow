@@ -22,13 +22,13 @@
 use strict;
 use warnings;
 
-use testutil;
 
 use Test::More tests => 6;
 use English qw(-no_match_vars);
 
-use testutil;
+use Stow::Util qw(set_debug_level);
 
+use testutil;
 init_test_dirs();
 cd("$TEST_DIR/target");
 
@@ -46,7 +46,7 @@ make_file('../stow/dotfiles/dot-foo');
 $stow->plan_stow('dotfiles');
 $stow->process_tasks();
 is(
-    readlink('.foo'),
+    normalize_path(get_link_target('.foo')),
     '../stow/dotfiles/dot-foo',
     => 'processed dotfile'
 );
@@ -63,7 +63,7 @@ make_file('../stow/dotfiles/dot-foo');
 $stow->plan_stow('dotfiles');
 $stow->process_tasks();
 is(
-    readlink('dot-foo'),
+    normalize_path(get_link_target('dot-foo')),
     '../stow/dotfiles/dot-foo',
     => 'unprocessed dotfile'
 );
@@ -81,7 +81,7 @@ make_file('../stow/dotfiles/dot-emacs/init.el');
 $stow->plan_stow('dotfiles');
 $stow->process_tasks();
 is(
-    readlink('.emacs'),
+    normalize_path(get_link_target('.emacs')),
     '../stow/dotfiles/dot-emacs',
     => 'processed dotfile folder'
 );
@@ -91,26 +91,34 @@ is(
 # "$DOT_PREFIX." should not have that part expanded.
 #
 
-$stow = new_Stow(dir => '../stow', dotfiles => 1);
-
 make_path('../stow/dotfiles');
 make_file('../stow/dotfiles/dot-');
 
-make_path('../stow/dotfiles/dot-.');
-make_file('../stow/dotfiles/dot-./foo');
+# Not supported on Windows since long path is not supported which is required
+# for non-standard characters at the end of a folder e.g., '.' (dot)
+if ($^O ne 'MSWin32') {
+    make_path('../stow/dotfiles/dot-.');
+    make_file('../stow/dotfiles/dot-./foo');
+}
 
+$stow = new_Stow(dir => '../stow', dotfiles => 1);
 $stow->plan_stow('dotfiles');
 $stow->process_tasks();
 is(
-    readlink('dot-'),
+    normalize_path(get_link_target('dot-')),
     '../stow/dotfiles/dot-',
     => 'processed dotfile'
 );
-is(
-    readlink('dot-.'),
-    '../stow/dotfiles/dot-.',
-    => 'unprocessed dotfile'
-);
+
+SKIP: {
+    skip 'Windows does not support trailing dot characters in path', 1 if $^O eq 'MSWin32';
+
+    is(
+        normalize_path(get_link_target('dot-.')),
+        '../stow/dotfiles/dot-.',
+        => 'unprocessed dotfile'
+    );
+}
 
 #
 # simple unstow scenario
@@ -126,6 +134,7 @@ $stow->plan_unstow('dotfiles');
 $stow->process_tasks();
 ok(
     $stow->get_conflict_count == 0 &&
-    -f '../stow/dotfiles/dot-bar' && ! -e '.bar'
+    -f '../stow/dotfiles/dot-bar' &&
+    ! -e '.bar'
     => 'unstow a simple dotfile'
 );

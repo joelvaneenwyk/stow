@@ -36,7 +36,7 @@ my $stow;
 
 #
 # nothing to clean in a simple tree
-# 
+#
 
 
 make_path('../stow/pkg1/bin1');
@@ -47,12 +47,12 @@ $stow = new_Stow();
 $stow->cleanup_invalid_links('./');
 is(
    scalar($stow->get_tasks), 0
-    => 'nothing to clean' 
+    => 'nothing to clean'
 );
 
 #
 # cleanup a bad link in a simple tree
-# 
+#
 make_path('bin2');
 make_path('../stow/pkg2/bin2');
 make_file('../stow/pkg2/bin2/file2a');
@@ -66,8 +66,8 @@ is(scalar($stow->get_tasks),     1, 'one task cleaning up bad link');
 is($stow->link_task_action('bin2/file2b'), 'remove', 'removal task for bad link');
 
 #
-# dont cleanup a bad link not owned by stow
-# 
+# do not cleanup a bad link not owned by stow
+#
 
 make_path('bin3');
 make_path('../stow/pkg3/bin3');

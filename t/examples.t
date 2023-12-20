@@ -56,19 +56,22 @@ make_file('stow/emacs/man/man1/emacs.1');
 
 #
 # stow perl into an empty target
-# 
+#
 
 $stow = new_Stow(dir => 'stow');
 $stow->plan_stow('perl');
 $stow->process_tasks();
 ok(
     $stow->get_conflict_count == 0 &&
-    -l 'bin' && -l 'info' && -l 'lib' && -l 'man' &&
-    readlink('bin')  eq 'stow/perl/bin' &&
-    readlink('info') eq 'stow/perl/info' &&
-    readlink('lib')  eq 'stow/perl/lib' &&
-    readlink('man')  eq 'stow/perl/man'
-    => 'stow perl into an empty target' 
+    is_symlink('bin') &&
+    is_symlink('info') &&
+    is_symlink('lib') &&
+    is_symlink('man') &&
+    normalize_path(get_link_target('bin'))  eq 'stow/perl/bin' &&
+    normalize_path(get_link_target('info')) eq 'stow/perl/info' &&
+    normalize_path(get_link_target('lib'))  eq 'stow/perl/lib' &&
+    normalize_path(get_link_target('man'))  eq 'stow/perl/man'
+    => 'stow perl into an empty target'
 );
 
 #
@@ -91,15 +94,18 @@ $stow->process_tasks();
 ok(
     $stow->get_conflict_count == 0 &&
     -d 'bin' && -d 'lib' && -d 'man' && -d 'man/man1' &&
-    -l 'info' && -l 'bin/perl' && -l 'bin/a2p' && 
-    -l 'lib/perl' && -l 'man/man1/perl.1' &&
-    readlink('info')     eq 'stow/perl/info' &&
-    readlink('bin/perl') eq '../stow/perl/bin/perl' &&
-    readlink('bin/a2p')  eq '../stow/perl/bin/a2p' &&
-    readlink('lib/perl') eq '../stow/perl/lib/perl' &&
-    readlink('man/man1/perl.1')  eq '../../stow/perl/man/man1/perl.1'
-    => 'stow perl into a non-empty target' 
-); 
+    is_symlink('info') &&
+    is_symlink('bin/perl') &&
+    is_symlink('bin/a2p') &&
+    is_symlink('lib/perl') &&
+    is_symlink('man/man1/perl.1') &&
+    normalize_path(get_link_target('info'))             eq 'stow/perl/info' &&
+    normalize_path(get_link_target('bin/perl'))         eq '../stow/perl/bin/perl' &&
+    normalize_path(get_link_target('bin/a2p'))          eq '../stow/perl/bin/a2p' &&
+    normalize_path(get_link_target('lib/perl'))         eq '../stow/perl/lib/perl' &&
+    normalize_path(get_link_target('man/man1/perl.1'))  eq '../../stow/perl/man/man1/perl.1'
+    => 'stow perl into a non-empty target'
+);
 
 
 #
@@ -117,43 +123,43 @@ $stow->plan_stow('perl', 'emacs');
 $stow->process_tasks();
 is($stow->get_conflict_count, 0, 'no conflicts');
 ok(
-    -d 'bin'        && 
-    -l 'bin/perl'   && 
-    -l 'bin/emacs'  && 
-    -l 'bin/a2p'    && 
-    -l 'bin/etags'  && 
-    readlink('bin/perl')    eq '../stow/perl/bin/perl'      &&
-    readlink('bin/a2p')     eq '../stow/perl/bin/a2p'       &&
-    readlink('bin/emacs')   eq '../stow/emacs/bin/emacs'    &&
-    readlink('bin/etags')   eq '../stow/emacs/bin/etags'    &&
-    
-    -d 'info'       && 
-    -l 'info/perl'  && 
-    -l 'info/emacs' && 
-    readlink('info/perl')   eq '../stow/perl/info/perl'     &&
-    readlink('info/emacs')  eq '../stow/emacs/info/emacs'   &&
+    -d 'bin'                    &&
+    is_symlink('bin/perl')      &&
+    is_symlink('bin/emacs')     &&
+    is_symlink('bin/a2p')       &&
+    is_symlink('bin/etags')     &&
+    normalize_path(get_link_target('bin/perl'))    eq '../stow/perl/bin/perl'      &&
+    normalize_path(get_link_target('bin/a2p'))     eq '../stow/perl/bin/a2p'       &&
+    normalize_path(get_link_target('bin/emacs'))   eq '../stow/emacs/bin/emacs'    &&
+    normalize_path(get_link_target('bin/etags'))   eq '../stow/emacs/bin/etags'    &&
 
-    -d 'man'                && 
-    -d 'man/man1'           &&
-    -l 'man/man1/perl.1'    &&
-    -l 'man/man1/emacs.1'   &&
-    readlink('man/man1/perl.1')  eq '../../stow/perl/man/man1/perl.1'   &&
-    readlink('man/man1/emacs.1') eq '../../stow/emacs/man/man1/emacs.1' &&
+    -d 'info'                   &&
+    is_symlink('info/perl')     &&
+    is_symlink('info/emacs')    &&
+    normalize_path(get_link_target('info/perl'))   eq '../stow/perl/info/perl'     &&
+    normalize_path(get_link_target('info/emacs'))  eq '../stow/emacs/info/emacs'   &&
 
-    -l 'lib'        && 
-    -l 'libexec'    &&
-    readlink('lib')     eq 'stow/perl/lib'      &&
-    readlink('libexec') eq 'stow/emacs/libexec' &&
+    -d 'man'                            &&
+    -d 'man/man1'                       &&
+    is_symlink( 'man/man1/perl.1')      &&
+    is_symlink( 'man/man1/emacs.1')     &&
+    normalize_path(get_link_target('man/man1/perl.1'))  eq '../../stow/perl/man/man1/perl.1'   &&
+    normalize_path(get_link_target('man/man1/emacs.1')) eq '../../stow/emacs/man/man1/emacs.1' &&
+
+    is_symlink('lib')          &&
+    is_symlink('libexec')      &&
+    normalize_path(get_link_target('lib'))     eq 'stow/perl/lib'      &&
+    normalize_path(get_link_target('libexec')) eq 'stow/emacs/libexec' &&
     1
-    => 'stow perl into an empty target, then stow emacs' 
-); 
+    => 'stow perl into an empty target, then stow emacs'
+);
 
 #
-# BUG 1: 
+# BUG 1:
 # 1. stowing a package with an empty directory
 # 2. stow another package with the same directory but non empty
 # 3. unstow the second package
-# Q. the original empty directory should remain 
+# Q. the original empty directory should remain
 # behaviour is the same as if the empty directory had nothing to do with stow
 #
 

@@ -25,6 +25,10 @@ use Getopt::Long;
 
 my $DEFAULT_TARGET = $ENV{STOW_DIR} || '/usr/local/';
 
+@USE_LIB_PMDIR@
+use Stow;
+use Stow::Util qw(is_symlink get_link_target normalize_path);
+
 our $Wanted   = \&bad_links;
 our %Package  = ();
 our $Stow_dir = '';
@@ -100,19 +104,22 @@ sub skip_dirs {
 
 # checking for files that do not link to anything
 sub bad_links {
-    -l && !-e && print "Bogus link: $File::Find::name\n";
+    my ($path) = $_;
+    is_symlink($path) && !-e get_link_target($path) && print "Bogus link: $File::Find::name\n";
 }
 
 # checking for files that are not owned by stow
 sub aliens  {
-    !-l && !-d && print "Unstowed file: $File::Find::name\n";
+    my ($path) = $_;
+    !is_symlink($path) && !-d $path && print "Unstowed file: $File::Find::name\n";
 }
 
 # just list the packages in the target directory
 # FIXME: what if the stow dir is not called 'stow'?
 sub list {
-    if (-l) {
-        $_ = readlink;
+    my ($path) = $_;
+    if (is_symlink($path)) {
+        $_ = normalize_path(get_link_target($path));
         s{\A(?:\.\./)+stow/}{}g;
         s{/.*}{}g;
         $Package{$_} = 1;

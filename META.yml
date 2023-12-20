@@ -4,12 +4,13 @@ author:
   - unknown
 build_requires:
   IO::Scalar: '0'
+  Test::Exception: '0'
   Test::More: '0'
   Test::Output: '0'
 configure_requires:
   Module::Build: '0'
 dynamic_config: 1
-generated_by: 'Module::Build version 0.4224, CPAN::Meta::Converter version 2.150010'
+generated_by: 'Module::Build version 0.4231, CPAN::Meta::Converter version 2.150010'
 license: gpl
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
@@ -24,7 +25,10 @@ provides:
     version: v2.3.2
 requires:
   Carp: '0'
+  ExtUtils::PL2Bat: '0'
   IO::File: '0'
+  Inline::C: '0'
+  Win32::Mutex: '0'
   perl: '5.006'
 resources:
   homepage: https://savannah.gnu.org/projects/stow
