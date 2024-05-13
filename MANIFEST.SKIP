@@ -81,6 +81,7 @@
 ^doc/manual-split/
 ^doc/stamp-vti$
 ^doc/HOWTO-RELEASE$
+^doc/internal/
 
 # Avoid test files
 tmp-testing-trees*
