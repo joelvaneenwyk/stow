@@ -86,6 +86,7 @@
 # Avoid test files
 tmp-testing-trees*
 ^.coveralls.yml
+^.github/dependabot.yml
 ^.github/workflows/
 ^.travis.yml
 ^docker/
