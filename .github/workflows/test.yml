@@ -28,7 +28,7 @@ jobs:
     name: Validate
     runs-on: ubuntu-latest
     container:
-      image: perldocker/perl-tester:stable
+      image: perldocker/perl-tester:latest
 
     steps:
       - run: apt-get update && apt-get install -y sudo texinfo texlive
@@ -50,10 +50,6 @@ jobs:
       - run: make test
 
   test:
-    needs: validate
-    name: Perl ${{ matrix.perl-version }}
-    runs-on: ubuntu-latest
-
     strategy:
       fail-fast: false
       matrix:
@@ -69,6 +65,10 @@ jobs:
       #
       #    cpanm -n Devel::Cover::Report::Coveralls
       image: perldocker/perl-tester:${{ matrix.perl-version }}
+
+    needs: validate
+    name: Perl ${{ matrix.perl-version }}
+    runs-on: ubuntu-latest
 
     steps:
       - run: apt-get update && apt-get install -y sudo texinfo texlive
