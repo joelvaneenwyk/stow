@@ -1,12 +1,16 @@
 #!/usr/bin/env bash
 
-set -eu
+set -euax
 
-version=$( tools/get-version )
-imagename=stowtest
-image=$imagename:$version
+function build() {
+    version="$(./tools/get-version)"
+    imagename=stowtest
+    image=$imagename:$version
 
-pushd docker
-echo "Building Docker image $image ..."
-docker build -t $image .
-popd
+    pushd docker
+    echo "Building Docker image $image ..."
+    docker build -t "$image" .
+    popd
+}
+
+build "$@"
