@@ -24,16 +24,38 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
 
 jobs:
-  # call-simple-perl-test:
-  #   uses: perl-actions/github-workflows/.github/workflows/simple-perltester-workflow.yml@main
-  #   with:
-  #     since-perl: 5.14
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    container:
+      image: perldocker/perl-tester:stable
+
+    steps:
+      - run: apt-get update && apt-get install -y sudo texinfo texlive
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+      - run: autoreconf --install
+      - name: ./configure && make
+        run: |
+          eval "$(perl -V:siteprefix)"
+          ./configure --prefix=$siteprefix && make
+          make cpanm
+      - run: make distcheck
+      - run: perl Build.PL
+      - run: ./Build build
+      - run: ./Build distcheck
+      - run: make test
 
   test:
+    needs: validate
     name: Perl ${{ matrix.perl-version }}
     runs-on: ubuntu-latest
 
     strategy:
+      fail-fast: false
       matrix:
         perl-version:
           - '5.38'
@@ -57,11 +79,11 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-#      - uses: awalsh128/cache-apt-pkgs-action@latest
-#        with:
-#          debug: true
-#          packages: texinfo texlive
-#          version: 1.0
+      - uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          debug: true
+          packages: texinfo texlive
+          version: 1.0
 
       - run: autoreconf --install
       - name: ./configure && make
@@ -73,11 +95,11 @@ jobs:
           # but that's OK because we install it here:
           make cpanm
 
-      #- name: Run tests
-      #  run: make test
-
       - run: make distcheck
       - run: perl Build.PL
       - run: ./Build build
       - run: cover -test -report coveralls
       - run: ./Build distcheck
+
+      - name: Run tests
+        run: make test
