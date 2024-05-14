@@ -82,12 +82,12 @@ Mailing lists
 
 Stow has the following mailing lists:
 
--   [help-stow](https://lists.gnu.org/mailman/listinfo/help-stow) is for
+- [help-stow](https://lists.gnu.org/mailman/listinfo/help-stow) is for
     general user help and discussion.
--   [stow-devel](https://lists.gnu.org/mailman/listinfo/stow-devel) is
+- [stow-devel](https://lists.gnu.org/mailman/listinfo/stow-devel) is
     used to discuss most aspects of Stow, including development and
     enhancement requests.
--   [bug-stow](https://lists.gnu.org/mailman/listinfo/bug-stow) is for
+- [bug-stow](https://lists.gnu.org/mailman/listinfo/bug-stow) is for
     bug reports.
 
 Announcements about Stow are posted to
