@@ -52,7 +52,7 @@ jobs:
       - run: apt-get update && apt-get install -y sudo texinfo texlive
 
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
 #      - uses: awalsh128/cache-apt-pkgs-action@latest
 #        with:
