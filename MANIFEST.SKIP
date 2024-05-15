@@ -8,6 +8,7 @@
 \B\.svn\b
 \B\.git\b
 \B\.gitignore\b
+\B\.gitattributes\b
 \b_darcs\b
 \B\.cvsignore$
 ^\.mrdownload$
@@ -88,9 +89,12 @@ tmp-testing-trees*
 ^.coveralls.yml
 ^.github/dependabot.yml
 ^.github/workflows/
+^.vscode/
 ^.travis.yml
 ^docker/
 ^[a-zA-Z]*-docker.sh
+^build\.sh
+^\.editorconfig
 ^playground/
 
 # Avoid development config

@@ -7,6 +7,10 @@
 # The above will handle all files NOT found below
 #
 
+# stow
+MANIFEST            text eol=lf
+MANIFEST.SKIP       text eol=lf
+
 # Documents
 *.bibtex   text diff=bibtex
 *.doc      diff=astextplain
