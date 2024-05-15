@@ -1,6 +1,7 @@
 {
     "recommendations": [
-        "mergesium.autotools",
+        "bscan.perlnavigator",
+        "richterger.perl",
         "maelvalais.autoconf",
         "james-yu.latex-workshop"
     ]
