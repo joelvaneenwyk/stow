@@ -36,10 +36,10 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
-      - uses: awalsh128/cache-apt-pkgs-action@dev
+      - uses: tecolicom/actions-use-apt-tools@v1
         with:
-          packages: texinfo texlive
-          debug: true
+          tools: texinfo texlive
+          method: timestamp
       - run: autoreconf --install
       - name: ./configure && make
         run: |
@@ -80,10 +80,10 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - uses: awalsh128/cache-apt-pkgs-action@dev
+      - uses: tecolicom/actions-use-apt-tools@v1
         with:
-          packages: texinfo texlive
-          debug: true
+          tools: texinfo texlive
+          method: timestamp
 
       - run: autoreconf --install
       - name: ./configure && make
