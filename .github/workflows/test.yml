@@ -37,9 +37,7 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - uses: teatimeguest/setup-texlive-action@v3
-        with:
-          packages: scheme-basic
+      - run: apt-get update && apt-get install -y sudo texinfo texlive
 
       - run: autoreconf --install
       - name: ./configure && make
@@ -81,9 +79,7 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - uses: teatimeguest/setup-texlive-action@v3
-        with:
-          packages: scheme-basic
+      - run: apt-get update && apt-get install -y sudo texinfo texlive
 
       - run: autoreconf --install
       - name: ./configure && make
