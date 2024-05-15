@@ -36,10 +36,11 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 0
-      - uses: tecolicom/actions-use-apt-tools@v1
+
+      - uses: teatimeguest/setup-texlive-action@v3
         with:
-          tools: texinfo texlive
-          method: timestamp
+          packages: scheme-basic
+
       - run: autoreconf --install
       - name: ./configure && make
         run: |
@@ -80,10 +81,9 @@ jobs:
           submodules: recursive
           fetch-depth: 0
 
-      - uses: tecolicom/actions-use-apt-tools@v1
+      - uses: teatimeguest/setup-texlive-action@v3
         with:
-          tools: texinfo texlive
-          method: timestamp
+          packages: scheme-basic
 
       - run: autoreconf --install
       - name: ./configure && make
