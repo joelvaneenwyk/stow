@@ -38,9 +38,8 @@ jobs:
           fetch-depth: 0
       - uses: awalsh128/cache-apt-pkgs-action@dev
         with:
-          packages: sudo texinfo texlive
+          packages: texinfo texlive
           debug: true
-          execute_install_scripts: true
       - run: autoreconf --install
       - name: ./configure && make
         run: |
@@ -83,9 +82,8 @@ jobs:
 
       - uses: awalsh128/cache-apt-pkgs-action@dev
         with:
-          packages: sudo texinfo texlive
+          packages: texinfo texlive
           debug: true
-          execute_install_scripts: true
 
       - run: autoreconf --install
       - name: ./configure && make
