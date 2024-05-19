@@ -1,3 +1,4 @@
+#!/usr/bin/env perl
 # This file is part of GNU Stow.
 #
 # GNU Stow is free software: you can redistribute it and/or modify it
@@ -24,7 +25,7 @@ use lib "bin";
 
 my $build = Module::Build->new(
     module_name => 'Stow',
-    keywords    => [ qw/stow symlink software package management install/ ],
+    keywords    => [qw/stow symlink software package management install/],
     license     => 'gpl',
 
     # Module::Build forces us to use v1.4 of the CPAN Meta Spec:
@@ -35,16 +36,16 @@ my $build = Module::Build->new(
     # },
     meta_add => {
         resources => {
-            license => 'http://www.gnu.org/licenses/gpl-2.0.html' ,
+            license  => 'http://www.gnu.org/licenses/gpl-2.0.html',
             homepage => 'https://savannah.gnu.org/projects/stow',
 
-            # Module::Build forces us to use v1.4 of the CPAN Meta Spec:
-            # https://rt.cpan.org/Ticket/Display.html?id=71502
-            # bugtracker => {
-            #     web    => 'http://rt.cpan.org/Public/Dist/Display.html?Name=Stow',
-            #     mailto => 'stow-devel@gnu.org',
-            # },
-            #bugtracker => 'http://rt.cpan.org/Public/Dist/Display.html?Name=Stow',
+        # Module::Build forces us to use v1.4 of the CPAN Meta Spec:
+        # https://rt.cpan.org/Ticket/Display.html?id=71502
+        # bugtracker => {
+        #     web    => 'http://rt.cpan.org/Public/Dist/Display.html?Name=Stow',
+        #     mailto => 'stow-devel@gnu.org',
+        # },
+        #bugtracker => 'http://rt.cpan.org/Public/Dist/Display.html?Name=Stow',
 
             # Module::Build forces us to use v1.4 of the CPAN Meta Spec:
             # https://rt.cpan.org/Ticket/Display.html?id=71502
@@ -57,12 +58,12 @@ my $build = Module::Build->new(
         },
     },
     requires => {
-        'perl'        => '5.006',
-        'Carp'        => 0,
-        'IO::File'    => 0,
+        'perl'     => '5.006',
+        'Carp'     => 0,
+        'IO::File' => 0,
     },
-    script_files => [ 'bin/stow', 'bin/chkstow' ],
-    all_from => 'lib/Stow.pm.in',
+    script_files       => [ 'bin/stow', 'bin/chkstow' ],
+    all_from           => 'lib/Stow.pm.in',
     configure_requires => {
         'Module::Build' => 0,
     },
@@ -73,8 +74,8 @@ my $build = Module::Build->new(
     },
 );
 
-if (system('grep', '-q', '^use lib ', 'bin/stow') >> 8 == 0) {
-  die <<'EOF';
+if ( system( 'grep', '-q', '^use lib ', 'bin/stow' ) >> 8 == 0 ) {
+    die <<'EOF';
 
 ERROR: bin/stow contains 'use lib' line which could interfere
 with CPAN-style installation via Module::Build.  To avoid this,

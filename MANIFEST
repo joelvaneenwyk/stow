@@ -51,6 +51,8 @@ t/rc_options.t
 t/testutil.pm
 t/unstow.t
 tools/get-version
+tools/pre-configure.sh
+tools/post-configure.sh
 THANKS
 TODO
 META.yml

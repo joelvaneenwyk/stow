@@ -1,0 +1,53 @@
+{
+    "files.associations": {
+        "MANIFEST*": "plaintext",
+        "*.rasi": "css",
+        "*.bbmodel": "json",
+        "*.sublime-snippet": "xml",
+        "*.hbs": "html",
+        "*.ejs": "html",
+        "*.emu": "html",
+        "lesskey": "lesskey",
+        "*.Xresources": "xdefaults",
+        "i3/config": "i3",
+        "i3/*.conf": "i3",
+        "polybar/config": "ini",
+        "polybar/*.conf": "ini"
+    },
+    "makefile.postConfigureScript": "./tools/post-configure.sh",
+    "makefile.preConfigureScript": "./tools/pre-configure.sh",
+    "perl.cacheDir": "${workspaceFolder}/.cache/",
+    "perl.containerCmd": "docker-compose",
+    "perl.containerName": "stow-perl",
+    "perl.enable": true,
+    "perl.fileFilter": [
+        ".pm",
+        ".pm.in",
+        ".t"
+    ],
+    "perl.logFile": ".cache/perl_vscode.log",
+    "perl.logLevel": 2,
+    "perl.perlInc": [
+        "lib/",
+        "t/"
+    ],
+    "perl.showLocalVars": true,
+    "perl.useTaintForSyntaxCheck": true,
+    "perlnavigator.enableWarnings": true,
+    "perlnavigator.includeLib": true,
+    "perlnavigator.includePaths": [
+        "lib/",
+        "lib/Stow/",
+        "t/"
+    ],
+    "perlnavigator.logging": true,
+    "perlnavigator.perlCompileEnabled": true,
+    "perlnavigator.perlcriticEnabled": true,
+    "perlnavigator.perlimportsLintEnabled": true,
+    "perlnavigator.perlimportsTidyEnabled": true,
+    "perlnavigator.perltidyEnabled": true,
+    "perlnavigator.severity1": "warning",
+    "perlnavigator.severity2": "warning",
+    "perlnavigator.severity3": "warning",
+    "perlnavigator.severity4": "warning"
+}
