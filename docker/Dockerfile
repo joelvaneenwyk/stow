@@ -16,7 +16,7 @@
 # Build docker image: `docker build -t stowtest`
 # Run tests: (from stow src directory)
 #    `docker run --rm -it -v $(pwd):$(pwd) -w $(pwd) stowtest`
-FROM debian:bookworm
+FROM debian:12.6
 RUN DEBIAN_FRONTEND=noninteractive apt-get update -qq
 RUN DEBIAN_FRONTEND=noninteractive \
 apt-get install -y --force-yes -q \
